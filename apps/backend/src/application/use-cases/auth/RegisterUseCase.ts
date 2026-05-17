@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
-import { User, UserPublic } from '../../domain/entities/User';
-import { IUserRepository } from '../../domain/interfaces/IUserRepository';
-import { PasswordService } from '../../infrastructure/services/PasswordService';
+import { User, UserPublic } from '../../../domain/entities/User';
+import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
+import { PasswordService } from '../../../infrastructure/services/PasswordService';
 // RegisterDTO previously lived in presentation layer; accept plain input here
 
 /**

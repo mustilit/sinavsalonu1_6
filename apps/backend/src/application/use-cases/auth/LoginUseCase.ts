@@ -1,7 +1,7 @@
-import { UserPublic } from '../../domain/entities/User';
-import { IUserRepository } from '../../domain/interfaces/IUserRepository';
-import { JwtService } from '../../infrastructure/services/JwtService';
-import { PasswordService } from '../../infrastructure/services/PasswordService';
+import { UserPublic } from '../../../domain/entities/User';
+import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
+import { JwtService } from '../../../infrastructure/services/JwtService';
+import { PasswordService } from '../../../infrastructure/services/PasswordService';
 // LoginDTO previously lived in presentation layer; accept plain input here
 
 /** Başarılı giriş sonucunda dönen kullanıcı bilgisi ve JWT token'ı. */

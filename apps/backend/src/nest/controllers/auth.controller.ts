@@ -1,10 +1,10 @@
 import { Controller, Post, Body, Get, Req, HttpException, HttpStatus, UseGuards, HttpCode } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { RegisterUseCase } from '../../application/use-cases/RegisterUseCase';
-import { RegisterEducatorUseCase } from '../../application/use-cases/RegisterEducatorUseCase';
-import { LoginUseCase } from '../../application/use-cases/LoginUseCase';
-import { ForgotPasswordUseCase } from '../../application/use-cases/ForgotPasswordUseCase';
-import { ResetPasswordUseCase } from '../../application/use-cases/ResetPasswordUseCase';
+import { RegisterUseCase } from '../../application/use-cases/auth/RegisterUseCase';
+import { RegisterEducatorUseCase } from '../../application/use-cases/auth/RegisterEducatorUseCase';
+import { LoginUseCase } from '../../application/use-cases/auth/LoginUseCase';
+import { ForgotPasswordUseCase } from '../../application/use-cases/auth/ForgotPasswordUseCase';
+import { ResetPasswordUseCase } from '../../application/use-cases/auth/ResetPasswordUseCase';
 import { Public } from '../decorators/public.decorator';
 import { RegisterEducatorDto } from './dto/register-educator.dto';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';

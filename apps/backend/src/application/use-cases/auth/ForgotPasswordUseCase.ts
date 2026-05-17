@@ -1,5 +1,5 @@
-import { IUserRepository } from '../../domain/interfaces/IUserRepository';
-import { IEmailProvider } from '../../domain/interfaces/IEmailProvider';
+import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
+import { IEmailProvider } from '../../../domain/interfaces/IEmailProvider';
 import { randomBytes } from 'crypto';
 
 export class ForgotPasswordUseCase {

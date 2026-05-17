@@ -1,6 +1,6 @@
-import { IUserRepository } from '../../domain/interfaces/IUserRepository';
-import { PasswordService } from '../../infrastructure/services/PasswordService';
-import { AppError } from '../errors/AppError';
+import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
+import { PasswordService } from '../../../infrastructure/services/PasswordService';
+import { AppError } from '../../errors/AppError';
 
 /**
  * Parola sıfırlama e-postasındaki token ile yeni parola atar.
