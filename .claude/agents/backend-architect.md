@@ -12,7 +12,9 @@ Sınav Salonu backend'i için NestJS + Prisma uzmanısın. Modüller tutarlı, e
 ```
 apps/backend/src/
   application/
-    use-cases/          → İş mantığı buradadır (her özellik için bir UseCase sınıfı)
+    use-cases/          → İş mantığı — 17 domain alt klasörüne ayrılmış
+      auth/ educator/ test/ question/ attempt/ purchase/ refund/ discount/
+      review/ objection/ ad/ package/ live/ admin/ contract/ report/ notification/
     services/           → Yardımcı domain servisleri
   domain/
     interfaces/         → Repository arayüzleri (IUserRepository vb.)
@@ -39,7 +41,8 @@ apps/backend/prisma/
 
 1. `prisma/schema.prisma` kontrol et — gerekli model var mı?
 2. Yoksa ekle → migration SQL dosyasını `prisma/migrations/` altına. Composite index gerekiyorsa **WHERE + ORDER BY** sırasına göre ekle (skill: `prisma-schema`).
-3. **UseCase sınıfı** yaz: `application/use-cases/<ÖzellikAdı>UseCase.ts`
+3. **UseCase sınıfı** yaz: `application/use-cases/<domain>/<ÖzellikAdı>UseCase.ts`
+   (örn. `discount/CreateDiscountCodeUseCase.ts`, `live/StartLiveSessionUseCase.ts`)
 4. **DTO** yaz: `nest/controllers/dto/<endpoint>.dto.ts` — `class-validator` dekoratörleri **zorunlu**. Her query/body param için en az bir validator.
 5. **Controller method** ekle — yalnızca UseCase'i çağır, iş mantığı yok.
 6. `app.module.ts`'e controller ve UseCase'i ekle (providers + controllers).
@@ -73,9 +76,9 @@ Frontend tarafında aynı kontratın `zod` karşılığını **`dalClient.js`** 
 ## UseCase Örneği
 
 ```ts
-// application/use-cases/CreateDiscountCodeUseCase.ts
-import { prisma } from '../../infrastructure/database/prisma';
-import { AppError } from '../errors/AppError';
+// application/use-cases/discount/CreateDiscountCodeUseCase.ts
+import { prisma } from '../../../infrastructure/database/prisma';
+import { AppError } from '../../errors/AppError';
 
 export class CreateDiscountCodeUseCase {
   async execute(educatorId: string, dto: CreateDiscountCodeDto) {
@@ -194,6 +197,30 @@ export class YeniCronService {
   }
 }
 ```
+
+## Sentry — Hata İzleme
+
+`src/instrument.ts` zaten kurulu. UseCase'lerde elle `Sentry.captureException` çağrısı **gerekmiyor** — `HttpExceptionFilter` 5xx hataları otomatik yakalar. Sadece arka plan task'larında (cron, queue worker) `try/catch` içinde eklenebilir:
+
+```ts
+import { Sentry } from '../../../instrument';
+
+try {
+  await this.someRiskyOp();
+} catch (err) {
+  Sentry.captureException(err);
+  throw err;
+}
+```
+
+## Import Derinliği
+
+Domain alt klasöründen (`use-cases/<domain>/`) erişim:
+- `../../../infrastructure/database/prisma` (3 seviye)
+- `../../errors/AppError`
+- `../../constants`
+- `../../services/SomeService`
+- `../../../domain/interfaces/IFoo`
 
 ## Çıktı
 

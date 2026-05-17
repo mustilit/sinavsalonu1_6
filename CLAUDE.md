@@ -18,7 +18,24 @@ apps/
   backend/               → NestJS backend
     src/
       application/
-        use-cases/       → İş mantığı buradadır (UseCase sınıfları)
+        use-cases/           → İş mantığı buradadır — 17 domain alt klasörüne ayrılmış
+          auth/              → Kayıt, giriş, şifre sıfırlama
+          educator/          → Eğitici profil, takip
+          test/              → Test CRUD, yayımlama, arama
+          question/          → Soru & seçenek CRUD
+          attempt/           → Deneme başlatma, cevap, submit, timeout
+          purchase/          → Satın alma akışı
+          refund/            → İade talebi ve yönetimi
+          discount/          → İndirim kodu
+          review/            → Değerlendirme
+          objection/         → İtiraz akışı
+          ad/                → Reklam paketi
+          package/           → Test paketi CRUD, yayımlama
+          live/              → Canlı sınav oturumu
+          admin/             → Kullanıcı yönetimi, ayarlar, raporlar
+          contract/          → Eğitici sözleşmesi
+          report/            → Raporlama
+          notification/      → Bildirim tercihleri, digest
         services/        → Yardımcı servisler (ReviewAggregation vb.)
       domain/
         interfaces/      → Repository arayüzleri
@@ -118,7 +135,7 @@ cd apps/frontend && npm audit --audit-level=high
 
 **Backend**
 - Controller ince — yalnızca HTTP ↔ UseCase köprüsü. İş mantığı Use Case'te.
-- Her endpoint için `Use Case` sınıfı (`apps/backend/src/application/use-cases/`).
+- Her endpoint için `Use Case` sınıfı — domain alt klasörüne yaz: `apps/backend/src/application/use-cases/<domain>/<AdUseCase>.ts` (örn. `discount/CreateDiscountCodeUseCase.ts`).
 - DTO'lar `class-validator` ile, her endpoint için ayrı. Her query/body param için en az bir validator zorunlu.
 - Prisma query'leri yalnızca Repository veya Use Case içinde — controller'da direkt Prisma yasak.
 - **Select discipline:** Liste endpoint'lerinde `findMany({ select: { ... } })` ile sadece UI'ın gösterdiği alanlar çekilir. `include: true` çıplak yasak.
@@ -154,6 +171,11 @@ cd apps/frontend && npm audit --audit-level=high
 - **Frontend code splitting:** `pages.config.js` `React.lazy` ile route-bazlı chunk; ilk yüklemede 47 sayfa indirilmiyor.
 - **Dark mode:** `next-themes` ile aktif, `<html class="dark">` toggle, localStorage persist.
 - **A11y testleri:** Playwright + axe-core ile kritik sayfalar WCAG 2.1 AA bekçisinde.
+- **Canlı sınav (LiveSession):** Educator oturum oluşturur/yönetir; candidate koda girerek katılır, soruları cevaplar. HTTP polling (2s) + heartbeat (15s). 6 yeni Prisma modeli: `LiveSessionTier`, `LiveSession`, `LiveQuestion`, `LiveOption`, `LiveParticipant`, `LiveAnswer`.
+- **Use-case domain refaktörü:** 149 use-case `application/use-cases/` altında 17 domain alt klasörüne taşındı (auth, educator, test, question, attempt, purchase, refund, discount, review, objection, ad, package, live, admin, contract, report, notification).
+- **Sentry hata izleme:** Backend `src/instrument.ts` + `HttpExceptionFilter` (5xx → captureException); frontend `main.jsx` + `ErrorBoundary`. DSN yoksa devre dışı. Sample rate prod'da %10. PII filtresi: authorization ve cookie header'ları event'ten kaldırılır.
+- **Bundle analyzer:** `ANALYZE=1 npm run build` → `dist/stats.html` treemap. CI'da `frontend_build` job'ı artifact yükler.
+- **settings.local.json wildcard izinler:** `Bash(*) PowerShell(*) Read(*) Write(*) Edit(*) Glob(*) Grep(*)` — yerel araçlarda onay istenmez.
 
 ## Delege Rehberi
 
