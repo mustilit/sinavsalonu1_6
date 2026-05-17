@@ -61,12 +61,12 @@ Türkçe varyant: `yayımlanmamış sınav satın alınamaz`.
 | Controller + Service (integ) | Gerçek service, gerçek Prisma (test DB) |
 | Harici servis (ödeme, email) | Interface üzerinden mock provider |
 | Zaman | `vi.useFakeTimers()` |
-| Network | MSW (frontend), nock veya mock fetch (backend) |
+| Network | `vi.mock('@/api/dalClient')` (frontend), jest.mock prisma (backend) |
 
 ## Frontend Test (Vitest + Testing Library)
 
 ```ts
-// apps/web/components/exam/ExamCard.test.tsx
+// apps/frontend/src/components/ExamCard.test.jsx
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ExamCard } from './ExamCard';
@@ -86,23 +86,22 @@ describe('ExamCard', () => {
 ## Backend Test (Jest + NestJS)
 
 ```ts
-// apps/api/src/modules/exam/__tests__/exam.service.spec.ts
-describe('ExamService', () => {
-  let service: ExamService;
-  const prisma = { exam: { findUnique: jest.fn(), update: jest.fn() } };
+// apps/backend/tests/usecases/UpdateExamTestUseCase.test.ts
+import { UpdateExamTestUseCase } from '../../src/application/use-cases/test/UpdateExamTestUseCase';
 
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      providers: [ExamService, { provide: PrismaService, useValue: prisma }],
-    }).compile();
-    service = module.get(ExamService);
-    jest.clearAllMocks();
-  });
+jest.mock('../../src/infrastructure/database/prisma', () => ({
+  prisma: {
+    examTest: { findUnique: jest.fn(), update: jest.fn() },
+  },
+}));
 
+describe('UpdateExamTestUseCase', () => {
   it('owner olmayan kullanıcı güncelleyemez', async () => {
-    prisma.exam.findUnique.mockResolvedValue({ id: '1', authorId: 'other' });
-    await expect(service.updateAsOwner('me', '1', {})).rejects.toThrow(ForbiddenException);
-    expect(prisma.exam.update).not.toHaveBeenCalled();
+    const { prisma } = require('../../src/infrastructure/database/prisma');
+    prisma.examTest.findUnique.mockResolvedValue({ id: '1', educatorId: 'other' });
+    const uc = new UpdateExamTestUseCase();
+    await expect(uc.execute('me', '1', {})).rejects.toThrow(ForbiddenException);
+    expect(prisma.examTest.update).not.toHaveBeenCalled();
   });
 });
 ```
@@ -110,17 +109,17 @@ describe('ExamService', () => {
 ## E2E Test (Playwright)
 
 ```ts
-// e2e/exam-purchase.spec.ts
-test.describe('Sınav satın alma akışı', () => {
+// apps/frontend/e2e/specs/package-purchase.spec.ts
+test.describe('Paket satın alma akışı', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await login(page, 'student@test');
+    await login(page, 'candidate@test');
   });
 
-  test('öğrenci yayımlanmış sınavı satın alabilir', async ({ page }) => {
+  test('aday yayımlanmış paketi satın alabilir', async ({ page }) => {
     await page.getByRole('link', { name: 'TYT Deneme' }).click();
     await page.getByRole('button', { name: 'Satın Al' }).click();
-    await expect(page.getByText('Sınavınız kütüphanenizde')).toBeVisible();
+    await expect(page.getByText('Kütüphanenizde')).toBeVisible();
   });
 });
 ```

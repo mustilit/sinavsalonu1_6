@@ -121,7 +121,7 @@ Kullanılmıyorsa `DROP INDEX` güvenli. Kullanılıyorsa kaldırma — regresyo
 3. **Trafiği azalt** — gerekirse bakım modu (kısa migration için gerek yok).
 4. **Migrate deploy**:
    ```bash
-   pnpm prisma migrate deploy
+   npx prisma migrate deploy
    ```
 5. **Doğrula** — sağlık endpoint'i, kritik query'ler.
 6. **Rollback planı hazır** — geri dönmek gerekirse ne yapılacak, komutu yazılı.

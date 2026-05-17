@@ -17,18 +17,21 @@ description: Ödeme sağlayıcı entegrasyonu için pattern — provider-agnosti
 ## Mimari
 
 ```
-apps/api/src/modules/payment/
-  payment.module.ts
-  payment.controller.ts       → POST /checkout, POST /webhook
-  payment.service.ts          → iş mantığı
-  providers/
-    payment-provider.interface.ts
+apps/backend/src/
+  application/use-cases/purchase/
+    CheckoutPurchaseUseCase.ts     → ödeme oturumu başlat
+    HandlePaymentWebhookUseCase.ts → provider callback işle
+    RefundPurchaseUseCase.ts       → iade akışı
+  infrastructure/payment/
+    payment-provider.interface.ts  → provider-agnostic arayüz
     stripe.provider.ts
     iyzico.provider.ts
-    mock.provider.ts          → test
-  dto/
-    checkout-request.dto.ts
-    webhook-payload.dto.ts
+    mock.provider.ts               → test
+  nest/controllers/
+    payment.controller.ts          → POST /checkout, POST /webhook
+    dto/
+      checkout-request.dto.ts
+      webhook-payload.dto.ts
 ```
 
 ## Provider Interface
@@ -154,7 +157,7 @@ async refund(userId: string, examId: string, reason: string) {
 
 - **Unit**: `MockProvider` inject et, her senaryoyu test et — başarılı, fail, webhook tekrarı.
 - **Integration**: gerçek HTTP kurulu, mock provider webhook gönder.
-- **E2e**: `pnpm test:e2e` — playwright `page.route()` ile provider URL'si intercept, fake başarı yönlendirmesi.
+- **E2e**: `cd apps/frontend && npm run test:e2e` — Playwright `page.route()` ile provider URL'si intercept, fake başarı yönlendirmesi.
 - **Manuel** (provider test modunda): Stripe'ın test kart numaraları, iyzico sandbox.
 
 **Gerçek para ortamında asla otomatik test çalıştırma.** `NODE_ENV=production` iken `MockProvider` kullanılamasın.

@@ -57,7 +57,7 @@ test('geçerli bilgilerle giriş yapılabilir', async () => {
 
 ```ts
 // Örnek: apps/backend/tests/usecases/CreateDiscountCodeUseCase.test.ts
-import { CreateDiscountCodeUseCase } from '../../src/application/use-cases/CreateDiscountCodeUseCase';
+import { CreateDiscountCodeUseCase } from '../../src/application/use-cases/discount/CreateDiscountCodeUseCase';
 
 jest.mock('../../src/infrastructure/database/prisma', () => ({
   prisma: {

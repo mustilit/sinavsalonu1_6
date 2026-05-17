@@ -169,15 +169,15 @@ Eski + yeni paralel çalışırken test edilir, geri alınabilir.
 
 External servis gerekmez:
 
-```ts
-// apps/web/lib/features.ts
+```js
+// apps/frontend/src/lib/features.js
 export const features = {
-  newCheckoutFlow: process.env.NEXT_PUBLIC_FEATURE_CHECKOUT_V2 === 'true',
-  examCategories: process.env.NEXT_PUBLIC_FEATURE_CATEGORIES === 'true',
+  newCheckoutFlow: import.meta.env.VITE_FEATURE_CHECKOUT_V2 === 'true',
+  examCategories: import.meta.env.VITE_FEATURE_CATEGORIES === 'true',
 };
 ```
 
-```tsx
+```jsx
 {features.newCheckoutFlow ? <CheckoutV2 /> : <CheckoutV1 />}
 ```
 

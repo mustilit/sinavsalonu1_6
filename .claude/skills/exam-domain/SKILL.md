@@ -1,25 +1,26 @@
 ---
 name: exam-domain
-description: Sinav Salonu domain modeli — Test/ExamTest, ExamQuestion, Attempt, User (STUDENT/EDUCATOR/ADMIN), TestPackage (satın alma birimi), Purchase, AdminSettings, BackupLog, DiscountCode, AdPackage. Yeni özellik veya veri modeli üzerinde çalışırken referans alın.
+description: Sinav Salonu domain modeli — Test/ExamTest, ExamQuestion, Attempt, User (CANDIDATE/EDUCATOR/ADMIN), TestPackage (satın alma birimi), Purchase, AdminSettings, BackupLog, DiscountCode, AdPackage. Yeni özellik veya veri modeli üzerinde çalışırken referans alın.
 ---
 
 # Sinav Salonu — Domain Modeli
 
 ## Amaç
 
-Test/sınav pazar yeri. Educator (eğitici) testler oluşturur ve bunları TestPackage'lar halinde fiyatlandırıp satar. Student (öğrenci) **TestPackage** satın alır, paket içindeki testleri çözer, skorunu görür. Admin yönetim ve moderasyon yapar.
+Test/sınav pazar yeri. Educator (eğitici) testler oluşturur ve bunları TestPackage'lar halinde fiyatlandırıp satar. Candidate (aday) **TestPackage** satın alır, paket içindeki testleri çözer, skorunu görür. Admin yönetim ve moderasyon yapar.
 
 **Önemli:** Satın alma birimi **TestPackage**'dır, tekil Test değildir. Tekil testler doğrudan satılmaz.
 
 ## Roller
 
-Tüm projede sadece bu üç rol kullanılır:
+Tüm projede şu dört rol kullanılır:
 
-- **STUDENT** — paket satın alır, içindeki testleri çözer, skorlarını görüntüler.
+- **CANDIDATE** — paket satın alır, içindeki testleri çözer, skorlarını görüntüler.
 - **EDUCATOR** — test ve paket oluşturur, fiyatlar, yayımlar, indirim kodu üretir, kendi satışlarını görüntüler.
 - **ADMIN** — global yönetim, moderasyon, ayarlar, yedekleme.
+- **WORKER** — ADMIN alt yetki bölümlemesi (WorkerPermissions sistemi).
 
-**AUTHOR** terimi **kullanılmaz** — eski referanslar varsa düzelt.
+**AUTHOR** ve **STUDENT** terimleri **kullanılmaz** — eski referanslar varsa EDUCATOR/CANDIDATE ile düzelt.
 
 Admin alt yetkilendirmesi için **Worker Permissions** sistemi var (`apps/backend/src/nest/guards/WorkerPermissions`). Bu farklı bir rol değil, ADMIN'in alt yetki bölümlemesidir.
 
@@ -27,7 +28,7 @@ Admin alt yetkilendirmesi için **Worker Permissions** sistemi var (`apps/backen
 
 ### User
 
-- `id, email, name, role (STUDENT | EDUCATOR | ADMIN), passwordHash, createdAt, updatedAt`
+- `id, email, name, role (CANDIDATE | EDUCATOR | ADMIN | WORKER), passwordHash, createdAt, updatedAt`
 - Worker permissions ADMIN için ek izin matrisi (ayrı tablo).
 
 ### Test (ExamTest)
@@ -57,22 +58,22 @@ Bir teste ait çoktan seçmeli soru.
 
 - `id, examTestId, content, choices (JSON), correctIndex, explanation, orderIndex, points`
 - Choices format: `[{text: '...'}]` + ayrı `correctIndex`, ya da `[{text, isCorrect}]`.
-- STUDENT'a dönerken `correctIndex` ve `explanation` **yalnızca submit sonrası** servis edilir.
+- CANDIDATE'a dönerken `correctIndex` ve `explanation` **yalnızca submit sonrası** servis edilir.
 - **Kopya soru tespiti:** EDUCATOR soru girerken (blur), aynı educator'ın diğer sorularıyla Jaccard benzerliği ≥ %75 ise amber uyarı. Israr ederek devam edilebilir.
 
 ### Attempt
 
-STUDENT'ın bir Test'i çözme oturumu. **Tekil Test üzerinden açılır** ama yetki TestPackage Purchase üzerinden doğrulanır.
+CANDIDATE'ın bir Test'i çözme oturumu. **Tekil Test üzerinden açılır** ama yetki TestPackage Purchase üzerinden doğrulanır.
 
 - `id, userId, examTestId, startedAt, submittedAt (nullable), score (nullable), status (IN_PROGRESS | SUBMITTED | EXPIRED)`
 - Cevaplar: `Answer { attemptId, examQuestionId, selectedIndex, isCorrect, answeredAt }`.
-- **Attempt açma kuralı:** STUDENT'ın `userId`'si, ilgili Test'i içeren herhangi bir TestPackage için `Purchase` (status `PAID`) sahibi olmalı.
+- **Attempt açma kuralı:** CANDIDATE'ın `userId`'si, ilgili Test'i içeren herhangi bir TestPackage için `Purchase` (status `PAID`) sahibi olmalı.
 - **Tek aktif attempt:** Aynı kullanıcı aynı Test'te aynı anda tek `IN_PROGRESS`.
 - **Süre kuralı:** `startedAt + durationMinutes < now()` iken submit yoksa `EXPIRED`, skor cevaplardan hesaplanır.
 
 ### Purchase
 
-STUDENT ↔ TestPackage satın alma ilişkisi, ödeme kaydı. **Tekil Test ile bağlantısı yoktur.**
+CANDIDATE ↔ TestPackage satın alma ilişkisi, ödeme kaydı. **Tekil Test ile bağlantısı yoktur.**
 
 - `id, userId, testPackageId, paidAt, amount, paymentProvider, providerRef, status (PENDING | PAID | FAILED | REFUNDED), refundedAt (nullable), discountCodeId (nullable), discountAmount (nullable)`
 - **Unique constraint:** `(userId, testPackageId)` — aynı paketi iki kez satın alamaz.
@@ -137,15 +138,15 @@ Gerçek zamanlı toplu sınav özelliği. **6 Prisma modeli:**
 - Paket unpublish edilebilir: yeni satışı durdurur, mevcut Purchase ve Attempt korunur.
 
 **Satın alma (TestPackage Purchase)**
-- **STUDENT** satın alır. EDUCATOR ve ADMIN paket satın almaz.
+- **CANDIDATE** satın alır. EDUCATOR ve ADMIN paket satın almaz.
 - EDUCATOR kendi yarattığı paketi satın alamaz (`testPackage.educatorId !== userId` kontrolü).
-- Aynı STUDENT aynı paketi ikinci kez satın alamaz (DB unique constraint).
+- Aynı CANDIDATE aynı paketi ikinci kez satın alamaz (DB unique constraint).
 - Purchase + Payment kaydı **aynı `prisma.$transaction`** içinde.
 - DiscountCode kullanılıyorsa: `discountCodeId` + `discountAmount` Purchase'a yazılır, DiscountCode'un `usageCount` artar.
 - Ücretsiz paket (`price = 0`): yine Purchase kaydı oluşur (yetki kontrolü için), ama provider çağrısı atlanır.
 
 **Test çözme (Attempt)**
-- STUDENT bir Test için Attempt açabilir IFF: o Test'i içeren herhangi bir TestPackage için `PAID` Purchase'ı var.
+- CANDIDATE bir Test için Attempt açabilir IFF: o Test'i içeren herhangi bir TestPackage için `PAID` Purchase'ı var.
 - Attempt başladıktan sonra soru listesi dondurulur (paket yayımdaysa zaten değişmez).
 - Submit'te: her cevabın `isCorrect` hesapla, `score = correctCount / totalQuestions` veya puan toplamı.
 - Süre dolduğunda otomatik `EXPIRED`, skor son cevaplarla hesaplanır.
@@ -158,8 +159,8 @@ Gerçek zamanlı toplu sınav özelliği. **6 Prisma modeli:**
 
 **Rol izinleri**
 
-| Aksiyon | STUDENT | EDUCATOR | ADMIN |
-|---------|---------|----------|-------|
+| Aksiyon | CANDIDATE | EDUCATOR | ADMIN |
+|---------|-----------|----------|-------|
 | Paket listele | ✓ | ✓ | ✓ |
 | Test oluştur | - | ✓ | ✓ |
 | TestPackage oluştur | - | ✓ | ✓ |
@@ -177,10 +178,10 @@ Gerçek zamanlı toplu sınav özelliği. **6 Prisma modeli:**
 
 - **Attempt sürdürürken paket unpublish edildi** → mevcut attempt etkilenmez (Purchase ve Attempt korunur), yeni attempt açılamaz.
 - **Süre dolduğunda client offline** → server-side `EXPIRED` transition (cron veya lazy check kullanıcı dönünce).
-- **Ödeme iade** → Purchase silinmez, `status = REFUNDED` + `refundedAt`. Geçmiş Attempt'lere dokunma — skor kalır. STUDENT iade sonrası paketteki testleri **yeni attempt açarak çözemez** (Purchase status `PAID` değil).
+- **Ödeme iade** → Purchase silinmez, `status = REFUNDED` + `refundedAt`. Geçmiş Attempt'lere dokunma — skor kalır. CANDIDATE iade sonrası paketteki testleri **yeni attempt açarak çözemez** (Purchase status `PAID` değil).
 - **EDUCATOR silindi** → paketleri ortada kalmasın: `archived` flag veya `anonymous-educator` placeholder. Mevcut Purchase'lar etkilenmez.
 - **Soru sonradan yanlış bulundu** → yayımlanmışta düzeltme yasak. Yeni versiyon (yeni Test, yeni paket) yarat. Eski attempt'lere dokunma.
-- **DiscountCode expired ama checkout açıkken STUDENT submit etti** → backend doğrulamasında reddet, frontend'e taze hata göster.
+- **DiscountCode expired ama checkout açıkken CANDIDATE submit etti** → backend doğrulamasında reddet, frontend'e taze hata göster.
 - **AdPurchase zaman aşımı** → cron veya lazy check ile aktif reklam kümesinden çıkar.
 
 ## Türkçe-İngilizce Haritası
@@ -197,7 +198,7 @@ Kod İngilizce, UI Türkçe. API yanıtları İngilizce alan adlı, frontend'de 
 | Skor | Score | `score` |
 | Satın alma | Purchase | `purchase` |
 | Eğitici | Educator | `educator` (AUTHOR DEĞİL) |
-| Öğrenci | Student | `student` |
+| Aday | Candidate | `candidate` (STUDENT DEĞİL) |
 | Yönetici | Admin | `admin` |
 | İndirim kodu | Discount code | `discountCode` |
 | Reklam paketi | Ad package | `adPackage` |

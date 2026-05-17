@@ -42,7 +42,7 @@ async purchase(userId: string, examId: string) {
   if (!exam.publishedAt) {
     throw new BadRequestException('Yayımlanmamış sınav satın alınamaz');
   }
-  if (exam.authorId === userId) {
+  if (exam.educatorId === userId) {
     throw new ForbiddenException('Kendi sınavınızı satın alamazsınız');
   }
   const existing = await this.prisma.purchase.findUnique({
@@ -59,7 +59,7 @@ Her domain kuralı **kod akışı kararı yanına** exception fırlatsın. "Önc
 
 ## Global Exception Filter
 
-`apps/api/src/common/filters/all-exceptions.filter.ts`:
+`apps/backend/src/nest/filters/http-exception.filter.ts`:
 
 ```ts
 import {
@@ -74,8 +74,8 @@ import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 
 @Catch()
-export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
+export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -155,7 +155,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
 `main.ts`'te kayıt:
 ```ts
-app.useGlobalFilters(new AllExceptionsFilter());
+app.useGlobalFilters(new HttpExceptionFilter());
 ```
 
 ## Validation 500 Olmasın
@@ -187,9 +187,9 @@ async create(dto: CreateExamDto) {
 **Doğru:** Hiçbir try/catch koyma — global filter zaten halledecek. Domain kontrolünü ÖNCEDEN yap.
 
 ```ts
-async create(authorId: string, dto: CreateExamDto) {
+async create(educatorId: string, dto: CreateExamDto) {
   if (dto.price < 0) throw new BadRequestException('Fiyat negatif olamaz');
-  return this.prisma.exam.create({ data: { ...dto, authorId } });
+  return this.prisma.exam.create({ data: { ...dto, educatorId } });
   // Prisma hatası fırlarsa, filter Prisma error mapping ile 4xx'e çevirir
 }
 ```

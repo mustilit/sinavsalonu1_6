@@ -132,7 +132,7 @@ queryClient.invalidateQueries({ queryKey: ['exams', examId] });
 
 ```js
 // apps/frontend/src/api/dalClient.js
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_BASE_URL ?? '';  // boş: Vite proxy devreye girer
 
 class ApiError extends Error {
   constructor(status, code, message, fieldErrors) {

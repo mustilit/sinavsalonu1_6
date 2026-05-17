@@ -1,6 +1,6 @@
 ---
 name: purchase-flow
-description: Sinav Salonu satın alma sürecinin uçtan uca akışı. STUDENT bir TestPackage satın alır; checkout, ödeme provider, webhook, kütüphaneye eklenme, iade ve indirim kodu senaryolarını kapsar. Satın alma butonu, checkout sayfası, webhook handler, "kütüphanem" sayfası, iade akışı gibi konular üzerinde çalışırken referans alın.
+description: Sinav Salonu satın alma sürecinin uçtan uca akışı. CANDIDATE bir TestPackage satın alır; checkout, ödeme provider, webhook, kütüphaneye eklenme, iade ve indirim kodu senaryolarını kapsar. Satın alma butonu, checkout sayfası, webhook handler, "kütüphanem" sayfası, iade akışı gibi konular üzerinde çalışırken referans alın.
 ---
 
 # Satın Alma Süreci — Uçtan Uca
@@ -8,7 +8,7 @@ description: Sinav Salonu satın alma sürecinin uçtan uca akışı. STUDENT bi
 ## Önce Şunları Bil
 
 - **Satın alma birimi: TestPackage.** Tekil Test satılmaz.
-- **Satın alan: STUDENT.** EDUCATOR ve ADMIN paket satın almaz.
+- **Satın alan: CANDIDATE.** EDUCATOR ve ADMIN paket satın almaz.
 - **Kayıt: Purchase** entity, `(userId, testPackageId)` unique.
 - Detaylı entity/iş kuralı için `exam-domain` skill'i.
 - Provider entegrasyonu (Stripe/iyzico/PayTR) için `payment-domain` skill'i.
@@ -16,7 +16,7 @@ description: Sinav Salonu satın alma sürecinin uçtan uca akışı. STUDENT bi
 ## Akış Şeması
 
 ```
-STUDENT  →  Paket Listesi  →  Paket Detayı  →  [Sepete Ekle/Satın Al]
+CANDIDATE  →  Paket Listesi  →  Paket Detayı  →  [Sepete Ekle/Satın Al]
                                                        │
                                                        ▼
                                             Checkout Sayfası
@@ -33,11 +33,11 @@ STUDENT  →  Paket Listesi  →  Paket Detayı  →  [Sepete Ekle/Satın Al]
                                        ▼                               ▼
                               Webhook: payment.succeeded     Webhook: payment.failed
                               • Purchase PAID                • Purchase FAILED
-                              • paidAt, providerRef          • Log + STUDENT'a mesaj
+                              • paidAt, providerRef          • Log + CANDIDATE'a mesaj
                               • DiscountCode usageCount++
                                        │
                                        ▼
-                              STUDENT /library'ye yönlendirilir
+                              CANDIDATE /library'ye yönlendirilir
                               • Cache invalidate ['purchases'], ['packages']
                               • "Kütüphanem"de paket görünür
                               • İçindeki testler için Attempt açılabilir
@@ -50,7 +50,7 @@ STUDENT  →  Paket Listesi  →  Paket Detayı  →  [Sepete Ekle/Satın Al]
 **Frontend** (`ui-builder` agent + `react-component` skill):
 - Sayfa: `apps/frontend/src/pages/PackageListPage.jsx`, `PackageDetailPage.jsx`
 - `useQuery({ queryKey: ['packages', filter], queryFn: () => dalClient.packages.list(filter) })`
-- STUDENT için "Satın Al" butonu. EDUCATOR / ADMIN için butonu **gösterme** (rol kontrolü `routeRoles.js` ya da component içinde).
+- CANDIDATE için "Satın Al" butonu. EDUCATOR / ADMIN için butonu **gösterme** (rol kontrolü `routeRoles.js` ya da component içinde).
 - Kullanıcı kendi paketini görüyorsa "Düzenle" göster, "Satın Al" gösterme.
 
 **Backend** (`backend-architect` agent + `nestjs-module` skill):
@@ -83,7 +83,7 @@ const checkout = useMutation({
 ```
 
 **Backend** (Use Case: `CheckoutPurchaseUseCase`):
-1. STUDENT mi? (auth + role check)
+1. CANDIDATE mi? (auth + role check)
 2. Paket var, yayımda mı?
 3. Educator kendi paketi mi? → ForbiddenException
 4. Aynı kullanıcı zaten almış mı? (status `PAID`) → ConflictException
@@ -107,7 +107,7 @@ const checkout = useMutation({
 
 ### Aşama 3 — Ödeme (provider tarafında)
 
-STUDENT browser'da provider sayfasına yönlenir, ödemeyi tamamlar. Bu aşamada uygulamamız "bekliyor".
+CANDIDATE browser'da provider sayfasına yönlenir, ödemeyi tamamlar. Bu aşamada uygulamamız "bekliyor".
 
 `payment-domain` skill'ine bak — provider-agnostic interface, fixture mock, test pattern'leri.
 
@@ -143,7 +143,7 @@ async webhook(@Body() rawBody: string, @Headers('stripe-signature') sig: string)
 
 ### Aşama 5 — Kullanıcı dönüşü (success URL)
 
-Provider STUDENT'ı bizim success URL'imize yönlendirir (`/checkout/success?session=xxx`).
+Provider CANDIDATE'ı bizim success URL'imize yönlendirir (`/checkout/success?session=xxx`).
 
 **Frontend:**
 - Sayfa: `CheckoutSuccessPage.jsx`
@@ -166,16 +166,16 @@ queryClient.invalidateQueries({ queryKey: ['library'] });
 - Her paket için "Çöz" butonları (paketteki testleri liste)
 
 **Backend:**
-- `GET /api/purchases/library` — auth STUDENT, kendi `PAID` Purchase'larını + her birindeki TestPackage + içindeki Test'leri döner.
+- `GET /api/purchases/library` — auth CANDIDATE, kendi `PAID` Purchase'larını + her birindeki TestPackage + içindeki Test'leri döner.
 
 ### Aşama 7 — Test çözme (post-purchase)
 
 **Frontend:**
-- STUDENT bir Test için "Başla" tıklar.
+- CANDIDATE bir Test için "Başla" tıklar.
 - `POST /api/attempts/start { examTestId }` → AttemptID döner.
 
 **Backend** (Use Case: `StartAttemptUseCase`):
-- STUDENT'ın `userId`'si için, **bu Test'i içeren herhangi bir TestPackage'a** `PAID` Purchase var mı?
+- CANDIDATE'ın `userId`'si için, **bu Test'i içeren herhangi bir TestPackage'a** `PAID` Purchase var mı?
   ```ts
   const hasAccess = await this.purchaseRepo.userOwnsPackageContaining(userId, examTestId);
   if (!hasAccess) throw new ForbiddenException('Bu testi çözmek için paketi satın alın');
@@ -185,7 +185,7 @@ queryClient.invalidateQueries({ queryKey: ['library'] });
 ### Aşama 8 — İade
 
 **Frontend:**
-- ADMIN paneli veya STUDENT self-service (politikaya göre)
+- ADMIN paneli veya CANDIDATE self-service (politikaya göre)
 - `POST /api/purchases/:id/refund { reason }` mutation
 
 **Backend** (Use Case: `RefundPurchaseUseCase`):
@@ -196,23 +196,23 @@ queryClient.invalidateQueries({ queryKey: ['library'] });
    - Purchase `status = REFUNDED`, `refundedAt`, `refundProviderRef`, `refundReason`
    - DiscountCode kullanılmışsa `usageCount--` (politika)
 5. Mevcut Attempt'lere dokunma — geçmiş skor kalır.
-6. STUDENT yeni Attempt açamaz çünkü Purchase artık `PAID` değil.
+6. CANDIDATE yeni Attempt açamaz çünkü Purchase artık `PAID` değil.
 
 ## Senaryolar
 
 ### Happy path
-1. STUDENT paket listesine bakar, bir paketi açar.
+1. CANDIDATE paket listesine bakar, bir paketi açar.
 2. "Satın Al" → CheckoutPage.
 3. (Opsiyonel) DiscountCode girer, "Uygula" → frontend backend'e validate eder, indirim gözükür.
-4. "Ödemeye Geç" → backend Purchase PENDING + provider session, STUDENT provider'a yönlenir.
-5. STUDENT öder, success URL'e döner. Provider webhook'u gönderir, Purchase PAID olur.
-6. STUDENT kütüphanesinde paketi görür, içindeki testleri çözebilir.
+4. "Ödemeye Geç" → backend Purchase PENDING + provider session, CANDIDATE provider'a yönlenir.
+5. CANDIDATE öder, success URL'e döner. Provider webhook'u gönderir, Purchase PAID olur.
+6. CANDIDATE kütüphanesinde paketi görür, içindeki testleri çözebilir.
 
 ### DiscountCode geçersiz (expired)
-1. STUDENT kodu CheckoutPage'de girer.
+1. CANDIDATE kodu CheckoutPage'de girer.
 2. Backend validate eder: `validUntil < now()` → 400 `DISCOUNT_INVALID`.
 3. Frontend `setFormError('İndirim kodu geçersiz veya süresi dolmuş')`.
-4. STUDENT kod olmadan devam edebilir.
+4. CANDIDATE kod olmadan devam edebilir.
 
 ### Çift sekme / çift tıklama
 - Frontend `disabled={mutation.isPending}` → tek tıklama.
@@ -225,7 +225,7 @@ queryClient.invalidateQueries({ queryKey: ['library'] });
 - Webhook `payment.failed` event gönderir.
 - Use Case Purchase `FAILED` yapar, log'a yazar.
 - Frontend success URL'de polling sırasında `FAILED` görürse "Ödemeniz başarısız, tekrar deneyin" gösterir.
-- STUDENT yeni checkout başlatabilir — eski PENDING/FAILED Purchase yeni session ile değiştirilir (status update veya yeni satır, uygulamaya göre).
+- CANDIDATE yeni checkout başlatabilir — eski PENDING/FAILED Purchase yeni session ile değiştirilir (status update veya yeni satır, uygulamaya göre).
 
 ### EDUCATOR kendi paketini satın almaya kalkar
 - Frontend: butonu zaten gizliyoruz.
@@ -234,7 +234,7 @@ queryClient.invalidateQueries({ queryKey: ['library'] });
 ### Ücretsiz paket
 - `package.price === 0` ise checkout sırasında provider atlanır.
 - Direkt `Purchase` `PAID` oluşturulur (audit için).
-- STUDENT'a "kütüphanenize eklendi" mesajı.
+- CANDIDATE'a "kütüphanenize eklendi" mesajı.
 
 ### Webhook gecikmesi
 - Kullanıcı success URL'e döndüğünde Purchase hala PENDING olabilir.
@@ -259,7 +259,7 @@ queryClient.invalidateQueries({ queryKey: ['library'] });
 | Webhook geldi ama Purchase PENDING | Idempotency lock alındı ama update fail | PaymentEvent loglarına bak, transaction içinde mi |
 | Aynı paket çift PAID kayıt | Webhook idempotency yok | PaymentEvent unique kontrolü, `payment-domain` skill |
 | DiscountCode usage limit aşıldı ama satış oluştu | Webhook'ta usageCount artırılırken validation yok | Use Case'te recheck |
-| STUDENT iade sonrası test çözüyor | Attempt yetki kontrolü `PAID` yerine `ANY` bakıyor | `StartAttemptUseCase` Purchase status filter |
+| CANDIDATE iade sonrası test çözüyor | Attempt yetki kontrolü `PAID` yerine `ANY` bakıyor | `StartAttemptUseCase` Purchase status filter |
 
 ## Test'ler
 
@@ -303,7 +303,7 @@ queryClient.invalidateQueries({ queryKey: ['library'] });
 ## Kritik Kurallar (Özet)
 
 1. **Satın alma birimi TestPackage** — tekil Test satılmaz, Purchase `testPackageId`'ye bağlı.
-2. **Sadece STUDENT satın alır.**
+2. **Sadece CANDIDATE satın alır.**
 3. **EDUCATOR kendi paketini alamaz** (defense in depth: frontend + backend).
 4. **DB unique constraint `(userId, testPackageId)`** çift satın almayı engeller.
 5. **Webhook idempotency olmadan deploy etme.**

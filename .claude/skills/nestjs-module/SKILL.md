@@ -5,10 +5,25 @@ description: NestJS modül iskeleti — Controller/Service/DTO/Guard/Interceptor
 
 # NestJS Modül Pattern'i
 
-## Dosya Yapısı
+> **⚠️ Proje Notu:** Sinav Salonu **feature-module** değil **Clean Architecture** kullanır.
+> Gerçek yapı için `backend-architect` agent ve `exam-domain` skill'ine bak.
+> Bu skill generic NestJS pattern referansı — kavramsal kılavuz olarak kullan.
+>
+> **Gerçek proje dizini:**
+> ```
+> apps/backend/src/
+>   nest/controllers/           → Controller dosyaları (HTTP katmanı)
+>   nest/controllers/dto/       → DTO sınıfları
+>   nest/guards/                → JWT, Roles, WorkerPermissions
+>   application/use-cases/<domain>/ → İş mantığı (Service değil UseCase)
+>   nest/app.module.ts          → Tüm controller/provider tek modülde
+> ```
+> Yeni endpoint: controller + use-case yaz, `app.module.ts`'e kayıt et.
+
+## Referans Yapısı (Generic)
 
 ```
-apps/api/src/modules/exam/
+src/modules/exam/
   exam.module.ts
   exam.controller.ts
   exam.service.ts
@@ -100,7 +115,7 @@ export class ExamService {
   findPublished() {
     return this.prisma.exam.findMany({
       where: { publishedAt: { not: null } },
-      select: { id: true, title: true, price: true, authorId: true },
+      select: { id: true, title: true, price: true, educatorId: true },
       orderBy: { publishedAt: 'desc' },
     });
   }
@@ -111,19 +126,19 @@ export class ExamService {
     return exam;
   }
 
-  create(authorId: string, dto: CreateExamDto) {
-    return this.prisma.exam.create({ data: { ...dto, authorId } });
+  create(educatorId: string, dto: CreateExamDto) {
+    return this.prisma.exam.create({ data: { ...dto, educatorId } });
   }
 
   async updateAsOwner(userId: string, id: string, dto: Partial<CreateExamDto>) {
     const exam = await this.findByIdOrThrow(id);
-    if (exam.authorId !== userId) throw new ForbiddenException();
+    if (exam.educatorId !== userId) throw new ForbiddenException();
     return this.prisma.exam.update({ where: { id }, data: dto });
   }
 
   async deleteAsOwner(userId: string, id: string) {
     const exam = await this.findByIdOrThrow(id);
-    if (exam.authorId !== userId) throw new ForbiddenException();
+    if (exam.educatorId !== userId) throw new ForbiddenException();
     return this.prisma.exam.delete({ where: { id } });
   }
 }
@@ -175,7 +190,7 @@ export class ExamOwnerGuard implements CanActivate {
   async canActivate(ctx: ExecutionContext) {
     const req = ctx.switchToHttp().getRequest();
     const exam = await this.exams.findByIdOrThrow(req.params.id);
-    return exam.authorId === req.user.id;
+    return exam.educatorId === req.user.id;
   }
 }
 ```
