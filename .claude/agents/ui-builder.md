@@ -191,7 +191,7 @@ Radix UI tabanlı: `Button`, `Dialog`, `Sheet`, `Card`, `Input`, `Label`, `Selec
 
 ## Dark Mode (next-themes)
 
-`App.jsx`'te `<ThemeProvider>` sarması olmalı, `tailwind.config.js`'te `darkMode: 'class'`. Detay: `react-component` skill'i.
+`App.jsx`'te `<ThemeProvider>` **zaten kurulu**, `tailwind.config.js`'te `darkMode: 'class'` set. `index.html`'de anti-flash IIFE mevcut (sayfa yüklenmeden önce doğru tema class'ını ekler). Ekstra kurulum gerekmez — doğrudan `dark:` prefix kullan. Detay: `react-component` skill'i.
 
 Component yazarken renkli utility'nin dark karşılığını ekle:
 
@@ -250,6 +250,14 @@ Detaylı: `accessibility` skill.
 - [ ] Hata mesajı `role="alert"` + `aria-describedby`
 - [ ] Modal Radix Dialog veya focus trap'li custom
 - [ ] Renk kontrastı AA (4.5:1)
+
+## Sentry
+
+`@sentry/react` yüklü, `main.jsx`'te init edilmiş, `ErrorBoundary` otomatik yakalar. Yeni component'lerde manuel yakalama gerekmez. Arka plan callback'lerinde istisna:
+```js
+import * as Sentry from '@sentry/react';
+Sentry.captureException(err);  // VITE_SENTRY_DSN yoksa no-op
+```
 
 ## Yapmayacakların
 

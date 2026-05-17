@@ -145,13 +145,16 @@ function PageFallback() {
 
 ### Vite Bundle Analyzer (kontrol)
 
+`rollup-plugin-visualizer` **zaten yapılandırılmış** (`vite.config.js`). Ekstra kurulum gerekmez:
+
 ```bash
 cd apps/frontend
-npm install --save-dev rollup-plugin-visualizer
-# vite.config.js'e plugin ekle, npm run build sonra dist/stats.html'i aç
+ANALYZE=1 npm run build   # dist/stats.html treemap üretir
 ```
 
-Beklenen sonuç: initial bundle 300-500 KB civarı, her sayfa kendi chunk'ında 20-80 KB.
+CI'da `frontend_build` job'ı `ANALYZE=1` ile build yapıp `bundle-stats-<sha>` artifact'ı yükler.
+
+Beklenen: initial bundle 300-500 KB, her sayfa kendi chunk'ında 20-80 KB.
 
 ### Prefetch (opsiyonel iyileştirme)
 
@@ -259,7 +262,7 @@ export function CreateTestForm() {
 
 ## Dark Mode + Theme Persistency (next-themes)
 
-Proje `next-themes ^0.4.4` yüklü ama henüz `App.jsx`'te aktif değil. Aktivasyon küçük bir iş.
+Proje `next-themes ^0.4.4` yüklü ve **`App.jsx`'te aktif**. `tailwind.config.js`'te `darkMode: 'class'` set edilmiş. Yeni component yazarken ekstra kurulum gerekmez; doğrudan `dark:` prefix kullan.
 
 ### Provider Kurulumu
 
@@ -373,9 +376,20 @@ Tailwind `dark:` prefix:
 
 Bu script `next-themes` Provider yüklenmeden önce çalışıp doğru tema class'ını ekler — "white flash" sorunu olmaz.
 
-## Error Boundary
+## Error Boundary + Sentry
 
-Render-time hatalar için global boundary mevcut: `apps/frontend/src/components/ErrorBoundary.jsx` ve `App.jsx`'te root seviyede sarılı. Route bazlı ek boundary yazılabilir:
+`apps/frontend/src/components/ErrorBoundary.jsx` — `App.jsx`'te root seviyede sarılı. `componentDidCatch` içinde **`Sentry.captureException`** çağrılıyor; `VITE_SENTRY_DSN` env yoksa sessizce atlanır. Yeni boundary yazarken aynı pattern:
+
+```jsx
+import * as Sentry from '@sentry/react';
+
+componentDidCatch(error, errorInfo) {
+  Sentry.captureException(error, { extra: errorInfo });
+  // prod'da console.error gürültü yapar, kaldırılabilir
+}
+```
+
+Route bazlı ek boundary yazılabilir:
 
 ```jsx
 <ErrorBoundary fallback={<RouteError />}>
@@ -429,6 +443,32 @@ Yeni sayfaya **mutlaka** axe-core e2e testi ekle (`accessibility` skill).
 - Tailwind dinamik class (`bg-${color}-500`, `dark:bg-${...}`) — JIT taramaz.
 - Default export — **sadece `pages/` altında React.lazy için istisna**.
 - Server Component / Server Action öner — bu proje SPA.
+
+## Sentry Frontend Entegrasyonu
+
+`@sentry/react` yüklü. `main.jsx`'te `Sentry.init()` App import'undan **önce** çağrılıyor:
+
+```js
+// main.jsx — App'ten önce
+import * as Sentry from '@sentry/react';
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    integrations: [Sentry.browserTracingIntegration()],
+    tracesSampleRate: 0.1,
+    sendDefaultPii: false,
+  });
+}
+```
+
+Manuel yakalamak istersen (örn. query callback'inde):
+```js
+import * as Sentry from '@sentry/react';
+Sentry.captureException(error);
+```
+
+`VITE_SENTRY_DSN` env yoksa (dev ortamı) Sentry init çalışmaz, `captureException` no-op'tur.
 
 ## Hızlı Tanı — "Component Render Olmuyor"
 

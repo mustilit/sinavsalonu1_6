@@ -68,7 +68,7 @@ Yeni endpoint çalışmıyorsa kontrol et:
 4. **AppModule**'da modül `imports` array'inde mi?
 5. **main.ts** global prefix var mı? `app.setGlobalPrefix('api')` → tüm endpoint'ler `/api/...` altında.
 6. **CORS** açık mı? `app.enableCors({ origin: '...' })`.
-7. **Frontend** doğru URL'e mi istek atıyor (env'de `NEXT_PUBLIC_API_URL`)?
+7. **Frontend** doğru URL'e mi istek atıyor (env'de `VITE_API_BASE_URL` — Next.js değil Vite, `NEXT_PUBLIC_*` değil)?
 
 90% endpoint hatası bu zincirin bir halkasında.
 
@@ -78,7 +78,8 @@ Sinav Salonu'nda tek merkezi client: `apps/frontend/src/api/dalClient.js`. Compo
 
 ```js
 // apps/frontend/src/api/dalClient.js
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
+// VITE_API_BASE_URL env yoksa Vite proxy devreye girer (dev'de boş bırakılır)
+const API_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 
 export class ApiError extends Error {
   constructor(status, code, message, fieldErrors) {
