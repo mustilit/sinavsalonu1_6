@@ -1,4 +1,4 @@
-import { UpdateNotificationPreferencesUseCase } from '../../src/application/use-cases/UpdateNotificationPreferencesUseCase';
+import { UpdateNotificationPreferencesUseCase } from '../../src/application/use-cases/notification/UpdateNotificationPreferencesUseCase';
 
 test('update notification preferences creates or updates', async () => {
   const repo: any = {

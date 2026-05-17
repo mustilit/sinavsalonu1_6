@@ -1,5 +1,5 @@
-import { CreateRefundRequestUseCase } from '../../src/application/use-cases/CreateRefundRequestUseCase';
-import { ResolveRefundRequestUseCase } from '../../src/application/use-cases/ResolveRefundRequestUseCase';
+import { CreateRefundRequestUseCase } from '../../src/application/use-cases/refund/CreateRefundRequestUseCase';
+import { ResolveRefundRequestUseCase } from '../../src/application/use-cases/refund/ResolveRefundRequestUseCase';
 
 // Prisma mock — CreateRefundRequestUseCase.getTestIdFromPurchase içinde require ile kullanılır
 jest.mock('../../src/infrastructure/database/prisma', () => ({

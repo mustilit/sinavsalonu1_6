@@ -1,7 +1,7 @@
 import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { GetAdminStatsUseCase } from '../../application/use-cases/GetAdminStatsUseCase';
+import { GetAdminStatsUseCase } from '../../application/use-cases/admin/GetAdminStatsUseCase';
 
 /**
  * Admin istatistik dashboard — kullanıcı, paket ve satış aggregate sayılarını döner.

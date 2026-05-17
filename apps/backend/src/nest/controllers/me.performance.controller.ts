@@ -1,7 +1,7 @@
 import { Controller, Get, Req, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { GetTopicPerformanceUseCase } from '../../application/use-cases/GetTopicPerformanceUseCase';
+import { GetTopicPerformanceUseCase } from '../../application/use-cases/report/GetTopicPerformanceUseCase';
 
 /**
  * Adayın kişisel performans raporlarını sunan endpoint'ler.

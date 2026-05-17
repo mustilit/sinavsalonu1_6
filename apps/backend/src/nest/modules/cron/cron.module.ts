@@ -6,10 +6,10 @@ import { PrismaFollowRepository } from '../../../infrastructure/repositories/Pri
 import { PrismaUserRepository } from '../../../infrastructure/repositories/PrismaUserRepository';
 import { PrismaObjectionRepository } from '../../../infrastructure/repositories/PrismaObjectionRepository';
 import { QueueService } from '../../../infrastructure/queue/queue.service';
-import { SendWeeklyFollowDigestUseCase } from '../../../application/use-cases/SendWeeklyFollowDigestUseCase';
-import { SendMonthlyInactiveReminderUseCase } from '../../../application/use-cases/SendMonthlyInactiveReminderUseCase';
-import { EscalateOverdueObjectionsUseCase } from '../../../application/use-cases/EscalateOverdueObjectionsUseCase';
-import { EscalateOverdueRefundsUseCase } from '../../../application/use-cases/EscalateOverdueRefundsUseCase';
+import { SendWeeklyFollowDigestUseCase } from '../../../application/use-cases/notification/SendWeeklyFollowDigestUseCase';
+import { SendMonthlyInactiveReminderUseCase } from '../../../application/use-cases/notification/SendMonthlyInactiveReminderUseCase';
+import { EscalateOverdueObjectionsUseCase } from '../../../application/use-cases/objection/EscalateOverdueObjectionsUseCase';
+import { EscalateOverdueRefundsUseCase } from '../../../application/use-cases/refund/EscalateOverdueRefundsUseCase';
 import { PrismaRefundRepository } from '../../../infrastructure/repositories/PrismaRefundRepository';
 import { PrismaAuditLogRepository } from '../../../infrastructure/repositories/PrismaAuditLogRepository';
 

@@ -2,9 +2,9 @@ import { Controller, Get, Post, Param, Body, Req, HttpCode, Inject } from '@nest
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiConflictResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
 import { ParseUUIDPipe } from '../pipes/parse-uuid.pipe';
-import { ListEducatorRefundsUseCase } from '../../application/use-cases/ListEducatorRefundsUseCase';
-import { EducatorApproveRefundUseCase } from '../../application/use-cases/EducatorApproveRefundUseCase';
-import { EducatorRejectRefundUseCase } from '../../application/use-cases/EducatorRejectRefundUseCase';
+import { ListEducatorRefundsUseCase } from '../../application/use-cases/refund/ListEducatorRefundsUseCase';
+import { EducatorApproveRefundUseCase } from '../../application/use-cases/refund/EducatorApproveRefundUseCase';
+import { EducatorRejectRefundUseCase } from '../../application/use-cases/refund/EducatorRejectRefundUseCase';
 import { EducatorRejectRefundDto } from './dto/educator-reject-refund.dto';
 
 /**

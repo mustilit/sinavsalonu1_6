@@ -4,10 +4,10 @@ import { Roles } from '../decorators/roles.decorator';
 import { CreateExamTypeDto } from './dto/create-examtype.dto';
 import { UpdateExamTypeDto } from './dto/update-examtype.dto';
 import { ListExamTypeQueryDto } from './dto/list-examtype.query.dto';
-import { CreateExamTypeUseCase } from '../../application/use-cases/CreateExamTypeUseCase';
-import { ListExamTypesUseCase } from '../../application/use-cases/ListExamTypesUseCase';
-import { UpdateExamTypeUseCase } from '../../application/use-cases/UpdateExamTypeUseCase';
-import { DeleteExamTypeUseCase } from '../../application/use-cases/DeleteExamTypeUseCase';
+import { CreateExamTypeUseCase } from '../../application/use-cases/admin/CreateExamTypeUseCase';
+import { ListExamTypesUseCase } from '../../application/use-cases/admin/ListExamTypesUseCase';
+import { UpdateExamTypeUseCase } from '../../application/use-cases/admin/UpdateExamTypeUseCase';
+import { DeleteExamTypeUseCase } from '../../application/use-cases/admin/DeleteExamTypeUseCase';
 
 /**
  * Admin sınav türü CRUD yönetimi — sınav türlerini listeler, oluşturur,

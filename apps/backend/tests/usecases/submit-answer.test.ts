@@ -1,4 +1,4 @@
-import { SubmitAnswerUseCase } from '../../src/application/use-cases/SubmitAnswerUseCase';
+import { SubmitAnswerUseCase } from '../../src/application/use-cases/attempt/SubmitAnswerUseCase';
 import { makeAttempt } from '../helpers/fakes';
 
 // Süreli olmayan attempt: remainingSec büyük bir değer, lastResumedAt çok yakın

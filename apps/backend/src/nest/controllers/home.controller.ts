@@ -1,9 +1,9 @@
 import { Controller, Get, Query, Req } from '@nestjs/common';
 import { Roles } from '../decorators/roles.decorator';
 import { GetRecommendedDto } from './dto/get-recommended.dto';
-import { GetRecommendedTestsUseCase } from '../../application/use-cases/GetRecommendedTestsUseCase';
-import { SelectAdSlotsUseCase } from '../../application/use-cases/SelectAdSlotsUseCase';
-import { RecordAdImpressionsUseCase } from '../../application/use-cases/RecordAdImpressionsUseCase';
+import { GetRecommendedTestsUseCase } from '../../application/use-cases/package/GetRecommendedTestsUseCase';
+import { SelectAdSlotsUseCase } from '../../application/use-cases/ad/SelectAdSlotsUseCase';
+import { RecordAdImpressionsUseCase } from '../../application/use-cases/ad/RecordAdImpressionsUseCase';
 import { PrismaExamRepository } from '../../infrastructure/repositories/PrismaExamRepository';
 import { PrismaFollowRepository } from '../../infrastructure/repositories/PrismaFollowRepository';
 import { ApiTags, ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';

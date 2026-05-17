@@ -1,9 +1,9 @@
 import { Controller, Post, Get, Put, Body, Param, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiBadRequestResponse, ApiConflictResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { CreateWorkerUseCase } from '../../application/use-cases/CreateWorkerUseCase';
-import { GetWorkerPermissionsUseCase } from '../../application/use-cases/GetWorkerPermissionsUseCase';
-import { UpdateWorkerPermissionsUseCase } from '../../application/use-cases/UpdateWorkerPermissionsUseCase';
+import { CreateWorkerUseCase } from '../../application/use-cases/admin/CreateWorkerUseCase';
+import { GetWorkerPermissionsUseCase } from '../../application/use-cases/admin/GetWorkerPermissionsUseCase';
+import { UpdateWorkerPermissionsUseCase } from '../../application/use-cases/admin/UpdateWorkerPermissionsUseCase';
 import { CreateWorkerDto } from './dto/create-worker.dto';
 import { UpdateWorkerPermissionsDto } from './dto/update-worker-permissions.dto';
 

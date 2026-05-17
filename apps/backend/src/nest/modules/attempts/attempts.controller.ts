@@ -1,10 +1,10 @@
 import { Controller, Post, Param, Body, Req, Get, Inject } from '@nestjs/common';
-import { SubmitAnswerUseCase } from '../../../application/use-cases/SubmitAnswerUseCase';
-import { SubmitAttemptUseCase } from '../../../application/use-cases/SubmitAttemptUseCase';
-import { GetQuestionSolutionUseCase } from '../../../application/use-cases/GetQuestionSolutionUseCase';
-import { GetAttemptStateUseCase } from '../../../application/use-cases/GetAttemptStateUseCase';
-import { TimeoutAttemptUseCase } from '../../../application/use-cases/TimeoutAttemptUseCase';
-import { GetAttemptResultUseCase } from '../../../application/use-cases/GetAttemptResultUseCase';
+import { SubmitAnswerUseCase } from '../../../application/use-cases/attempt/SubmitAnswerUseCase';
+import { SubmitAttemptUseCase } from '../../../application/use-cases/attempt/SubmitAttemptUseCase';
+import { GetQuestionSolutionUseCase } from '../../../application/use-cases/question/GetQuestionSolutionUseCase';
+import { GetAttemptStateUseCase } from '../../../application/use-cases/attempt/GetAttemptStateUseCase';
+import { TimeoutAttemptUseCase } from '../../../application/use-cases/attempt/TimeoutAttemptUseCase';
+import { GetAttemptResultUseCase } from '../../../application/use-cases/attempt/GetAttemptResultUseCase';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiConflictResponse, ApiUnauthorizedResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { AttemptStateResponseDto } from '../../controllers/dto/attempt-state.response.dto';
 import { AttemptResultResponseDto } from '../../controllers/dto/attempt-result.response.dto';

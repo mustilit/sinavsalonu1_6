@@ -1,4 +1,4 @@
-import { SubmitAttemptUseCase } from '../../src/application/use-cases/SubmitAttemptUseCase';
+import { SubmitAttemptUseCase } from '../../src/application/use-cases/attempt/SubmitAttemptUseCase';
 import { makeAttempt } from '../helpers/fakes';
 
 /** Fake $transaction that runs the callback with the tx object (same as prisma here) */

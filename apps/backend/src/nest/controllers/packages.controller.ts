@@ -5,14 +5,14 @@ import { Roles } from '../decorators/roles.decorator';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
 import { AddTestToPackageDto } from './dto/add-test-to-package.dto';
-import { CreateTestPackageUseCase } from '../../application/use-cases/CreateTestPackageUseCase';
-import { GetTestPackageUseCase } from '../../application/use-cases/GetTestPackageUseCase';
-import { ListEducatorPackagesUseCase } from '../../application/use-cases/ListEducatorPackagesUseCase';
-import { UpdateTestPackageUseCase } from '../../application/use-cases/UpdateTestPackageUseCase';
-import { AddTestToPackageUseCase } from '../../application/use-cases/AddTestToPackageUseCase';
-import { RemoveTestFromPackageUseCase } from '../../application/use-cases/RemoveTestFromPackageUseCase';
-import { PublishTestPackageUseCase } from '../../application/use-cases/PublishTestPackageUseCase';
-import { UnpublishTestPackageUseCase } from '../../application/use-cases/UnpublishTestPackageUseCase';
+import { CreateTestPackageUseCase } from '../../application/use-cases/package/CreateTestPackageUseCase';
+import { GetTestPackageUseCase } from '../../application/use-cases/package/GetTestPackageUseCase';
+import { ListEducatorPackagesUseCase } from '../../application/use-cases/package/ListEducatorPackagesUseCase';
+import { UpdateTestPackageUseCase } from '../../application/use-cases/package/UpdateTestPackageUseCase';
+import { AddTestToPackageUseCase } from '../../application/use-cases/package/AddTestToPackageUseCase';
+import { RemoveTestFromPackageUseCase } from '../../application/use-cases/package/RemoveTestFromPackageUseCase';
+import { PublishTestPackageUseCase } from '../../application/use-cases/package/PublishTestPackageUseCase';
+import { UnpublishTestPackageUseCase } from '../../application/use-cases/package/UnpublishTestPackageUseCase';
 
 /**
  * TestPackage CRUD endpoint'leri.

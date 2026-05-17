@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PurchaseUseCase } from '../../../application/use-cases/PurchaseUseCase';
+import { PurchaseUseCase } from '../../../application/use-cases/purchase/PurchaseUseCase';
 import { Inject } from '@nestjs/common';
 import type { PrismaClient } from '@prisma/client';
 

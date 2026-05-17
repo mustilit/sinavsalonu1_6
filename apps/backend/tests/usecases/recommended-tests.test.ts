@@ -1,4 +1,4 @@
-import { GetRecommendedTestsUseCase } from '../../src/application/use-cases/GetRecommendedTestsUseCase';
+import { GetRecommendedTestsUseCase } from '../../src/application/use-cases/package/GetRecommendedTestsUseCase';
 
 // RedisCache mock — testlerde gerçek Redis bağlantısı olmaz
 jest.mock('../../src/infrastructure/cache/RedisCache', () => ({

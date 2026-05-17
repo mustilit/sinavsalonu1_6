@@ -1,4 +1,4 @@
-import { GetRecommendedTestsUseCase } from '../../src/application/use-cases/GetRecommendedTestsUseCase';
+import { GetRecommendedTestsUseCase } from '../../src/application/use-cases/package/GetRecommendedTestsUseCase';
 import { ListMarketplaceTestsUseCase } from '../../src/application/use-cases/test/ListMarketplaceTestsUseCase';
 
 // RedisCache mock — testlerde gerçek Redis bağlantısı olmaz

@@ -3,10 +3,10 @@ import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse } from '@nest
 import { Roles } from '../decorators/roles.decorator';
 import { CreateAdPackageDto } from './dto/create-ad-package.dto';
 import { UpdateAdPackageDto } from './dto/update-ad-package.dto';
-import { CreateAdPackageUseCase } from '../../application/use-cases/CreateAdPackageUseCase';
-import { ListAdPackagesUseCase } from '../../application/use-cases/ListAdPackagesUseCase';
-import { UpdateAdPackageUseCase } from '../../application/use-cases/UpdateAdPackageUseCase';
-import { DeleteAdPackageUseCase } from '../../application/use-cases/DeleteAdPackageUseCase';
+import { CreateAdPackageUseCase } from '../../application/use-cases/ad/CreateAdPackageUseCase';
+import { ListAdPackagesUseCase } from '../../application/use-cases/ad/ListAdPackagesUseCase';
+import { UpdateAdPackageUseCase } from '../../application/use-cases/ad/UpdateAdPackageUseCase';
+import { DeleteAdPackageUseCase } from '../../application/use-cases/ad/DeleteAdPackageUseCase';
 
 /** FR-Y-09: Reklam paketleri tanımlama */
 @Controller('admin/ad-packages')

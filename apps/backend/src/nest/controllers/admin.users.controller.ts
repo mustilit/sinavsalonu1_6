@@ -3,8 +3,8 @@ import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@ne
 import { Roles } from '../decorators/roles.decorator';
 import { ParseUUIDPipe } from '../pipes/parse-uuid.pipe';
 import { PrismaUserRepository } from '../../infrastructure/repositories/PrismaUserRepository';
-import { ListUsersUseCase } from '../../application/use-cases/ListUsersUseCase';
-import { UpdateUserByAdminUseCase } from '../../application/use-cases/UpdateUserByAdminUseCase';
+import { ListUsersUseCase } from '../../application/use-cases/admin/ListUsersUseCase';
+import { UpdateUserByAdminUseCase } from '../../application/use-cases/admin/UpdateUserByAdminUseCase';
 
 /**
  * Admin kullanıcı yönetimi — tüm kullanıcıları listeler ve admin tarafından günceller.

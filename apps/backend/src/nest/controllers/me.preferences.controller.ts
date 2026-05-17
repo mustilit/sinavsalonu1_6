@@ -1,8 +1,8 @@
 import { Controller, Get, Patch, Body, Req } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { GetUserPreferencesUseCase } from '../../application/use-cases/GetUserPreferencesUseCase';
-import { UpdateUserPreferencesUseCase } from '../../application/use-cases/UpdateUserPreferencesUseCase';
+import { GetUserPreferencesUseCase } from '../../application/use-cases/notification/GetUserPreferencesUseCase';
+import { UpdateUserPreferencesUseCase } from '../../application/use-cases/notification/UpdateUserPreferencesUseCase';
 import { PrismaUserPreferenceRepository } from '../../infrastructure/repositories/PrismaUserPreferenceRepository';
 
 /**

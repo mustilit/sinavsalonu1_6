@@ -1,4 +1,4 @@
-import { ApproveRefundUseCase } from '../../src/application/use-cases/ApproveRefundUseCase';
+import { ApproveRefundUseCase } from '../../src/application/use-cases/refund/ApproveRefundUseCase';
 
 describe('ApproveRefundUseCase', () => {
   const makeProcessor = () => ({ process: jest.fn().mockResolvedValue(undefined) });

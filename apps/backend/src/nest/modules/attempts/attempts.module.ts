@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AttemptsController } from './attempts.controller';
-import { SubmitAnswerUseCase } from '../../../application/use-cases/SubmitAnswerUseCase';
-import { SubmitAttemptUseCase } from '../../../application/use-cases/SubmitAttemptUseCase';
-import { GetQuestionSolutionUseCase } from '../../../application/use-cases/GetQuestionSolutionUseCase';
+import { SubmitAnswerUseCase } from '../../../application/use-cases/attempt/SubmitAnswerUseCase';
+import { SubmitAttemptUseCase } from '../../../application/use-cases/attempt/SubmitAttemptUseCase';
+import { GetQuestionSolutionUseCase } from '../../../application/use-cases/question/GetQuestionSolutionUseCase';
 import { PrismaAttemptRepository } from '../../../infrastructure/repositories/PrismaAttemptRepository';
 import { PrismaExamRepository } from '../../../infrastructure/repositories/PrismaExamRepository';
-import { GetAttemptStateUseCase } from '../../../application/use-cases/GetAttemptStateUseCase';
+import { GetAttemptStateUseCase } from '../../../application/use-cases/attempt/GetAttemptStateUseCase';
 import { PrismaAttemptAnswerRepository } from '../../../infrastructure/repositories/PrismaAttemptAnswerRepository';
 import { PrismaAuditLogRepository } from '../../../infrastructure/repositories/PrismaAuditLogRepository';
-import { TimeoutAttemptUseCase } from '../../../application/use-cases/TimeoutAttemptUseCase';
-import { GetAttemptResultUseCase } from '../../../application/use-cases/GetAttemptResultUseCase';
+import { TimeoutAttemptUseCase } from '../../../application/use-cases/attempt/TimeoutAttemptUseCase';
+import { GetAttemptResultUseCase } from '../../../application/use-cases/attempt/GetAttemptResultUseCase';
 import { PrismaExamRepository as PrismaExamRepo } from '../../../infrastructure/repositories/PrismaExamRepository';
 
 @Module({

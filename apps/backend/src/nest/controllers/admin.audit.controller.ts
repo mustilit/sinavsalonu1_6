@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { ListAuditLogsUseCase } from '../../application/use-cases/ListAuditLogsUseCase';
+import { ListAuditLogsUseCase } from '../../application/use-cases/admin/ListAuditLogsUseCase';
 import { ListAuditLogsQueryDto } from './dto/list-audit-logs-query.dto';
 
 /**

@@ -10,7 +10,7 @@
  * ancak asıl akış paket satın almadır.
  */
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { PurchaseUseCase } from '../../src/application/use-cases/PurchaseUseCase';
+import { PurchaseUseCase } from '../../src/application/use-cases/purchase/PurchaseUseCase';
 
 // ---------------------------------------------------------------------------
 // Fixtures

@@ -18,24 +18,24 @@ import { CreateLiveSessionDto } from './dto/create-live-session.dto';
 import { CreateLiveTierDto } from './dto/create-live-tier.dto';
 import { UpdateLiveTierDto } from './dto/update-live-tier.dto';
 
-import { CreateLiveSessionUseCase } from '../../application/use-cases/CreateLiveSessionUseCase';
-import { GetLiveSessionStateUseCase } from '../../application/use-cases/GetLiveSessionStateUseCase';
-import { JoinLiveSessionUseCase } from '../../application/use-cases/JoinLiveSessionUseCase';
-import { SubmitLiveAnswerUseCase } from '../../application/use-cases/SubmitLiveAnswerUseCase';
-import { StartLiveSessionUseCase } from '../../application/use-cases/StartLiveSessionUseCase';
-import { NavigateLiveQuestionUseCase } from '../../application/use-cases/NavigateLiveQuestionUseCase';
-import { ToggleLiveStatsUseCase } from '../../application/use-cases/ToggleLiveStatsUseCase';
-import { EndLiveSessionUseCase } from '../../application/use-cases/EndLiveSessionUseCase';
-import { PingLiveSessionUseCase } from '../../application/use-cases/PingLiveSessionUseCase';
-import { PayLiveSessionUseCase } from '../../application/use-cases/PayLiveSessionUseCase';
-import { ListMyLiveSessionsUseCase } from '../../application/use-cases/ListMyLiveSessionsUseCase';
-import { ListLiveSessionTiersUseCase } from '../../application/use-cases/ListLiveSessionTiersUseCase';
-import { CreateLiveSessionTierUseCase } from '../../application/use-cases/CreateLiveSessionTierUseCase';
-import { UpdateLiveSessionTierUseCase } from '../../application/use-cases/UpdateLiveSessionTierUseCase';
-import { DeleteLiveSessionTierUseCase } from '../../application/use-cases/DeleteLiveSessionTierUseCase';
-import { GetLiveSessionByCodeUseCase } from '../../application/use-cases/GetLiveSessionByCodeUseCase';
-import { CreateRound2LiveSessionUseCase } from '../../application/use-cases/CreateRound2LiveSessionUseCase';
-import { GetLiveSessionComparisonUseCase } from '../../application/use-cases/GetLiveSessionComparisonUseCase';
+import { CreateLiveSessionUseCase } from '../../application/use-cases/live/CreateLiveSessionUseCase';
+import { GetLiveSessionStateUseCase } from '../../application/use-cases/live/GetLiveSessionStateUseCase';
+import { JoinLiveSessionUseCase } from '../../application/use-cases/live/JoinLiveSessionUseCase';
+import { SubmitLiveAnswerUseCase } from '../../application/use-cases/live/SubmitLiveAnswerUseCase';
+import { StartLiveSessionUseCase } from '../../application/use-cases/live/StartLiveSessionUseCase';
+import { NavigateLiveQuestionUseCase } from '../../application/use-cases/live/NavigateLiveQuestionUseCase';
+import { ToggleLiveStatsUseCase } from '../../application/use-cases/live/ToggleLiveStatsUseCase';
+import { EndLiveSessionUseCase } from '../../application/use-cases/live/EndLiveSessionUseCase';
+import { PingLiveSessionUseCase } from '../../application/use-cases/live/PingLiveSessionUseCase';
+import { PayLiveSessionUseCase } from '../../application/use-cases/live/PayLiveSessionUseCase';
+import { ListMyLiveSessionsUseCase } from '../../application/use-cases/live/ListMyLiveSessionsUseCase';
+import { ListLiveSessionTiersUseCase } from '../../application/use-cases/live/ListLiveSessionTiersUseCase';
+import { CreateLiveSessionTierUseCase } from '../../application/use-cases/live/CreateLiveSessionTierUseCase';
+import { UpdateLiveSessionTierUseCase } from '../../application/use-cases/live/UpdateLiveSessionTierUseCase';
+import { DeleteLiveSessionTierUseCase } from '../../application/use-cases/live/DeleteLiveSessionTierUseCase';
+import { GetLiveSessionByCodeUseCase } from '../../application/use-cases/live/GetLiveSessionByCodeUseCase';
+import { CreateRound2LiveSessionUseCase } from '../../application/use-cases/live/CreateRound2LiveSessionUseCase';
+import { GetLiveSessionComparisonUseCase } from '../../application/use-cases/live/GetLiveSessionComparisonUseCase';
 
 @Controller('live-sessions')
 @ApiTags('LiveSessions')

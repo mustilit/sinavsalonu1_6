@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Query, Body, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { GetEducatorReportUseCase } from '../../application/use-cases/GetEducatorReportUseCase';
-import { SendBulkEducatorEmailUseCase } from '../../application/use-cases/SendBulkEducatorEmailUseCase';
+import { GetEducatorReportUseCase } from '../../application/use-cases/report/GetEducatorReportUseCase';
+import { SendBulkEducatorEmailUseCase } from '../../application/use-cases/admin/SendBulkEducatorEmailUseCase';
 
 /**
  * Admin eğitici raporu ve toplu e-posta — eğitici performansını listeler

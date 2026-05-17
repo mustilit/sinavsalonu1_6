@@ -1,4 +1,4 @@
-import { GetAttemptStateUseCase } from '../../src/application/use-cases/GetAttemptStateUseCase';
+import { GetAttemptStateUseCase } from '../../src/application/use-cases/attempt/GetAttemptStateUseCase';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { makeAttempt, makeAttemptRepo } from '../helpers/fakes';
 

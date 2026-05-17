@@ -4,10 +4,10 @@ import { ApiTags, ApiOkResponse } from '@nestjs/swagger';
 import { ApiErrorResponses } from '../swagger/decorators';
 import { UnsubscribeResponseDto } from './dto/unsubscribe.response.dto';
 import { Public } from '../decorators/public.decorator';
-import { UnsubscribeEmailUseCase } from '../../application/use-cases/UnsubscribeEmailUseCase';
+import { UnsubscribeEmailUseCase } from '../../application/use-cases/notification/UnsubscribeEmailUseCase';
 import { PrismaNotificationPreferenceRepository } from '../../infrastructure/repositories/PrismaNotificationPreferenceRepository';
 import { PrismaAuditLogRepository } from '../../infrastructure/repositories/PrismaAuditLogRepository';
-import { UpdateNotificationPreferencesUseCase } from '../../application/use-cases/UpdateNotificationPreferencesUseCase';
+import { UpdateNotificationPreferencesUseCase } from '../../application/use-cases/notification/UpdateNotificationPreferencesUseCase';
 import { Roles } from '../decorators/roles.decorator';
 import { Request } from 'express';
 

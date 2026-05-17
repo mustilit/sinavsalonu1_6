@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import type { PrismaClient } from '@prisma/client';
 import { ContractsController } from './contracts.controller';
-import { GetActiveContractUseCase } from '../../../application/use-cases/GetActiveContractUseCase';
-import { AcceptContractUseCase } from '../../../application/use-cases/AcceptContractUseCase';
+import { GetActiveContractUseCase } from '../../../application/use-cases/contract/GetActiveContractUseCase';
+import { AcceptContractUseCase } from '../../../application/use-cases/contract/AcceptContractUseCase';
 import { PrismaContractRepository } from '../../../infrastructure/repositories/PrismaContractRepository';
 import { PrismaContractAcceptanceRepository } from '../../../infrastructure/repositories/PrismaContractAcceptanceRepository';
 import { PrismaAuditLogRepository } from '../../../infrastructure/repositories/PrismaAuditLogRepository';

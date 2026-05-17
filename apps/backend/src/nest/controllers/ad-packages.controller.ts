@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Inject } from '@nestjs/common';
 import { ApiTags, ApiOkResponse } from '@nestjs/swagger';
 import { Public } from '../decorators/public.decorator';
-import { ListAdPackagesUseCase } from '../../application/use-cases/ListAdPackagesUseCase';
+import { ListAdPackagesUseCase } from '../../application/use-cases/ad/ListAdPackagesUseCase';
 
 /** Public: Eğiticilerin satın alabileceği aktif reklam paketlerini listeler */
 @Controller('ad-packages')

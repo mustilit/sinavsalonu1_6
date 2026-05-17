@@ -2,9 +2,9 @@ import { Controller, Get, Post, Query, Res, Body, ParseIntPipe, DefaultValuePipe
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Roles } from '../decorators/roles.decorator';
-import { GetCommissionReportUseCase } from '../../application/use-cases/GetCommissionReportUseCase';
-import { GetCommissionRateHistoryUseCase } from '../../application/use-cases/GetCommissionRateHistoryUseCase';
-import { UpdateCommissionRateUseCase } from '../../application/use-cases/UpdateCommissionRateUseCase';
+import { GetCommissionReportUseCase } from '../../application/use-cases/report/GetCommissionReportUseCase';
+import { GetCommissionRateHistoryUseCase } from '../../application/use-cases/report/GetCommissionRateHistoryUseCase';
+import { UpdateCommissionRateUseCase } from '../../application/use-cases/admin/UpdateCommissionRateUseCase';
 import { UpdateCommissionRateDto } from './dto/update-commission-rate.dto';
 
 /** Varsayılan rapor dönemi için bir önceki ayı hesaplar — Ocak için Aralık'a döner */

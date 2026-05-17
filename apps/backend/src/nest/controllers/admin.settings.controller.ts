@@ -2,11 +2,11 @@ import { Controller, Get, Patch, Body, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
 import type { PrismaClient } from '@prisma/client';
-import { GetAdminSettingsUseCase } from '../../application/use-cases/GetAdminSettingsUseCase';
-import { UpdateAdminSettingsUseCase } from '../../application/use-cases/UpdateAdminSettingsUseCase';
+import { GetAdminSettingsUseCase } from '../../application/use-cases/admin/GetAdminSettingsUseCase';
+import { UpdateAdminSettingsUseCase } from '../../application/use-cases/admin/UpdateAdminSettingsUseCase';
 import { UpdateAdminSettingsDto } from './dto/update-admin-settings.dto';
-import { GetAdminPaymentSettingsUseCase } from '../../application/use-cases/GetAdminPaymentSettingsUseCase';
-import { UpdatePaymentSettingsUseCase } from '../../application/use-cases/UpdatePaymentSettingsUseCase';
+import { GetAdminPaymentSettingsUseCase } from '../../application/use-cases/admin/GetAdminPaymentSettingsUseCase';
+import { UpdatePaymentSettingsUseCase } from '../../application/use-cases/admin/UpdatePaymentSettingsUseCase';
 
 /**
  * Admin uygulama ayarları — satın alma kill-switch gibi özellik bayraklarını

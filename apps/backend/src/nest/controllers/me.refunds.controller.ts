@@ -1,7 +1,7 @@
 import { Controller, Get, Req, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { ListMyRefundsUseCase } from '../../application/use-cases/ListMyRefundsUseCase';
+import { ListMyRefundsUseCase } from '../../application/use-cases/refund/ListMyRefundsUseCase';
 
 /**
  * Giriş yapmış adayın iade taleplerini listeler.

@@ -2,9 +2,9 @@ import { Controller, Get, Query, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
 import { ListObjectionsQueryDto } from './dto/list-objections-query.dto';
-import { ListEscalatedObjectionsUseCase } from '../../application/use-cases/ListEscalatedObjectionsUseCase';
-import { ListAllObjectionsUseCase } from '../../application/use-cases/ListAllObjectionsUseCase';
-import { ListTestReportStatsUseCase } from '../../application/use-cases/ListTestReportStatsUseCase';
+import { ListEscalatedObjectionsUseCase } from '../../application/use-cases/objection/ListEscalatedObjectionsUseCase';
+import { ListAllObjectionsUseCase } from '../../application/use-cases/objection/ListAllObjectionsUseCase';
+import { ListTestReportStatsUseCase } from '../../application/use-cases/report/ListTestReportStatsUseCase';
 
 /**
  * Admin itiraz yönetimi — tüm itirazları, yalnızca eskalatlanmışları listeler

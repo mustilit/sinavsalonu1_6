@@ -3,8 +3,8 @@ import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse, ApiNotFoun
 import { Roles } from '../decorators/roles.decorator';
 import { ParseUUIDPipe } from '../pipes/parse-uuid.pipe';
 import { AnswerObjectionDto } from './dto/answer-objection.dto';
-import { AnswerObjectionUseCase } from '../../application/use-cases/AnswerObjectionUseCase';
-import { ListEducatorObjectionsUseCase } from '../../application/use-cases/ListEducatorObjectionsUseCase';
+import { AnswerObjectionUseCase } from '../../application/use-cases/objection/AnswerObjectionUseCase';
+import { ListEducatorObjectionsUseCase } from '../../application/use-cases/objection/ListEducatorObjectionsUseCase';
 
 /**
  * Eğiticiye gelen soru itirazlarını listeler ve yanıtlar.

@@ -2,8 +2,8 @@ import { Controller, Get, Post, Query, Body, Req, HttpCode, Inject } from '@nest
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiNotFoundResponse, ApiConflictResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { Public } from '../../decorators/public.decorator';
 import { Roles } from '../../decorators/roles.decorator';
-import { GetActiveContractUseCase } from '../../../application/use-cases/GetActiveContractUseCase';
-import { AcceptContractUseCase } from '../../../application/use-cases/AcceptContractUseCase';
+import { GetActiveContractUseCase } from '../../../application/use-cases/contract/GetActiveContractUseCase';
+import { AcceptContractUseCase } from '../../../application/use-cases/contract/AcceptContractUseCase';
 import { GetActiveContractQueryDto } from './dto/get-active-contract.query.dto';
 import { AcceptContractDto } from './dto/accept-contract.dto';
 

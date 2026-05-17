@@ -1,4 +1,4 @@
-import { SendWeeklyFollowDigestUseCase } from '../../src/application/use-cases/SendWeeklyFollowDigestUseCase';
+import { SendWeeklyFollowDigestUseCase } from '../../src/application/use-cases/notification/SendWeeklyFollowDigestUseCase';
 
 // prisma modülünü mock'la — test gerçek DB'ye bağlanmasın
 jest.mock('../../src/infrastructure/database/prisma', () => ({

@@ -1,10 +1,10 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, HttpException, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiConflictResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { CreateContractUseCase } from '../../application/use-cases/CreateContractUseCase';
-import { UpdateContractUseCase } from '../../application/use-cases/UpdateContractUseCase';
-import { ListContractsUseCase } from '../../application/use-cases/ListContractsUseCase';
-import { GetActiveContractUseCase } from '../../application/use-cases/GetActiveContractUseCase';
+import { CreateContractUseCase } from '../../application/use-cases/contract/CreateContractUseCase';
+import { UpdateContractUseCase } from '../../application/use-cases/contract/UpdateContractUseCase';
+import { ListContractsUseCase } from '../../application/use-cases/contract/ListContractsUseCase';
+import { GetActiveContractUseCase } from '../../application/use-cases/contract/GetActiveContractUseCase';
 import { CONTRACT_REPO } from '../../application/constants';
 import { Inject } from '@nestjs/common';
 import type { IContractRepository } from '../../domain/interfaces/IContractRepository';

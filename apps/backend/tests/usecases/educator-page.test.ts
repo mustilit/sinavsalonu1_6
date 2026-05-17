@@ -7,7 +7,7 @@ afterEach(() => {
 });
 
 test('educator not found throws', async () => {
-  const usersRepo = { findEducatorById: async () => null };
+  const usersRepo = { findById: async () => null };
   const examsRepo = { listPublishedByEducator: async () => ({ items: [], total: 0 }) };
   const statsRepo = { findManyByTestIds: async () => [] };
   const reviewAgg = { getAggregatesForTestIds: async () => ({}) };
@@ -20,7 +20,7 @@ test('returns published tests and pagination meta with enrichment preferring Tes
   const test1 = { id: 't1', title: 'T1', educatorId: 'ed1', publishedAt: new Date().toISOString(), isTimed: false, questionCount: 1 };
   const test2 = { id: 't2', title: 'T2', educatorId: 'ed1', publishedAt: new Date().toISOString(), isTimed: false, questionCount: 1 };
 
-  const usersRepo = { findEducatorById: async () => fakeUser };
+  const usersRepo = { findById: async () => fakeUser };
   const examsRepo = {
     listPublishedByEducator: async () => ({ items: [test1, test2], total: 2 }),
   };

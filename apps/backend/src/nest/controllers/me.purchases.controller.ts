@@ -1,7 +1,7 @@
 import { Controller, Get, Req, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { ListMyPurchasesUseCase } from '../../application/use-cases/ListMyPurchasesUseCase';
+import { ListMyPurchasesUseCase } from '../../application/use-cases/purchase/ListMyPurchasesUseCase';
 
 /**
  * Giriş yapmış adayın satın alma geçmişini ve ilgili deneme bilgilerini döndürür.

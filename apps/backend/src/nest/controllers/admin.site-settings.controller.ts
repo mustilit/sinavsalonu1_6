@@ -2,8 +2,8 @@ import { Controller, Get, Patch, Body, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
 import type { PrismaClient } from '@prisma/client';
-import { GetSiteSettingsUseCase } from '../../application/use-cases/GetSiteSettingsUseCase';
-import { UpdateSiteSettingsUseCase } from '../../application/use-cases/UpdateSiteSettingsUseCase';
+import { GetSiteSettingsUseCase } from '../../application/use-cases/admin/GetSiteSettingsUseCase';
+import { UpdateSiteSettingsUseCase } from '../../application/use-cases/admin/UpdateSiteSettingsUseCase';
 import { UpdateSiteSettingsDto } from './dto/update-site-settings.dto';
 
 /**

@@ -1,4 +1,4 @@
-import { CreateOrUpdateReviewUseCase } from '../../src/application/use-cases/CreateOrUpdateReviewUseCase';
+import { CreateOrUpdateReviewUseCase } from '../../src/application/use-cases/review/CreateOrUpdateReviewUseCase';
 
 // CreateOrUpdateReviewUseCase içinde prisma singleton'ı kullanılıyor; mock gerekli
 jest.mock('../../src/infrastructure/database/prisma', () => ({

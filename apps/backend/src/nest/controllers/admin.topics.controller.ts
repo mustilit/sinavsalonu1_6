@@ -3,11 +3,11 @@ import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse, ApiForbidden
 import { Roles } from '../decorators/roles.decorator';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
-import { CreateTopicUseCase } from '../../application/use-cases/CreateTopicUseCase';
-import { UpdateTopicUseCase } from '../../application/use-cases/UpdateTopicUseCase';
-import { DeleteTopicUseCase } from '../../application/use-cases/DeleteTopicUseCase';
-import { GetTopicTreeUseCase } from '../../application/use-cases/GetTopicTreeUseCase';
-import { ListTopicsByExamTypeUseCase } from '../../application/use-cases/ListTopicsByExamTypeUseCase';
+import { CreateTopicUseCase } from '../../application/use-cases/admin/CreateTopicUseCase';
+import { UpdateTopicUseCase } from '../../application/use-cases/admin/UpdateTopicUseCase';
+import { DeleteTopicUseCase } from '../../application/use-cases/admin/DeleteTopicUseCase';
+import { GetTopicTreeUseCase } from '../../application/use-cases/admin/GetTopicTreeUseCase';
+import { ListTopicsByExamTypeUseCase } from '../../application/use-cases/admin/ListTopicsByExamTypeUseCase';
 
 /**
  * Admin konu CRUD + ağaç yönetimi.

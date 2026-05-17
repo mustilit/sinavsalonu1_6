@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Query, Body, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { GetCandidateReportUseCase } from '../../application/use-cases/GetCandidateReportUseCase';
-import { SendBulkCandidateEmailUseCase } from '../../application/use-cases/SendBulkCandidateEmailUseCase';
+import { GetCandidateReportUseCase } from '../../application/use-cases/report/GetCandidateReportUseCase';
+import { SendBulkCandidateEmailUseCase } from '../../application/use-cases/admin/SendBulkCandidateEmailUseCase';
 
 /**
  * Admin aday yönetimi — aday raporunu listeler ve toplu e-posta gönderir.

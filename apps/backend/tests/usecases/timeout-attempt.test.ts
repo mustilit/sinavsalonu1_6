@@ -1,6 +1,6 @@
 import { makeAttempt, makeAttemptRepo } from '../helpers/fakes';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { TimeoutAttemptUseCase } from '../../src/application/use-cases/TimeoutAttemptUseCase';
+import { TimeoutAttemptUseCase } from '../../src/application/use-cases/attempt/TimeoutAttemptUseCase';
 
 describe('TimeoutAttemptUseCase', () => {
   it('throws if not owner', async () => {

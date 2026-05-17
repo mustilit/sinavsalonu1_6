@@ -1,4 +1,4 @@
-import { GetQuestionSolutionUseCase } from '../../src/application/use-cases/GetQuestionSolutionUseCase';
+import { GetQuestionSolutionUseCase } from '../../src/application/use-cases/question/GetQuestionSolutionUseCase';
 import { BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { makeAttempt, makeAttemptRepo } from '../helpers/fakes';
 

@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
-import { GetAdminAdReportUseCase } from '../../application/use-cases/GetAdminAdReportUseCase';
+import { GetAdminAdReportUseCase } from '../../application/use-cases/admin/GetAdminAdReportUseCase';
 
 /**
  * AdminAdReportController — FR-Y-10

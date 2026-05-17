@@ -2,7 +2,7 @@ import { Controller, Post, Body, Req, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiCreatedResponse, ApiBadRequestResponse, ApiForbiddenResponse, ApiConflictResponse, ApiNotFoundResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
 import { CreateObjectionDto } from './dto/create-objection.dto';
-import { CreateObjectionUseCase } from '../../application/use-cases/CreateObjectionUseCase';
+import { CreateObjectionUseCase } from '../../application/use-cases/objection/CreateObjectionUseCase';
 
 /**
  * Adayın soru itirazı oluşturmasını sağlar.
