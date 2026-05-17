@@ -40,7 +40,7 @@ export class AddTestToPackageUseCase {
 
     // maxTestsPerPackage admin ayarı kontrolü
     const settings = await prisma.adminSettings.findFirst({ where: { id: 1 } });
-    const maxTests = (settings as any)?.maxTestsPerPackage ?? 10;
+    const maxTests = settings?.maxTestsPerPackage ?? 10;
     const currentCount = pkg.tests?.length ?? 0;
 
     if (currentCount >= maxTests) {

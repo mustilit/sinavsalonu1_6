@@ -1,53 +1,37 @@
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { entities } from "@/api/dalClient";
+import { getAdminStats, entities } from "@/api/dalClient";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import StatCard from "@/components/ui/StatCard";
-import { 
-  BookOpen, 
-  ShoppingBag, 
+import {
+  BookOpen,
+  ShoppingBag,
   TrendingUp,
   Award,
   ArrowRight,
   UserCheck,
-  GraduationCap
+  GraduationCap,
 } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
+  const isAdmin = (user?.role || '').toString().toUpperCase() === "ADMIN";
 
-  const { data: users = [] } = useQuery({
-    queryKey: ["allUsers"],
-    queryFn: () => entities.User.list(),
-    enabled: (user?.role || '').toString().toUpperCase() === "ADMIN",
-  });
-
-  const { data: tests = [] } = useQuery({
-    queryKey: ["allTests"],
-    queryFn: () => entities.TestPackage.list(),
-    enabled: (user?.role || '').toString().toUpperCase() === "ADMIN",
-  });
-
-  const { data: sales = [] } = useQuery({
-    queryKey: ["allSales"],
-    queryFn: () => entities.Purchase.list("-created_date", 100),
-    enabled: (user?.role || '').toString().toUpperCase() === "ADMIN",
+  const { data: stats } = useQuery({
+    queryKey: ["adminStats"],
+    queryFn: getAdminStats,
+    enabled: isAdmin,
   });
 
   const { data: examTypes = [] } = useQuery({
-    queryKey: ["examTypes"],
+    queryKey: ["examTypesAdmin"],
     queryFn: () => entities.ExamType.list(),
-    enabled: (user?.role || '').toString().toUpperCase() === "ADMIN",
+    enabled: isAdmin,
   });
 
-  const educators = users.filter(u => u.user_type === "educator");
-  const candidates = users.filter(u => u.user_type === "candidate" || !u.user_type);
-  const publishedTests = tests.filter(t => t.is_published);
-  const totalRevenue = sales.reduce((sum, s) => sum + (s.price_paid || 0), 0);
-
-  if ((user?.role || '').toString().toUpperCase() !== "ADMIN") {
+  if (!isAdmin) {
     return (
       <div className="text-center py-20">
         <h2 className="text-xl font-semibold text-slate-900">Erişim Engellendi</h2>
@@ -55,6 +39,9 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  const s = stats ?? { users: {}, packages: {}, sales: {} };
+  const totalRevenue = (s.sales?.totalRevenueCents ?? 0) / 100;
 
   return (
     <div>
@@ -67,31 +54,31 @@ export default function AdminDashboard() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <StatCard
           title="Toplam Aday"
-          value={candidates.length}
+          value={s.users?.candidates ?? 0}
           icon={UserCheck}
           bgColor="bg-indigo-500"
         />
         <StatCard
           title="Toplam Eğitici"
-          value={educators.length}
+          value={s.users?.educators ?? 0}
           icon={GraduationCap}
           bgColor="bg-purple-500"
         />
         <StatCard
-          title="Toplam Test"
-          value={tests.length}
+          title="Toplam Paket"
+          value={s.packages?.total ?? 0}
           icon={BookOpen}
           bgColor="bg-violet-500"
         />
         <StatCard
           title="Toplam Satış"
-          value={sales.length}
+          value={s.sales?.total ?? 0}
           icon={ShoppingBag}
           bgColor="bg-emerald-500"
         />
         <StatCard
           title="Toplam Gelir"
-          value={`₺${totalRevenue.toLocaleString()}`}
+          value={`₺${totalRevenue.toLocaleString('tr-TR')}`}
           icon={TrendingUp}
           bgColor="bg-amber-500"
         />
@@ -110,20 +97,20 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                 <span className="text-slate-600">Adaylar</span>
-                <span className="font-bold text-slate-900">{candidates.length}</span>
+                <span className="font-bold text-slate-900">{s.users?.candidates ?? 0}</span>
               </div>
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                 <span className="text-slate-600">Eğiticiler</span>
-                <span className="font-bold text-slate-900">{educators.length}</span>
+                <span className="font-bold text-slate-900">{s.users?.educators ?? 0}</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Test Stats */}
+        {/* Test Package Stats */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Testler</CardTitle>
+            <CardTitle>Test Paketleri</CardTitle>
             <Link to={createPageUrl("ManageTests")} className="text-sm text-indigo-600 flex items-center gap-1">
               Yönet <ArrowRight className="w-4 h-4" />
             </Link>
@@ -132,11 +119,11 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                 <span className="text-slate-600">Yayında</span>
-                <span className="font-bold text-emerald-600">{publishedTests.length}</span>
+                <span className="font-bold text-emerald-600">{s.packages?.published ?? 0}</span>
               </div>
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                 <span className="text-slate-600">Taslak</span>
-                <span className="font-bold text-slate-600">{tests.length - publishedTests.length}</span>
+                <span className="font-bold text-slate-600">{s.packages?.draft ?? 0}</span>
               </div>
             </div>
           </CardContent>

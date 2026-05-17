@@ -42,6 +42,22 @@ jobs:
             apps/backend/test-reports
             apps/backend/coverage
 
+  security_audit:
+    name: Security Audit (npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Audit backend
+        working-directory: apps/backend
+        run: npm audit --audit-level=high
+      - name: Audit frontend
+        working-directory: apps/frontend
+        run: npm audit --audit-level=high
+
   smoke_public_endpoints:
     name: Smoke - public endpoints static checks
     runs-on: ubuntu-latest
@@ -197,8 +213,8 @@ jobs:
   notify_on_failure:
     name: Notify Slack on failure (optional)
     runs-on: ubuntu-latest
-    needs: [build_test, smoke_public_endpoints, migrate_stage2_guard, migrate_deploy]
-    if: ${{ needs.build_test.result == 'failure' || needs.smoke_public_endpoints.result == 'failure' || needs.migrate_stage2_guard.result == 'failure' || needs.migrate_deploy.result == 'failure' }}
+    needs: [build_test, security_audit, smoke_public_endpoints, migrate_stage2_guard, migrate_deploy]
+    if: ${{ needs.build_test.result == 'failure' || needs.security_audit.result == 'failure' || needs.smoke_public_endpoints.result == 'failure' || needs.migrate_stage2_guard.result == 'failure' || needs.migrate_deploy.result == 'failure' }}
     steps:
       - name: Send Slack notification (if configured)
         if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}

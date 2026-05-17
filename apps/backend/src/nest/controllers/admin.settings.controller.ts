@@ -5,7 +5,7 @@ import type { PrismaClient } from '@prisma/client';
 import { GetAdminSettingsUseCase } from '../../application/use-cases/GetAdminSettingsUseCase';
 import { UpdateAdminSettingsUseCase } from '../../application/use-cases/UpdateAdminSettingsUseCase';
 import { UpdateAdminSettingsDto } from './dto/update-admin-settings.dto';
-import { GetPaymentSettingsUseCase } from '../../application/use-cases/GetPaymentSettingsUseCase';
+import { GetAdminPaymentSettingsUseCase } from '../../application/use-cases/GetAdminPaymentSettingsUseCase';
 import { UpdatePaymentSettingsUseCase } from '../../application/use-cases/UpdatePaymentSettingsUseCase';
 
 /**
@@ -45,6 +45,10 @@ export class AdminSettingsController {
       testAttemptsEnabled: dto.testAttemptsEnabled,
       adPurchasesEnabled: dto.adPurchasesEnabled,
       minPackagePriceCents: dto.minPackagePriceCents,
+      minQuestionsPerTest: dto.minQuestionsPerTest,
+      maxQuestionsPerTest: dto.maxQuestionsPerTest,
+      maxTestsPerPackage: dto.maxTestsPerPackage,
+      maxLiveQuestions: dto.maxLiveQuestions,
     });
   }
 
@@ -54,7 +58,7 @@ export class AdminSettingsController {
   @ApiOkResponse({ description: 'Payment provider settings' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async getPaymentSettings() {
-    const uc = new GetPaymentSettingsUseCase();
+    const uc = new GetAdminPaymentSettingsUseCase();
     return uc.execute();
   }
 

@@ -128,6 +128,7 @@ function QuestionEditDialog({ question, questionIndex, topicList, onSave, onSave
   const [displayIndex, setDisplayIndex] = useState(questionIndex);
   const [submitting, setSubmitting] = useState(false);
   const [duplicateLoading, setDuplicateLoading] = useState(false);
+  const [dialogErrors, setDialogErrors] = useState({});
 
   const handleContentBlur = async () => {
     const text = local.content.trim();
@@ -170,11 +171,16 @@ function QuestionEditDialog({ question, questionIndex, topicList, onSave, onSave
   };
 
   const validate = () => {
-    if (!local.options.some(o => o.isCorrect)) {
-      toast.error("Lütfen doğru seçeneği işaretleyin (A–E)");
-      return false;
-    }
-    return true;
+    const errs = {};
+    if (!local.content.trim() && !local.mediaUrl && !local._imgFile)
+      errs.content = "Soru metni veya görsel zorunludur";
+    const filledOpts = local.options.filter(o => o.content.trim() || o.mediaUrl || o._imgFile);
+    if (filledOpts.length < 2)
+      errs.options = "En az 2 seçenek doldurulmalıdır";
+    if (!local.options.some(o => o.isCorrect))
+      errs.correct = "Doğru seçeneği işaretleyiniz (A–E)";
+    setDialogErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
   const handleSave = async () => {
@@ -225,11 +231,15 @@ function QuestionEditDialog({ question, questionIndex, topicList, onSave, onSave
             <Textarea
               placeholder="Soru metnini giriniz..."
               value={local.content}
-              onChange={(e) => setLocal(prev => ({ ...prev, content: e.target.value, duplicateWarning: null }))}
+              onChange={(e) => { setLocal(prev => ({ ...prev, content: e.target.value, duplicateWarning: null })); setDialogErrors(p => ({ ...p, content: "" })); }}
               onBlur={handleContentBlur}
               disabled={duplicateLoading}
               rows={3}
+              className={dialogErrors.content ? "border-rose-500 focus-visible:ring-rose-500" : ""}
             />
+            {dialogErrors.content && (
+              <p className="text-xs text-rose-500 mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{dialogErrors.content}</p>
+            )}
             {duplicateLoading && (
               <p className="text-xs text-slate-500 flex items-center gap-1">
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -391,6 +401,18 @@ function QuestionEditDialog({ question, questionIndex, topicList, onSave, onSave
                 </div>
               );
             })}
+
+            {/* Seçenek hataları */}
+            {(dialogErrors.options || dialogErrors.correct) && (
+              <div className="space-y-1">
+                {dialogErrors.options && (
+                  <p className="text-xs text-rose-500 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{dialogErrors.options}</p>
+                )}
+                {dialogErrors.correct && (
+                  <p className="text-xs text-rose-500 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{dialogErrors.correct}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -497,7 +519,7 @@ function QuestionItem({ questionIndex, question, topicList, onUpdate, onDelete, 
 }
 
 // ─── Test kartı (Adım 2'de) ─────────────────────────────────────────────────
-function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestDelete }) {
+function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestDelete, error, onErrorClear }) {
   const [showDOCXDialog, setShowDOCXDialog] = useState(false);
   const [docxLoading, setDocxLoading] = useState(false);
 
@@ -593,8 +615,17 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
                 id={`test-title-${test._k}`}
                 placeholder="Örn: YKS Matematik"
                 value={test.title}
-                onChange={(e) => onTestUpdate({ ...test, title: e.target.value })}
+                onChange={(e) => {
+                  onTestUpdate({ ...test, title: e.target.value });
+                  if (onErrorClear) onErrorClear(test._k);
+                }}
+                className={error ? "border-rose-500 focus-visible:ring-rose-500" : ""}
               />
+              {error && (
+                <p className="text-xs text-rose-500 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />{error}
+                </p>
+              )}
             </div>
             <div className="space-y-2 mt-3">
               <Label htmlFor={`test-type-${test._k}`}>Sınav Türü (İsteğe Bağlı)</Label>
@@ -734,6 +765,8 @@ export default function CreateTest() {
   // ─── Sihirbaz durumu ────────────────────────────────────────────────
   const [step, setStep] = useState(1);
   const [previewTestIndex, setPreviewTestIndex] = useState(null);
+  const [pkgErrors, setPkgErrors] = useState({});
+  const [testErrors, setTestErrors] = useState({});
 
   const [pkgData, setPkgData] = useState({
     title: "",
@@ -907,32 +940,40 @@ export default function CreateTest() {
 
   // ─── Geçiş işleyicileri ────────────────────────────────────────
   const goToTests = () => {
-    if (!pkgData.title.trim()) {
-      toast.error("Paket başlığı zorunludur");
+    const errs = {};
+    if (!pkgData.title.trim()) errs.title = "Paket başlığı zorunludur";
+    if (!pkgData.priceCents || pkgData.priceCents < minPriceTL)
+      errs.price = `Fiyat en az ${minPriceTL} ₺ olmalıdır`;
+    if (Object.keys(errs).length) {
+      setPkgErrors(errs);
       return;
     }
-    if (!pkgData.priceCents || pkgData.priceCents < minPriceTL) {
-      toast.error(`Paket fiyatı en az ${minPriceTL} ₺ olmalıdır`);
-      return;
-    }
+    setPkgErrors({});
     setStep(2);
   };
 
   const goToPreview = () => {
-    const validTests = tests.filter((t) => {
-      if (!t.title.trim()) return false;
-      const validQuestions = t.questions.filter((q) => {
-        const filledOpts = q.options.filter(o => o.content.trim() || o.mediaUrl);
-        return (q.content.trim() || q.mediaUrl) && filledOpts.length >= 2 && q.options.some(o => o.isCorrect);
-      });
-      return validQuestions.length > 0;
+    const errs = {};
+    tests.forEach((t) => {
+      if (!t.title.trim()) {
+        errs[t._k] = "Test başlığı zorunludur";
+      } else {
+        const validQuestions = t.questions.filter((q) => {
+          const filledOpts = q.options.filter(o => o.content.trim() || o.mediaUrl);
+          return (q.content.trim() || q.mediaUrl) && filledOpts.length >= 2 && q.options.some(o => o.isCorrect);
+        });
+        if (validQuestions.length === 0) {
+          errs[t._k] = "En az bir tamamlanmış soru gereklidir";
+        }
+      }
     });
 
+    const validTests = tests.filter((t) => !errs[t._k]);
     if (validTests.length === 0) {
-      toast.error("En az bir tamamlanmış test ve soru eklemelisiniz");
+      setTestErrors(errs);
       return;
     }
-
+    setTestErrors(errs);
     setStep(3);
   };
 
@@ -1016,7 +1057,9 @@ export default function CreateTest() {
               <Label htmlFor="pkg-title">Paket Başlığı *</Label>
               <Input id="pkg-title" placeholder="Örn: KPSS Genel Yetenek Paket"
                 value={pkgData.title}
-                onChange={(e) => setPkgData({ ...pkgData, title: e.target.value })} />
+                onChange={(e) => { setPkgData({ ...pkgData, title: e.target.value }); setPkgErrors(p => ({ ...p, title: "" })); }}
+                className={pkgErrors.title ? "border-rose-500 focus-visible:ring-rose-500" : ""} />
+              {pkgErrors.title && <p className="text-xs text-rose-500 mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{pkgErrors.title}</p>}
             </div>
 
             <div className="space-y-2">
@@ -1041,8 +1084,11 @@ export default function CreateTest() {
               <Label htmlFor="pkg-price">Fiyat (₺) *</Label>
               <Input id="pkg-price" type="number" min="1" step="1" placeholder="Örn: 49"
                 value={pkgData.priceCents || ""}
-                onChange={(e) => setPkgData({ ...pkgData, priceCents: Number(e.target.value) })} />
-              <p className="text-xs text-slate-500">Minimum fiyat: {minPriceTL} ₺</p>
+                onChange={(e) => { setPkgData({ ...pkgData, priceCents: Number(e.target.value) }); setPkgErrors(p => ({ ...p, price: "" })); }}
+                className={pkgErrors.price ? "border-rose-500 focus-visible:ring-rose-500" : ""} />
+              {pkgErrors.price
+                ? <p className="text-xs text-rose-500 mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{pkgErrors.price}</p>
+                : <p className="text-xs text-slate-500">Minimum fiyat: {minPriceTL} ₺</p>}
             </div>
 
             <div className="space-y-2">
@@ -1092,6 +1138,8 @@ export default function CreateTest() {
               testIndex={tIdx}
               examTypes={examTypes}
               topicList={topicList}
+              error={testErrors[test._k]}
+              onErrorClear={(key) => setTestErrors(p => ({ ...p, [key]: "" }))}
               onTestUpdate={(updated) => {
                 setTests(tests.map((t, i) => i === tIdx ? updated : t));
               }}

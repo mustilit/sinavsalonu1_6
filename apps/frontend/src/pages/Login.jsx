@@ -45,8 +45,9 @@ export default function Login() {
         <h1 className="text-2xl font-bold text-slate-900 mb-6 text-center">Giriş Yap</h1>
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">E-posta</label>
+            <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1">E-posta</label>
             <Input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -56,8 +57,9 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Şifre</label>
+            <label htmlFor="login-password" className="block text-sm font-medium text-slate-700 mb-1">Şifre</label>
             <Input
+              id="login-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -77,7 +79,7 @@ export default function Login() {
         </form>
         <p className="mt-4 text-center text-sm text-slate-600">
           Hesabınız yok mu?{' '}
-          <Link to={createPageUrl('Register')} className="text-indigo-600 hover:underline">
+          <Link to={createPageUrl('Register')} className="text-indigo-600 underline hover:no-underline">
             Kayıt ol
           </Link>
         </p>
@@ -86,7 +88,7 @@ export default function Login() {
             ← Ana sayfaya dön
           </Link>
         </p>
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-slate-500">
           Demo: aday@demo.com veya educator@demo.com — şifre: demo123
         </p>
       </div>

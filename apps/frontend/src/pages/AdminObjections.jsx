@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination } from "@/components/ui/Pagination";
 import { AlertTriangle, BarChart3, MessageSquare, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -17,6 +18,10 @@ const statusConfig = {
 
 export default function AdminObjections() {
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [statsPage, setStatsPage] = useState(1);
+  const [statsPageSize, setStatsPageSize] = useState(25);
 
   /* All objections – enriched */
   const { data: all = [], isLoading: loadingAll } = useQuery({
@@ -81,7 +86,7 @@ export default function AdminObjections() {
         {/* ── Tüm Bildirimler ── */}
         <TabsContent value="all">
           <div className="flex items-center gap-3 mb-4">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
               <SelectTrigger className="w-48 h-9">
                 <SelectValue />
               </SelectTrigger>
@@ -104,8 +109,9 @@ export default function AdminObjections() {
               <CardContent className="text-center py-12 text-slate-400">Bildirim bulunamadı</CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
-              {all.map(obj => (
+            <>
+              <div className="space-y-3">
+              {all.slice((page - 1) * pageSize, page * pageSize).map(obj => (
                 <Card key={obj.id}>
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
@@ -148,7 +154,9 @@ export default function AdminObjections() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
+              </div>
+              <Pagination page={page} pageSize={pageSize} total={all.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            </>
           )}
         </TabsContent>
 
@@ -169,8 +177,9 @@ export default function AdminObjections() {
               ) : stats.length === 0 ? (
                 <p className="text-center text-slate-400 py-8">Henüz bildirim yok</p>
               ) : (
+                <>
                 <div className="divide-y">
-                  {stats.map((s, idx) => (
+                  {stats.slice((statsPage - 1) * statsPageSize, statsPage * statsPageSize).map((s, idx) => (
                     <div key={s.testId} className="flex items-center gap-4 px-6 py-4">
                       <span className={`text-xl font-bold w-8 shrink-0 ${idx < 3 ? "text-rose-500" : "text-slate-300"}`}>
                         {idx + 1}
@@ -204,6 +213,8 @@ export default function AdminObjections() {
                     </div>
                   ))}
                 </div>
+                <Pagination page={statsPage} pageSize={statsPageSize} total={stats.length} onPageChange={setStatsPage} onPageSizeChange={setStatsPageSize} />
+                </>
               )}
             </CardContent>
           </Card>

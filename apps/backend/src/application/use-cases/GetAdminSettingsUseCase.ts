@@ -19,6 +19,10 @@ export class GetAdminSettingsUseCase {
         testAttemptsEnabled: true,
         adPurchasesEnabled: true,
         minPackagePriceCents: 100,
+        minQuestionsPerTest: 1,
+        maxQuestionsPerTest: 100,
+        maxTestsPerPackage: 10,
+        maxLiveQuestions: 50,
       };
     }
 
@@ -40,6 +44,10 @@ export class GetAdminSettingsUseCase {
       testAttemptsEnabled: row.testAttemptsEnabled ?? true,
       adPurchasesEnabled: (row as any).adPurchasesEnabled ?? true,
       minPackagePriceCents,
+      minQuestionsPerTest: (row as any).minQuestionsPerTest ?? 1,
+      maxQuestionsPerTest: (row as any).maxQuestionsPerTest ?? 100,
+      maxTestsPerPackage: (row as any).maxTestsPerPackage ?? 10,
+      maxLiveQuestions: (row as any).maxLiveQuestions ?? 50,
     };
   }
 }

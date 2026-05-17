@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useDeferredValue } from "react";
 import { entities } from "@/api/dalClient";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -25,14 +25,25 @@ export default function Explore() {
   const [selectedEducator, setSelectedEducator] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
+  // useDeferredValue: kullanıcı yazarken UI bloklanmaz; 2+ karakter sunucuya gider
+  const deferredSearch = useDeferredValue(searchQuery);
+  const serverQuery = deferredSearch.trim().length >= 2 ? deferredSearch.trim() : "";
+
   const { data: examTypes = [] } = useQuery({
     queryKey: ["examTypes"],
     queryFn: () => entities.ExamType.filter({ is_active: true }),
   });
 
+  // serverQuery veya examType değiştiğinde sunucuya yeni istek at
   const { data: allTests = [], isLoading } = useQuery({
-    queryKey: ["tests"],
-    queryFn: () => entities.TestPackage.filter({ is_published: true, is_active: true }, "-created_date"),
+    queryKey: ["tests", serverQuery, selectedExamType],
+    queryFn: () => entities.TestPackage.filter({
+      is_published: true,
+      is_active: true,
+      ...(serverQuery && { q: serverQuery }),
+      ...(selectedExamType && { exam_type_id: selectedExamType }),
+    }, "-created_date", 100),
+    staleTime: 30_000,
   });
 
   const { data: purchases = [] } = useQuery({
@@ -61,25 +72,20 @@ export default function Explore() {
     if (p.test_package_id && p.attempt) attemptByTestId[p.test_package_id] = p.attempt;
   });
 
-  // Filter tests
+  // Metin araması + examType sunucuda yapılıyor;
+  // difficulty, price, rating, educator client-side kalan hafif filtreler
   const filteredTests = allTests.filter((test) => {
-    const matchesSearch = !searchQuery || 
-      test.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      test.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      test.educator_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesExamType = !selectedExamType || test.exam_type_id === selectedExamType;
     const matchesDifficulty = !selectedDifficulty || test.difficulty === selectedDifficulty;
     const matchesRating = !minRating || (test.average_rating || 0) >= minRating;
     const matchesEducator = !selectedEducator || test.educator_email === selectedEducator;
-    
+
     let matchesPrice = true;
     if (priceRange === "free") matchesPrice = test.price === 0;
     else if (priceRange === "under50") matchesPrice = test.price < 50;
     else if (priceRange === "50to100") matchesPrice = test.price >= 50 && test.price <= 100;
     else if (priceRange === "over100") matchesPrice = test.price > 100;
 
-    return matchesSearch && matchesExamType && matchesDifficulty && matchesPrice && matchesRating && matchesEducator;
+    return matchesDifficulty && matchesPrice && matchesRating && matchesEducator;
   });
 
   // Get unique educators for filter
@@ -128,7 +134,7 @@ export default function Explore() {
           </Button>
           <div className={`flex flex-col lg:flex-row gap-4 ${showFilters ? "block" : "hidden lg:flex"}`}>
             <Select value={selectedExamType} onValueChange={setSelectedExamType}>
-              <SelectTrigger className="w-full lg:w-44 h-12">
+              <SelectTrigger aria-label="Sınav türü filtresi" className="w-full lg:w-44 h-12">
                 <SelectValue placeholder="Sınav Türü" />
               </SelectTrigger>
               <SelectContent>
@@ -140,7 +146,7 @@ export default function Explore() {
             </Select>
 
             <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
-              <SelectTrigger className="w-full lg:w-36 h-12">
+              <SelectTrigger aria-label="Zorluk filtresi" className="w-full lg:w-36 h-12">
                 <SelectValue placeholder="Zorluk" />
               </SelectTrigger>
               <SelectContent>
@@ -152,7 +158,7 @@ export default function Explore() {
             </Select>
 
             <Select value={priceRange} onValueChange={setPriceRange}>
-              <SelectTrigger className="w-full lg:w-36 h-12">
+              <SelectTrigger aria-label="Fiyat filtresi" className="w-full lg:w-36 h-12">
                 <SelectValue placeholder="Fiyat" />
               </SelectTrigger>
               <SelectContent>
@@ -165,7 +171,7 @@ export default function Explore() {
             </Select>
 
             <Select value={selectedEducator} onValueChange={setSelectedEducator}>
-              <SelectTrigger className="w-full lg:w-44 h-12">
+              <SelectTrigger aria-label="Eğitici filtresi" className="w-full lg:w-44 h-12">
                 <SelectValue placeholder="Eğitici" />
               </SelectTrigger>
               <SelectContent>
@@ -185,6 +191,7 @@ export default function Explore() {
                 max={5}
                 step={1}
                 className="w-16"
+                aria-label="Minimum puan filtresi"
               />
             </div>
           </div>

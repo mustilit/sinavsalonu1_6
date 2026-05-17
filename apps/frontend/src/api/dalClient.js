@@ -127,6 +127,11 @@ function normalizeRefund(r) {
   };
 }
 
+export async function getAdminStats() {
+  const { data } = await api.get('/admin/stats');
+  return data;
+}
+
 export const entities = {
   User: {
     list: async (sort = '-created_date', limit = 200) => {
@@ -356,6 +361,7 @@ export const entities = {
       // Yayınlı paket listesi — yeni TestPackage tabanlı endpoint (tek kaynak)
       const params = { limit: limit || 50 };
       if (opts.exam_type_id) params.examTypeId = opts.exam_type_id;
+      if (opts.q) params.q = opts.q;
       const { data } = await api.get('/marketplace/packages', { params });
       const items = data?.items ?? [];
       return items.map(marketplacePackageAdapter);
@@ -875,6 +881,98 @@ export const topics = {
   /** Konu sil */
   remove: async (id) => {
     await api.delete(`/admin/topics/${id}`);
+  },
+};
+
+/** LiveSession Tier yönetimi (Admin) */
+export const liveSessionTiers = {
+  list: async () => {
+    const { data } = await api.get('/live-sessions/tiers');
+    return Array.isArray(data) ? data : [];
+  },
+  listAll: async () => {
+    const { data } = await api.get('/live-sessions/tiers/all');
+    return Array.isArray(data) ? data : [];
+  },
+  listAdmin: async () => {
+    const { data } = await api.get('/live-sessions/tiers/all');
+    return Array.isArray(data) ? data : [];
+  },
+  create: async (body) => {
+    const { data } = await api.post('/live-sessions/tiers', body);
+    return data;
+  },
+  update: async (id, body) => {
+    const { data } = await api.put(`/live-sessions/tiers/${id}`, body);
+    return data;
+  },
+  remove: async (id) => {
+    const { data } = await api.delete(`/live-sessions/tiers/${id}`);
+    return data;
+  },
+};
+
+/** LiveSession işlemleri */
+export const liveSessions = {
+  create: async (body) => {
+    const { data } = await api.post('/live-sessions', body);
+    return data;
+  },
+  listMy: async () => {
+    const { data } = await api.get('/live-sessions/my');
+    return Array.isArray(data) ? data : [];
+  },
+  pay: async (id) => {
+    const { data } = await api.post(`/live-sessions/${id}/pay`);
+    return data;
+  },
+  start: async (id) => {
+    const { data } = await api.post(`/live-sessions/${id}/start`);
+    return data;
+  },
+  next: async (id) => {
+    const { data } = await api.post(`/live-sessions/${id}/next`);
+    return data;
+  },
+  prev: async (id) => {
+    const { data } = await api.post(`/live-sessions/${id}/prev`);
+    return data;
+  },
+  toggleStats: async (id) => {
+    const { data } = await api.post(`/live-sessions/${id}/toggle-stats`);
+    return data;
+  },
+  end: async (id) => {
+    const { data } = await api.post(`/live-sessions/${id}/end`);
+    return data;
+  },
+  createRound2: async (id) => {
+    const { data } = await api.post(`/live-sessions/${id}/round2`);
+    return data;
+  },
+  getComparison: async (id) => {
+    const { data } = await api.get(`/live-sessions/${id}/comparison`);
+    return data;
+  },
+  getState: async (id) => {
+    const { data } = await api.get(`/live-sessions/${id}/state`);
+    return data;
+  },
+  getByCode: async (code) => {
+    const { data } = await api.get(`/live-sessions/code/${code}`);
+    return data;
+  },
+  join: async (code) => {
+    const { data } = await api.post(`/live-sessions/join/${code}`);
+    return data;
+  },
+  ping: async (id) => {
+    const { data } = await api.post(`/live-sessions/${id}/ping`);
+    return data;
+  },
+  submitAnswer: async (id, questionId, optionId) => {
+    const { data } = await api.post(`/live-sessions/${id}/answer`, { questionId, optionId });
+    return data;
   },
 };
 

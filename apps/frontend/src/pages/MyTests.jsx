@@ -129,7 +129,7 @@ export default function MyTests() {
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">Sınav Türü</label>
               <Select value={selectedExamType} onValueChange={setSelectedExamType}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Sınav türü filtresi">
                   <SelectValue placeholder="Tümü" />
                 </SelectTrigger>
                 <SelectContent>
@@ -145,7 +145,7 @@ export default function MyTests() {
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">Eğitici</label>
               <Select value={selectedEducator} onValueChange={setSelectedEducator}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Eğitici filtresi">
                   <SelectValue placeholder="Tümü" />
                 </SelectTrigger>
                 <SelectContent>
@@ -161,7 +161,7 @@ export default function MyTests() {
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">Çözülme Durumu</label>
               <Select value={completionFilter} onValueChange={setCompletionFilter}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Çözülme durumu filtresi">
                   <SelectValue placeholder="Tümü" />
                 </SelectTrigger>
                 <SelectContent>

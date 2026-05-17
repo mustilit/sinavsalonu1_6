@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RefreshCw, CheckCircle, XCircle, Filter, Clock, AlertTriangle } from "lucide-react";
+import { Pagination } from "@/components/ui/Pagination";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -61,7 +62,9 @@ export default function ManageRefunds() {
   const [adminNotes, setAdminNotes] = useState("");
   const [filterStatus, setFilterStatus] = useState("actionable");
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 20;
+  const [pageSize, setPageSize] = useState(20);
+  const [resolvedPage, setResolvedPage] = useState(1);
+  const [resolvedPageSize, setResolvedPageSize] = useState(20);
 
   const { data: refunds = [], isLoading } = useQuery({
     queryKey: ["admin-refunds", filterStatus],
@@ -96,8 +99,8 @@ export default function ManageRefunds() {
   const actionable = refunds.filter((r) => NEEDS_ADMIN_ACTION.includes(r.status));
   const resolved = refunds.filter((r) => !NEEDS_ADMIN_ACTION.includes(r.status));
 
-  const paginatedActionable = actionable.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.ceil(actionable.length / PAGE_SIZE);
+  const paginatedActionable = actionable.slice((page - 1) * pageSize, page * pageSize);
+  const paginatedResolved = resolved.slice((resolvedPage - 1) * resolvedPageSize, resolvedPage * resolvedPageSize);
 
   if ((user?.role || "").toUpperCase() !== "ADMIN") {
     return (
@@ -122,7 +125,7 @@ export default function ManageRefunds() {
           <Filter className="w-4 h-4" />
           Durum:
         </div>
-        <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
+        <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); setResolvedPage(1); }}>
           <SelectTrigger className="w-56">
             <span className="truncate text-sm">{
               filterStatus === "actionable" ? "Admin Aksiyonu Gerekenler" :
@@ -213,13 +216,16 @@ export default function ManageRefunds() {
                 ))}
               </div>
 
-              {totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-4">
-                  <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Önceki</Button>
-                  <span className="text-sm text-slate-500 flex items-center px-2">{page} / {totalPages}</span>
-                  <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>Sonraki</Button>
-                </div>
-              )}
+              <div className="mt-4 bg-white border border-slate-200 rounded-xl">
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  total={actionable.length}
+                  onPageChange={setPage}
+                  onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+                  pageSizeOptions={[10, 20, 50]}
+                />
+              </div>
             </>
           )}
         </TabsContent>
@@ -232,30 +238,42 @@ export default function ManageRefunds() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-3">
-              {resolved.map((r) => (
-                <Card key={r.id}>
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge className={STATUS_COLOR[r.status] ?? "bg-slate-100"}>
-                            {STATUS_LABEL[r.status] ?? r.status}
-                          </Badge>
+            <>
+              <div className="space-y-3">
+                {paginatedResolved.map((r) => (
+                  <Card key={r.id}>
+                    <CardContent className="p-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className={STATUS_COLOR[r.status] ?? "bg-slate-100"}>
+                              {STATUS_LABEL[r.status] ?? r.status}
+                            </Badge>
+                          </div>
+                          <p className="font-medium text-slate-900">{r.test_package_title || "Test"}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{safeFormatDate(r.created_date)}</p>
+                          {r.admin_notes && (
+                            <p className="text-sm text-slate-600 mt-1 p-2 bg-slate-50 rounded">
+                              <strong>Not:</strong> {r.admin_notes}
+                            </p>
+                          )}
                         </div>
-                        <p className="font-medium text-slate-900">{r.test_package_title || "Test"}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">{safeFormatDate(r.created_date)}</p>
-                        {r.admin_notes && (
-                          <p className="text-sm text-slate-600 mt-1 p-2 bg-slate-50 rounded">
-                            <strong>Not:</strong> {r.admin_notes}
-                          </p>
-                        )}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <div className="mt-4 bg-white border border-slate-200 rounded-xl">
+                <Pagination
+                  page={resolvedPage}
+                  pageSize={resolvedPageSize}
+                  total={resolved.length}
+                  onPageChange={setResolvedPage}
+                  onPageSizeChange={(s) => { setResolvedPageSize(s); setResolvedPage(1); }}
+                  pageSizeOptions={[10, 20, 50]}
+                />
+              </div>
+            </>
           )}
         </TabsContent>
       </Tabs>

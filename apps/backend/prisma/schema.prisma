@@ -149,6 +149,8 @@ model User {
   viewedAdImpressions     AdImpression[]           @relation("AdImpressionViewer")
   workerPermission        WorkerPermission?
   testPackages            TestPackage[]    @relation("educatorPackages")
+  liveSessions            LiveSession[]    @relation("EducatorLiveSessions")
+  liveParticipations      LiveParticipant[] @relation("UserLiveParticipations")
 
   @@index([tenantId])
   @@map("users")
@@ -383,17 +385,19 @@ model Purchase {
 }
 
 model TestPackage {
-  id          String    @id @default(cuid())
-  tenantId    String
-  educatorId  String?
-  title       String
-  description String?
-  priceCents  Int
-  difficulty  String    @default("medium")
-  isActive    Boolean   @default(true)
-  publishedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  tenantId     String
+  educatorId   String?
+  title        String
+  description  String?
+  priceCents   Int
+  difficulty   String    @default("medium")
+  isActive     Boolean   @default(true)
+  publishedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  /// Generated tsvector kolonu — Prisma'nın yazması yasak, sadece okunur
+  searchVector Unsupported("tsvector")?  @map("search_vector")
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id])
   educator  User?      @relation("educatorPackages", fields: [educatorId], references: [id], onDelete: SetNull)
@@ -596,9 +600,26 @@ model AdminSettings {
   testAttemptsEnabled    Boolean  @default(true)  // Test Durdur (çözüm başlatma)
   adPurchasesEnabled     Boolean  @default(true)  // Reklam Satın Alma Durdur
   minPackagePriceCents   Int      @default(100)   // Minimum paket fiyatı (kuruş)
+  minQuestionsPerTest    Int      @default(1)     // Test başına minimum soru sayısı
+  maxQuestionsPerTest    Int      @default(100)   // Test başına maksimum soru sayısı
+  maxTestsPerPackage     Int      @default(10)    // Paket başına maksimum test sayısı
+  maxLiveQuestions       Int      @default(50)    // Canlı oturum başına maksimum soru sayısı
   updatedAt              DateTime @updatedAt
 
   @@map("admin_settings")
+}
+
+// Komisyon oranı değişiklik geçmişi — her oran değişiminde bir kayıt eklenir.
+// Bir satın alma için geçerli oran: effectiveFrom <= purchase.createdAt ORDER BY effectiveFrom DESC LIMIT 1
+model CommissionRateHistory {
+  id                String   @id @default(uuid())
+  commissionPercent Int
+  effectiveFrom     DateTime
+  note              String?
+  createdAt         DateTime @default(now())
+
+  @@index([effectiveFrom])
+  @@map("commission_rate_history")
 }
 
 // Site / şirket bilgileri — ana sayfa ve footer, admin tarafından düzenlenir
@@ -742,6 +763,117 @@ model PaymentSettings {
   updatedAt           DateTime @updatedAt
 
   @@map("payment_settings")
+}
+
+// ── Live Session Modülleri ────────────────────────────────────────────────────
+
+model LiveSessionTier {
+  id              String        @id @default(uuid())
+  label           String
+  minParticipants Int           @default(0)
+  maxParticipants Int?
+  priceCents      Int           @default(0)
+  isActive        Boolean       @default(true)
+  order           Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  sessions        LiveSession[]
+
+  @@map("live_session_tiers")
+}
+
+model LiveSession {
+  id                 String           @id @default(uuid())
+  educatorId         String
+  tierId             String?
+  maxParticipants    Int?
+  title              String
+  joinCode           String           @unique
+  status             String           @default("DRAFT")
+  currentQuestionIdx Int              @default(0)
+  showStats          Boolean          @default(false)
+  paidAt             DateTime?
+  startedAt          DateTime?
+  endedAt            DateTime?
+  roundNumber        Int              @default(1)
+  parentSessionId    String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  educator     User              @relation("EducatorLiveSessions", fields: [educatorId], references: [id])
+  tier         LiveSessionTier?  @relation(fields: [tierId], references: [id])
+  questions    LiveQuestion[]
+  participants LiveParticipant[]
+  parent       LiveSession?      @relation("LiveSessionRounds", fields: [parentSessionId], references: [id])
+  rounds       LiveSession[]     @relation("LiveSessionRounds")
+
+  @@index([educatorId])
+  @@index([parentSessionId])
+  @@map("live_sessions")
+}
+
+model LiveQuestion {
+  id        String       @id @default(uuid())
+  sessionId String
+  content   String
+  mediaUrl  String?
+  order     Int
+  createdAt DateTime     @default(now())
+
+  session LiveSession  @relation(fields: [sessionId], references: [id])
+  options LiveOption[]
+  answers LiveAnswer[]
+
+  @@index([sessionId])
+  @@map("live_questions")
+}
+
+model LiveOption {
+  id         String  @id @default(uuid())
+  questionId String
+  content    String
+  isCorrect  Boolean
+  order      Int
+
+  question LiveQuestion @relation(fields: [questionId], references: [id])
+  answers  LiveAnswer[]
+
+  @@index([questionId])
+  @@map("live_options")
+}
+
+model LiveParticipant {
+  id         String   @id @default(uuid())
+  sessionId  String
+  userId     String
+  joinedAt   DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  session LiveSession  @relation(fields: [sessionId], references: [id])
+  user    User         @relation("UserLiveParticipations", fields: [userId], references: [id])
+  answers LiveAnswer[]
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([sessionId, lastSeenAt])
+  @@map("live_participants")
+}
+
+model LiveAnswer {
+  id            String   @id @default(uuid())
+  sessionId     String
+  questionId    String
+  participantId String
+  optionId      String?
+  answeredAt    DateTime @default(now())
+
+  question    LiveQuestion    @relation(fields: [questionId], references: [id])
+  option      LiveOption?     @relation(fields: [optionId], references: [id])
+  participant LiveParticipant @relation(fields: [participantId], references: [id])
+
+  @@unique([questionId, participantId])
+  @@index([sessionId])
+  @@map("live_answers")
 }
 
 // Worker rolü: sınırlı admin; hangi sayfalara erişebildiği burada saklanır

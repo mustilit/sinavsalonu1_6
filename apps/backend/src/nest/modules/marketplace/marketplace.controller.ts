@@ -29,10 +29,15 @@ export class MarketplaceController {
   @Public()
   @Get('packages')
   @ApiErrorResponses()
-  async listPackages(@Query('examTypeId') examTypeId?: string, @Query('limit') limit?: string) {
+  async listPackages(
+    @Query('examTypeId') examTypeId?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+  ) {
     return this.listPackagesUC.execute({
       examTypeId,
       limit: limit ? parseInt(limit, 10) : 20,
+      q: q?.trim() || undefined,
     });
   }
 

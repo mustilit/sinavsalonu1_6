@@ -46,6 +46,7 @@ export default defineConfig({
       '/packages': { target: backendTarget, changeOrigin: true },
       '/docs': { target: backendTarget, changeOrigin: true },
       '/health': { target: backendTarget, changeOrigin: true },
+      '/live-sessions': { target: backendTarget, changeOrigin: true },
     },
   },
 });

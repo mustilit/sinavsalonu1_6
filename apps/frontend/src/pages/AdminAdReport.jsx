@@ -6,6 +6,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api/apiClient";
+import { Pagination } from "@/components/ui/Pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -70,6 +71,8 @@ export default function AdminAdReport() {
   const [targetType, setTargetType] = useState("all");        // "all" | "TEST" | "EDUCATOR"
   const [statusFilter, setStatus] = useState("all");          // "all" | "active" | "expired"
   const [searchText, setSearchText] = useState("");           // eğitici kullanıcı adı / e-posta arama
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   // Uygulanmış (fetch edilmiş) filtre değerleri
   const [applied, setApplied] = useState({
@@ -93,7 +96,10 @@ export default function AdminAdReport() {
     },
   });
 
-  const handleApply = () => setApplied({ year, month, targetType });
+  const handleApply = () => {
+    setApplied({ year, month, targetType });
+    setPage(1);
+  };
 
   // İstemci tarafı filtreler: durum ve metin araması
   const filteredItems = useMemo(() => {
@@ -208,14 +214,14 @@ export default function AdminAdReport() {
               <Input
                 placeholder="Kullanıcı adı veya e-posta..."
                 value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
+                onChange={(e) => { setSearchText(e.target.value); setPage(1); }}
                 className="h-9 text-sm"
               />
             </div>
             {/* Durum filtresi */}
             <div>
               <label className="block text-xs text-slate-500 mb-1.5">Durum</label>
-              <Select value={statusFilter} onValueChange={setStatus}>
+              <Select value={statusFilter} onValueChange={(v) => { setStatus(v); setPage(1); }}>
                 <SelectTrigger className="w-36">
                   <SelectValue />
                 </SelectTrigger>
@@ -326,7 +332,7 @@ export default function AdminAdReport() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filteredItems.map((item) => {
+                {filteredItems.slice((page - 1) * pageSize, page * pageSize).map((item) => {
                   const pct = deliveryPct(item.impressionsDelivered, item.totalImpressions);
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
@@ -438,6 +444,7 @@ export default function AdminAdReport() {
                 </tr>
               </tfoot>
             </table>
+            <Pagination page={page} pageSize={pageSize} total={filteredItems.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
           </div>
         )}
       </div>

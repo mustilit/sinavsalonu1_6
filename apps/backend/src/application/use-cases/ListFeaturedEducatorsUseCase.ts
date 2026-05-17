@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 export type FeaturedEducator = {
   id: string;
   username: string;
+  avatarUrl: string | null;
   testCount: number;
   saleCount: number;
   ratingAvg: number | null;
@@ -96,7 +97,11 @@ export class ListFeaturedEducatorsUseCase {
       const fallback = await prisma.user.findMany({
         where: fallbackWhere,
         take: capped,
-        select: { id: true, username: true },
+        select: {
+          id: true,
+          username: true,
+          userPreference: { select: { preferences: true } },
+        },
       });
       const testCounts = await prisma.examTest.groupBy({
         by: ['educatorId'],
@@ -107,16 +112,21 @@ export class ListFeaturedEducatorsUseCase {
       return fallback.map((u) => ({
         id: u.id,
         username: u.username,
+        avatarUrl: ((u.userPreference?.preferences as any)?.profile_image_url ?? null) as string | null,
         testCount: byEducator[u.id] ?? 0,
         saleCount: 0,
         ratingAvg: null as number | null,
       }));
     }
 
-    // Resolve user data for collected educator IDs
+    // Resolve user data for collected educator IDs (avatar için userPreference dahil)
     const users = await prisma.user.findMany({
       where: { id: { in: educatorIds }, role: 'EDUCATOR' },
-      select: { id: true, username: true },
+      select: {
+        id: true,
+        username: true,
+        userPreference: { select: { preferences: true } },
+      },
     });
     const userMap = new Map(users.map((u) => [u.id, u]));
 
@@ -151,12 +161,17 @@ export class ListFeaturedEducatorsUseCase {
 
     return educatorIds
       .filter((id) => userMap.has(id))
-      .map((id) => ({
-        id,
-        username: userMap.get(id)!.username,
-        testCount: testCountMap.get(id) ?? 0,
-        saleCount: saleMap.get(id) ?? 0,
-        ratingAvg: ratingMap.get(id) ?? null,
-      }));
+      .map((id) => {
+        const u = userMap.get(id)!;
+        const avatarUrl: string | null = (u.userPreference?.preferences as any)?.profile_image_url ?? null;
+        return {
+          id,
+          username: u.username,
+          avatarUrl,
+          testCount: testCountMap.get(id) ?? 0,
+          saleCount: saleMap.get(id) ?? 0,
+          ratingAvg: ratingMap.get(id) ?? null,
+        };
+      });
   }
 }

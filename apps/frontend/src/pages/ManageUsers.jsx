@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Pagination } from "@/components/ui/Pagination";
 import {
   Table,
   TableBody,
@@ -150,6 +151,8 @@ export default function ManageUsers() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [showInvite, setShowInvite] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectUserId, setRejectUserId] = useState(null);
@@ -361,11 +364,11 @@ export default function ManageUsers() {
           <Input
             placeholder="İsim veya e-posta ara..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
             className="pl-10"
           />
         </div>
-        <Select value={filterRole} onValueChange={setFilterRole}>
+        <Select value={filterRole} onValueChange={(v) => { setFilterRole(v); setPage(1); }}>
           <SelectTrigger className="w-full sm:w-44">
             <SelectValue />
           </SelectTrigger>
@@ -394,6 +397,7 @@ export default function ManageUsers() {
               <p className="text-slate-500">Kullanıcı bulunamadı</p>
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -406,7 +410,7 @@ export default function ManageUsers() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((u) => (
+                  {users.slice((page - 1) * pageSize, page * pageSize).map((u) => (
                     <TableRow key={u.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -485,6 +489,8 @@ export default function ManageUsers() {
                 </TableBody>
               </Table>
             </div>
+            <Pagination page={page} pageSize={pageSize} total={users.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            </>
           )}
         </CardContent>
       </Card>

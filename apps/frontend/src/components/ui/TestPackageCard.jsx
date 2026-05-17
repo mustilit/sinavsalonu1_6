@@ -105,7 +105,7 @@ export default function TestPackageCard({ test, onBuy, isPurchased, isCompleted,
             {test.campaign_price && test.campaign_price > 0 && test.campaign_price < test.price ?
             <div>
                 <span className="text-2xl font-bold text-slate-900">₺{test.campaign_price}</span>
-                <span className="text-sm text-slate-400 line-through ml-2">₺{test.price}</span>
+                <span className="text-sm text-slate-500 line-through ml-2">₺{test.price}</span>
               </div> :
 
             <div className="text-2xl font-bold text-slate-900">
@@ -115,7 +115,7 @@ export default function TestPackageCard({ test, onBuy, isPurchased, isCompleted,
           </div>
           {isPurchased ?
           <Link to={createPageUrl("TestDetail") + `?id=${test.id}${isCompleted ? '&review=true' : ''}`}>
-              <Button size="sm" style={{backgroundColor: isCompleted ? '#94a3b8' : isInProgress ? '#f97316' : '#10b981'}} className="hover:opacity-90 flex items-center gap-1">
+              <Button size="sm" style={{backgroundColor: isCompleted ? '#475569' : isInProgress ? '#c2410c' : '#047857'}} className="hover:opacity-90 flex items-center gap-1">
                 {isCompleted ? (
                   <><Eye className="w-4 h-4" /> Gözden Geçir</>
                 ) : isInProgress ? (

@@ -247,7 +247,7 @@ export default function MyResults() {
         <div className="flex items-center gap-4 flex-wrap">
             <Filter className="w-5 h-5 text-slate-500" />
             <Select value={filterTest} onValueChange={setFilterTest}>
-              <SelectTrigger className="w-64">
+              <SelectTrigger aria-label="Test paketi filtresi" className="w-64">
                 <SelectValue placeholder="Tüm Paketler" />
               </SelectTrigger>
               <SelectContent>
@@ -258,7 +258,7 @@ export default function MyResults() {
               </SelectContent>
             </Select>
             <Select value={filterExamType} onValueChange={setFilterExamType}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger aria-label="Sınav türü filtresi" className="w-48">
                 <SelectValue placeholder="Tüm Sınav Türleri" />
               </SelectTrigger>
               <SelectContent>
@@ -269,7 +269,7 @@ export default function MyResults() {
               </SelectContent>
             </Select>
             <Select value={filterTimeRange} onValueChange={setFilterTimeRange}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger aria-label="Zaman aralığı filtresi" className="w-48">
                 <SelectValue placeholder="Tüm Zamanlar" />
               </SelectTrigger>
               <SelectContent>
@@ -346,7 +346,7 @@ export default function MyResults() {
             <h2 className="text-base font-semibold text-slate-800">Gelişim</h2>
             <div data-html2canvas-ignore="true">
               <Select value={chartType} onValueChange={setChartType}>
-                <SelectTrigger className="w-40 shrink-0">
+                <SelectTrigger aria-label="Grafik türü seçimi" className="w-40 shrink-0">
                   <span className="truncate text-sm">
                     {chartType === "performance" ? "Performans" : chartType === "questions" ? "Çözülen Soru" : "Çalışma Süresi"}
                   </span>
@@ -458,7 +458,7 @@ export default function MyResults() {
           <h2 className="text-base font-semibold text-slate-800">
             Test Geçmişi
             {filteredResults.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-slate-400">({filteredResults.length})</span>
+              <span className="ml-2 text-sm font-normal text-slate-500">({filteredResults.length})</span>
             )}
           </h2>
           {filteredResults.length > 0 && (
@@ -511,17 +511,17 @@ export default function MyResults() {
                     <TableRow key={result?.id ? String(result.id) : "row-" + idx}>
                       <TableCell className="font-medium">
                         {getTestTitle(result)}
-                        {total && <span className="ml-1 text-xs text-slate-400">({total} soru)</span>}
+                        {total && <span className="ml-1 text-xs text-slate-500">({total} soru)</span>}
                       </TableCell>
                       <TableCell className="text-center">
                         <span className="font-bold text-lg">{result.score}</span>
                       </TableCell>
                       <TableCell className="text-center text-sm">
                         <span className="text-emerald-600 font-medium">{result.correct_count ?? 0}</span>
-                        <span className="text-slate-300 mx-1">/</span>
+                        <span className="text-slate-400 mx-1">/</span>
                         <span className="text-rose-500 font-medium">{result.wrong_count ?? 0}</span>
-                        <span className="text-slate-300 mx-1">/</span>
-                        <span className="text-slate-400">{result.empty_count ?? 0}</span>
+                        <span className="text-slate-400 mx-1">/</span>
+                        <span className="text-slate-500">{result.empty_count ?? 0}</span>
                       </TableCell>
                       <TableCell className="text-center">
                         {mins !== null ? (
@@ -531,7 +531,7 @@ export default function MyResults() {
                               ? `${Math.floor(mins / 60)}sa ${mins % 60}dk`
                               : `${mins}dk ${secs}s`}
                           </div>
-                        ) : <span className="text-slate-300">—</span>}
+                        ) : <span className="text-slate-400">—</span>}
                       </TableCell>
                       <TableCell className="text-slate-500 text-sm">
                         {safeFormatDate(result.created_date)}
@@ -543,7 +543,7 @@ export default function MyResults() {
                             +{formatOvertime(result.overtime_seconds)}
                           </Badge>
                         ) : (
-                          <span className="text-slate-300 text-xs">—</span>
+                          <span className="text-slate-400 text-xs">—</span>
                         )}
                       </TableCell>
                       <TableCell>

@@ -1,0 +1,110 @@
+# Patch: .github/workflows/backend-migrate-and-test.yml
+#
+# Bu patch backend & frontend için npm audit job ekler. protect-paths.sh
+# .github/workflows altını korumalı olarak işaretlediği için elle uygulanmalı.
+#
+# NASIL UYGULANIR
+#   1. .github/workflows/backend-migrate-and-test.yml'i aç
+#   2. Mevcut "jobs:" listesine "audit:" job'unu ekle (build_test'ten önce veya paralel)
+#   3. notify_on_failure'in "needs:" listesine "audit"'i ekle (opsiyonel)
+#   4. Commit + push, ilk CI'da yeni job'un Pass olduğunu doğrula
+#
+# AUDIT EŞİĞİ
+#   --audit-level=high → high ve critical PR'ı kırar; moderate yalnız uyarır.
+#   Daha sıkı isterseniz "moderate", daha gevşek isterseniz "critical".
+#
+# KNOWN VULN İSTİSNALARI
+#   `npm audit` patch'i olmayan bir bağımlılıkta fail ederse:
+#     - Önce paketin güncel sürümüne çık (`npm update <pkg>` ya da Dependabot PR)
+#     - Çözüm yoksa override veya geçici "audit-ignore" listesi tut.
+#     - .github/audit-allowlist.json gibi bir dosyada CVE id + son geçerlilik tarihi tut,
+#       script ile audit JSON çıktısını filtreleyip "expected" CVE'leri atla.
+
+# ==================================================================
+# EKLENECEK YENİ JOB (jobs: bloğunun sonuna)
+# ==================================================================
+
+  audit:
+    name: Security audit (npm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ----- Backend -----
+      - name: Install backend deps
+        working-directory: apps/backend
+        run: npm ci
+
+      - name: Run npm audit (backend)
+        working-directory: apps/backend
+        # high ve critical fail ettirir; moderate ve düşüğü görmek için JSON çıktısını rapor olarak yükle.
+        run: |
+          set +e
+          npm audit --audit-level=high --json > audit-backend.json
+          STATUS=$?
+          # Çıktı raporu için saklarız (her zaman)
+          if [ "$STATUS" -ne 0 ]; then
+            echo "::error::Backend npm audit found high/critical vulnerabilities"
+            jq '.vulnerabilities | to_entries | map(select(.value.severity == "high" or .value.severity == "critical")) | .[] | {name: .key, severity: .value.severity, via: .value.via}' audit-backend.json || cat audit-backend.json
+            exit $STATUS
+          fi
+          echo "Backend audit clean (high/critical)"
+
+      # ----- Frontend -----
+      - name: Install frontend deps
+        working-directory: apps/frontend
+        run: npm ci
+
+      - name: Run npm audit (frontend)
+        working-directory: apps/frontend
+        run: |
+          set +e
+          npm audit --audit-level=high --json > audit-frontend.json
+          STATUS=$?
+          if [ "$STATUS" -ne 0 ]; then
+            echo "::error::Frontend npm audit found high/critical vulnerabilities"
+            jq '.vulnerabilities | to_entries | map(select(.value.severity == "high" or .value.severity == "critical")) | .[] | {name: .key, severity: .value.severity, via: .value.via}' audit-frontend.json || cat audit-frontend.json
+            exit $STATUS
+          fi
+          echo "Frontend audit clean (high/critical)"
+
+      - name: Upload audit reports (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-${{ github.sha }}
+          path: |
+            apps/backend/audit-backend.json
+            apps/frontend/audit-frontend.json
+
+# ==================================================================
+# notify_on_failure GÜNCELLEMESİ — needs listesine audit ekle (opsiyonel)
+# ==================================================================
+#
+# Mevcut:
+#   needs: [build_test, smoke_public_endpoints, migrate_stage2_guard, migrate_deploy]
+#   if: ${{ needs.build_test.result == 'failure' || ... }}
+#
+# Sonra:
+#   needs: [build_test, smoke_public_endpoints, migrate_stage2_guard, migrate_deploy, audit]
+#   if: ${{ needs.build_test.result == 'failure' || ... || needs.audit.result == 'failure' }}
+
+# ==================================================================
+# ALTERNATİF — Audit'i Dependabot PR'larında değil her commit'te koşturmamak için
+# ==================================================================
+#
+# Audit job'unu sadece main'e push'ta + haftalık schedule'da çalıştırmak isterseniz:
+#
+#   on:
+#     workflow_dispatch:
+#     push:
+#       branches: [main]
+#     schedule:
+#       - cron: '0 6 * * 1'   # Her pazartesi 06:00 UTC
+#
+# Bu dosya zaten "push: branches: main" üzerinde — değişiklik gerekmez,
+# yalnızca schedule eklemek mantıklı olur.

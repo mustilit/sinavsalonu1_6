@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
+import { Pagination } from "@/components/ui/Pagination";
 import { Plus, Edit2, Trash2, Award, Search, X, CalendarDays } from "lucide-react";
 import {
   Select,
@@ -40,6 +41,8 @@ export default function ManageExamTypes() {
   const [editingExam, setEditingExam] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [formData, setFormData] = useState({ name: "", description: "", active: true });
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const queryClient = useQueryClient();
 
   // Filtreler
@@ -55,6 +58,7 @@ export default function ManageExamTypes() {
     setFilterStatus("all");
     setFilterDateFrom("");
     setFilterDateTo("");
+    setPage(1);
   };
 
   const { data: examTypes = [], isLoading } = useQuery({
@@ -179,7 +183,7 @@ export default function ManageExamTypes() {
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
                   value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
+                  onChange={(e) => { setSearchName(e.target.value); setPage(1); }}
                   placeholder="Sınav türü ara..."
                   className="pl-8 h-9"
                 />
@@ -189,7 +193,7 @@ export default function ManageExamTypes() {
             {/* Aktiflik */}
             <div className="min-w-[140px]">
               <Label className="text-xs text-slate-500 mb-1 block">Durum</Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
@@ -210,7 +214,7 @@ export default function ManageExamTypes() {
               <Input
                 type="date"
                 value={filterDateFrom}
-                onChange={(e) => setFilterDateFrom(e.target.value)}
+                onChange={(e) => { setFilterDateFrom(e.target.value); setPage(1); }}
                 className="h-9"
               />
             </div>
@@ -222,7 +226,7 @@ export default function ManageExamTypes() {
               <Input
                 type="date"
                 value={filterDateTo}
-                onChange={(e) => setFilterDateTo(e.target.value)}
+                onChange={(e) => { setFilterDateTo(e.target.value); setPage(1); }}
                 className="h-9"
               />
             </div>
@@ -266,8 +270,9 @@ export default function ManageExamTypes() {
               )}
             </div>
           ) : (
+            <>
             <div className="divide-y divide-slate-100">
-              {filteredExamTypes.map((exam) => (
+              {filteredExamTypes.slice((page - 1) * pageSize, page * pageSize).map((exam) => (
                 <div key={exam.id} className="flex items-center justify-between p-6">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
@@ -313,6 +318,8 @@ export default function ManageExamTypes() {
                 </div>
               ))}
             </div>
+            <Pagination page={page} pageSize={pageSize} total={filteredExamTypes.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            </>
           )}
         </CardContent>
       </Card>

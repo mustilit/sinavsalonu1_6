@@ -96,6 +96,14 @@ export type AdminSettings = {
   adPurchasesEnabled: boolean;
   /** Minimum paket fiyatı (kuruş). Eğitici bu değerin altında fiyat giremez. */
   minPackagePriceCents: number;
+  /** Test başına minimum soru sayısı. Yayımlamada kontrol edilir. */
+  minQuestionsPerTest: number;
+  /** Test başına maksimum soru sayısı. Soru eklerken kontrol edilir. */
+  maxQuestionsPerTest: number;
+  /** Paket başına maksimum test sayısı. Pakete test eklerken kontrol edilir. */
+  maxTestsPerPackage: number;
+  /** Canlı oturum başına maksimum soru sayısı. Oturum oluştururken kontrol edilir. */
+  maxLiveQuestions: number;
 };
 
 export type SiteSettings = {

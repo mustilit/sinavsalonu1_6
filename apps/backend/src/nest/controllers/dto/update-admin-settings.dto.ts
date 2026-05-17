@@ -47,4 +47,28 @@ export class UpdateAdminSettingsDto {
   @IsInt()
   @IsPositive()
   minPackagePriceCents?: number;
+
+  @ApiPropertyOptional({ example: 1, description: 'Test başına minimum soru sayısı' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  minQuestionsPerTest?: number;
+
+  @ApiPropertyOptional({ example: 100, description: 'Test başına maksimum soru sayısı' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxQuestionsPerTest?: number;
+
+  @ApiPropertyOptional({ example: 10, description: 'Paket başına maksimum test sayısı' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxTestsPerPackage?: number;
+
+  @ApiPropertyOptional({ example: 50, description: 'Canlı oturum başına maksimum soru sayısı' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxLiveQuestions?: number;
 }

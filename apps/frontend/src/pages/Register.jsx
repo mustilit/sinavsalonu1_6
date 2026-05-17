@@ -49,8 +49,9 @@ export default function Register() {
 
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">E-posta</label>
+            <label htmlFor="reg-email" className="block text-sm font-medium text-slate-700 mb-1">E-posta</label>
             <Input
+              id="reg-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -60,8 +61,9 @@ export default function Register() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Kullanıcı adı</label>
+            <label htmlFor="reg-username" className="block text-sm font-medium text-slate-700 mb-1">Kullanıcı adı</label>
             <Input
+              id="reg-username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -71,8 +73,9 @@ export default function Register() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Şifre</label>
+            <label htmlFor="reg-password" className="block text-sm font-medium text-slate-700 mb-1">Şifre</label>
             <Input
+              id="reg-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -89,7 +92,7 @@ export default function Register() {
 
         <p className="mt-4 text-center text-sm text-slate-600">
           Zaten hesabınız var mı?{' '}
-          <Link to={createPageUrl('Login')} className="text-indigo-600 hover:underline">
+          <Link to={createPageUrl('Login')} className="text-indigo-600 underline hover:no-underline">
             Giriş yap
           </Link>
         </p>

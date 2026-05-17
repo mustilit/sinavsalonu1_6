@@ -1,8 +1,11 @@
-import { Controller, Get, Query, Res, ParseIntPipe, DefaultValuePipe, Inject } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Query, Res, Body, ParseIntPipe, DefaultValuePipe, Inject } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Roles } from '../decorators/roles.decorator';
 import { GetCommissionReportUseCase } from '../../application/use-cases/GetCommissionReportUseCase';
+import { GetCommissionRateHistoryUseCase } from '../../application/use-cases/GetCommissionRateHistoryUseCase';
+import { UpdateCommissionRateUseCase } from '../../application/use-cases/UpdateCommissionRateUseCase';
+import { UpdateCommissionRateDto } from './dto/update-commission-rate.dto';
 
 /** Varsayılan rapor dönemi için bir önceki ayı hesaplar — Ocak için Aralık'a döner */
 const prevMonthYear = (): { year: number; month: number } => {
@@ -22,6 +25,10 @@ export class AdminCommissionController {
   constructor(
     @Inject(GetCommissionReportUseCase)
     private readonly getReport: GetCommissionReportUseCase,
+    @Inject(GetCommissionRateHistoryUseCase)
+    private readonly getRateHistory: GetCommissionRateHistoryUseCase,
+    @Inject(UpdateCommissionRateUseCase)
+    private readonly updateRate: UpdateCommissionRateUseCase,
   ) {}
 
   @Get('report')
@@ -49,5 +56,23 @@ export class AdminCommissionController {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(Buffer.from(csv, 'utf8'));
+  }
+
+  @Get('rates')
+  @Roles('ADMIN')
+  @ApiOkResponse({ description: 'Commission rate change history with effective date ranges' })
+  async getRates() {
+    return this.getRateHistory.execute();
+  }
+
+  @Post('rates')
+  @Roles('ADMIN')
+  @ApiCreatedResponse({ description: 'New commission rate recorded and AdminSettings updated' })
+  async createRate(@Body() dto: UpdateCommissionRateDto) {
+    return this.updateRate.execute({
+      commissionPercent: dto.commissionPercent,
+      effectiveFrom: dto.effectiveFrom ? new Date(dto.effectiveFrom) : undefined,
+      note: dto.note,
+    });
   }
 }

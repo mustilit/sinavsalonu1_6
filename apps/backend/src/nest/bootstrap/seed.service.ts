@@ -38,6 +38,25 @@ export class SeedService implements OnApplicationBootstrap {
         console.warn('Seed: admin_settings upsert skipped:', (e as Error).message);
       }
 
+      // CommissionRateHistory — başlangıç kaydı yoksa oluştur
+      try {
+        const historyCount = await this.prisma.commissionRateHistory.count();
+        if (historyCount === 0) {
+          const settings = await this.prisma.adminSettings.findFirst({ where: { id: 1 } });
+          const initialRate = settings?.commissionPercent ?? 20;
+          await this.prisma.commissionRateHistory.create({
+            data: {
+              commissionPercent: initialRate,
+              effectiveFrom: new Date('2024-01-01T00:00:00.000Z'),
+              note: 'Başlangıç komisyon oranı (sistem seed)',
+            },
+          });
+          console.log(`Seed: CommissionRateHistory başlangıç kaydı oluşturuldu (%${initialRate})`);
+        }
+      } catch (e) {
+        console.warn('Seed: commission_rate_history seed skipped:', (e as Error).message);
+      }
+
       await this.seedDemoUsersAndData();
       await this.ensureTestQuestions();
     } catch (e) {

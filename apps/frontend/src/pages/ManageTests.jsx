@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Pagination } from "@/components/ui/Pagination";
 import { 
   Table, 
   TableBody, 
@@ -34,6 +35,8 @@ export default function ManageTests() {
   const [filterPublishStatus, setFilterPublishStatus] = useState("all");
   const [filterEducatorPublishStatus, setFilterEducatorPublishStatus] = useState("all");
   const [educatorOpen, setEducatorOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const queryClient = useQueryClient();
 
   const { data: tests = [], isLoading } = useQuery({
@@ -121,11 +124,11 @@ export default function ManageTests() {
             <Input
               placeholder="Test veya eğitici ara..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
               className="pl-10"
             />
           </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue />
             </SelectTrigger>
@@ -143,7 +146,7 @@ export default function ManageTests() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-          <Select value={filterExamType} onValueChange={setFilterExamType}>
+          <Select value={filterExamType} onValueChange={(v) => { setFilterExamType(v); setPage(1); }}>
             <SelectTrigger>
               <SelectValue placeholder="Sınav Türü" />
             </SelectTrigger>
@@ -180,6 +183,7 @@ export default function ManageTests() {
                       onSelect={() => {
                         setFilterEducator("all");
                         setEducatorOpen(false);
+                        setPage(1);
                       }}
                     >
                       <Check className={filterEducator === "all" ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"} />
@@ -192,6 +196,7 @@ export default function ManageTests() {
                         onSelect={() => {
                           setFilterEducator(educator.email);
                           setEducatorOpen(false);
+                          setPage(1);
                         }}
                       >
                         <Check className={filterEducator === educator.email ? "mr-2 h-4 w-4 opacity-100" : "mr-2 h-4 w-4 opacity-0"} />
@@ -204,7 +209,7 @@ export default function ManageTests() {
             </PopoverContent>
           </Popover>
 
-          <Select value={filterPriceRange} onValueChange={setFilterPriceRange}>
+          <Select value={filterPriceRange} onValueChange={(v) => { setFilterPriceRange(v); setPage(1); }}>
             <SelectTrigger>
               <SelectValue placeholder="Fiyat Aralığı" />
             </SelectTrigger>
@@ -217,7 +222,7 @@ export default function ManageTests() {
             </SelectContent>
           </Select>
 
-          <Select value={filterSalesRange} onValueChange={setFilterSalesRange}>
+          <Select value={filterSalesRange} onValueChange={(v) => { setFilterSalesRange(v); setPage(1); }}>
             <SelectTrigger>
               <SelectValue placeholder="Satış Sayısı" />
             </SelectTrigger>
@@ -230,7 +235,7 @@ export default function ManageTests() {
             </SelectContent>
           </Select>
 
-          <Select value={filterPublishStatus} onValueChange={setFilterPublishStatus}>
+          <Select value={filterPublishStatus} onValueChange={(v) => { setFilterPublishStatus(v); setPage(1); }}>
             <SelectTrigger>
               <SelectValue placeholder="Admin Durumu" />
             </SelectTrigger>
@@ -241,7 +246,7 @@ export default function ManageTests() {
             </SelectContent>
           </Select>
 
-          <Select value={filterEducatorPublishStatus} onValueChange={setFilterEducatorPublishStatus}>
+          <Select value={filterEducatorPublishStatus} onValueChange={(v) => { setFilterEducatorPublishStatus(v); setPage(1); }}>
             <SelectTrigger>
               <SelectValue placeholder="Yayın Durumu" />
             </SelectTrigger>
@@ -268,6 +273,7 @@ export default function ManageTests() {
               <p className="text-slate-500">Test bulunamadı</p>
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -283,7 +289,7 @@ export default function ManageTests() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTests.map((test) => (
+                  {filteredTests.slice((page - 1) * pageSize, page * pageSize).map((test) => (
                     <TableRow key={test.id}>
                       <TableCell>
                         <div>
@@ -354,6 +360,8 @@ export default function ManageTests() {
                 </TableBody>
               </Table>
             </div>
+            <Pagination page={page} pageSize={pageSize} total={filteredTests.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            </>
           )}
         </CardContent>
       </Card>

@@ -34,11 +34,12 @@ export default function Educators() {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Backend shape: { id, username, testCount, saleCount, ratingAvg }
+  // Backend shape: { id, username, avatarUrl, testCount, saleCount, ratingAvg }
   const educators = rawEducators
     .map((e) => ({
       id: e.id,
       name: e.username ?? e.name ?? e.id,
+      avatarUrl: e.avatarUrl ?? null,
       testCount: e.testCount ?? 0,
       totalSales: e.saleCount ?? 0,
       avgRating: e.ratingAvg ?? 0,
@@ -147,8 +148,11 @@ export default function Educators() {
                 className="group bg-white rounded-2xl border border-slate-100 p-6 hover:shadow-xl hover:border-indigo-200 transition-all"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <User className="w-8 h-8 text-indigo-600" />
+                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-violet-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {educator.avatarUrl
+                      ? <img src={educator.avatarUrl} alt={educator.name} className="w-full h-full object-cover" />
+                      : <User className="w-8 h-8 text-indigo-600" />
+                    }
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-lg text-slate-900 group-hover:text-indigo-600 transition-colors truncate mb-3">

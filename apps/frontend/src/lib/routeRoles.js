@@ -53,6 +53,13 @@ export const PAGE_ROLES = {
   CreateTest: [ROLES.EDUCATOR],
   EditTest: [ROLES.EDUCATOR],
   EducatorRefunds: [ROLES.EDUCATOR],
+  // Canlı test: Educator oturum oluşturur ve yönetir
+  MyLiveSessions: [ROLES.EDUCATOR],
+  LiveSessionCreate: [ROLES.EDUCATOR],
+  LiveSessionHost: [ROLES.EDUCATOR],
+
+  // Canlı test: Aday oturuma katılır
+  LiveSessionJoin: [ROLES.CANDIDATE],
 
   // AdminAdReport: Reklam satın alım raporu — yalnızca admin
   AdminAdReport: [ROLES.ADMIN],
@@ -67,6 +74,8 @@ export const PAGE_ROLES = {
   ManageTests: [ROLES.ADMIN],
   ManageRefunds: [ROLES.ADMIN],
   AdminObjections: [ROLES.ADMIN],
+  // Canlı test kapasite paketleri yönetimi — yalnızca admin
+  ManageLiveTiers: [ROLES.ADMIN],
 };
 
 /** Rolü büyük harfe normalize et (backend bazen küçük harf dönebilir) */

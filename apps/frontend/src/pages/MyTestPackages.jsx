@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api/apiClient";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Plus,
   Edit2,
@@ -70,12 +69,6 @@ export default function MyTestPackages() {
       toast.error(err?.message || "İşlem başarısız");
     },
   });
-
-  const difficultyLabels = {
-    easy: { label: "Kolay", color: "bg-emerald-100 text-emerald-700" },
-    medium: { label: "Orta", color: "bg-amber-100 text-amber-700" },
-    hard: { label: "Zor", color: "bg-rose-100 text-rose-700" }
-  };
 
   const filteredTests = testsWithRealCounts.filter((test) => {
     const matchesSearch =

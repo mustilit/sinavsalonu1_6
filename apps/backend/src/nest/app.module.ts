@@ -119,6 +119,8 @@ import { GetEducatorReportUseCase } from '../application/use-cases/GetEducatorRe
 import { SendBulkEducatorEmailUseCase } from '../application/use-cases/SendBulkEducatorEmailUseCase';
 import { AdminCommissionController } from './controllers/admin.commission.controller';
 import { GetCommissionReportUseCase } from '../application/use-cases/GetCommissionReportUseCase';
+import { GetCommissionRateHistoryUseCase } from '../application/use-cases/GetCommissionRateHistoryUseCase';
+import { UpdateCommissionRateUseCase } from '../application/use-cases/UpdateCommissionRateUseCase';
 import { GetPopularPackagesUseCase } from '../application/use-cases/GetPopularPackagesUseCase';
 import { AdminAdReportController } from './controllers/admin.ad-report.controller';
 import { GetAdminAdReportUseCase } from '../application/use-cases/GetAdminAdReportUseCase';
@@ -141,6 +143,27 @@ import { RemoveTestFromPackageUseCase } from '../application/use-cases/RemoveTes
 import { PublishTestPackageUseCase } from '../application/use-cases/PublishTestPackageUseCase';
 import { UnpublishTestPackageUseCase } from '../application/use-cases/UnpublishTestPackageUseCase';
 import { UploadController } from './controllers/upload.controller';
+import { AdminStatsController } from './controllers/admin.stats.controller';
+import { GetAdminStatsUseCase } from '../application/use-cases/GetAdminStatsUseCase';
+import { LiveSessionsController } from './controllers/live-sessions.controller';
+import { CreateLiveSessionUseCase } from '../application/use-cases/CreateLiveSessionUseCase';
+import { GetLiveSessionStateUseCase } from '../application/use-cases/GetLiveSessionStateUseCase';
+import { JoinLiveSessionUseCase } from '../application/use-cases/JoinLiveSessionUseCase';
+import { SubmitLiveAnswerUseCase } from '../application/use-cases/SubmitLiveAnswerUseCase';
+import { StartLiveSessionUseCase } from '../application/use-cases/StartLiveSessionUseCase';
+import { NavigateLiveQuestionUseCase } from '../application/use-cases/NavigateLiveQuestionUseCase';
+import { ToggleLiveStatsUseCase } from '../application/use-cases/ToggleLiveStatsUseCase';
+import { EndLiveSessionUseCase } from '../application/use-cases/EndLiveSessionUseCase';
+import { PingLiveSessionUseCase } from '../application/use-cases/PingLiveSessionUseCase';
+import { PayLiveSessionUseCase } from '../application/use-cases/PayLiveSessionUseCase';
+import { ListMyLiveSessionsUseCase } from '../application/use-cases/ListMyLiveSessionsUseCase';
+import { ListLiveSessionTiersUseCase } from '../application/use-cases/ListLiveSessionTiersUseCase';
+import { CreateLiveSessionTierUseCase } from '../application/use-cases/CreateLiveSessionTierUseCase';
+import { UpdateLiveSessionTierUseCase } from '../application/use-cases/UpdateLiveSessionTierUseCase';
+import { DeleteLiveSessionTierUseCase } from '../application/use-cases/DeleteLiveSessionTierUseCase';
+import { GetLiveSessionByCodeUseCase } from '../application/use-cases/GetLiveSessionByCodeUseCase';
+import { CreateRound2LiveSessionUseCase } from '../application/use-cases/CreateRound2LiveSessionUseCase';
+import { GetLiveSessionComparisonUseCase } from '../application/use-cases/GetLiveSessionComparisonUseCase';
 
 const THROTTLE_TTL_SECONDS = Number(process.env.THROTTLE_TTL_SECONDS ?? '60') || 60;
 
@@ -205,7 +228,7 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
     (require('./modules/refunds/refunds.module').RefundsModule),
     ContractsModule,
   ],
-  controllers: [RootController, HealthController, NotificationsController, AdminDlqController, TestsPerformanceController, HomeController, SiteController, ReviewsController, EducatorsController, FollowsController, CspReportController, AdminExamTypesController, AdminTopicsController, AdminEducatorsController, AdminUsersController, ObjectionsController, EducatorObjectionsController, AdminObjectionsController, AdminRefundsController, AdminSettingsController, AdminSiteSettingsController, AdminContractsController, AdminAuditController, AdminAdPackagesController, AdPackagesController, MeRefundsController, MePurchasesController, MePreferencesController, MetricsController, AdminCandidatesController, AdminEducatorReportController, AdminCommissionController, AdminAdReportController, MePerformanceController, MeHeartbeatController, AdminWorkersController, PackagesController, UploadController, AttemptsController, EducatorRefundsController],
+  controllers: [RootController, HealthController, NotificationsController, AdminDlqController, TestsPerformanceController, HomeController, SiteController, ReviewsController, EducatorsController, FollowsController, CspReportController, AdminExamTypesController, AdminTopicsController, AdminEducatorsController, AdminUsersController, ObjectionsController, EducatorObjectionsController, AdminObjectionsController, AdminRefundsController, AdminSettingsController, AdminSiteSettingsController, AdminContractsController, AdminAuditController, AdminAdPackagesController, AdPackagesController, MeRefundsController, MePurchasesController, MePreferencesController, MetricsController, AdminCandidatesController, AdminEducatorReportController, AdminCommissionController, AdminAdReportController, MePerformanceController, MeHeartbeatController, AdminWorkersController, PackagesController, UploadController, AttemptsController, EducatorRefundsController, AdminStatsController, LiveSessionsController],
   providers: [
     SeedService,
     ...(throttleDisabled ? [] : [{ provide: APP_GUARD, useClass: CustomThrottlerGuard }]),
@@ -437,6 +460,8 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
       inject: [MockEmailProvider],
     },
     GetCommissionReportUseCase,
+    { provide: GetCommissionRateHistoryUseCase, useFactory: () => new GetCommissionRateHistoryUseCase() },
+    { provide: UpdateCommissionRateUseCase, useFactory: () => new UpdateCommissionRateUseCase() },
     GetPopularPackagesUseCase,
     // Reklam satın alım raporu — admin filtreli liste
     GetAdminAdReportUseCase,
@@ -446,6 +471,27 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
     { provide: CreateWorkerUseCase, useFactory: () => new CreateWorkerUseCase() },
     { provide: GetWorkerPermissionsUseCase, useFactory: () => new GetWorkerPermissionsUseCase() },
     { provide: UpdateWorkerPermissionsUseCase, useFactory: () => new UpdateWorkerPermissionsUseCase() },
+    // Admin stats dashboard — bağımlılıksız, doğrudan prisma kullanır
+    GetAdminStatsUseCase,
+    // LiveSession use-cases — singleton prisma kullanır, bağımlılıksız
+    { provide: CreateLiveSessionUseCase, useFactory: () => new CreateLiveSessionUseCase() },
+    { provide: GetLiveSessionStateUseCase, useFactory: () => new GetLiveSessionStateUseCase() },
+    { provide: JoinLiveSessionUseCase, useFactory: () => new JoinLiveSessionUseCase() },
+    { provide: SubmitLiveAnswerUseCase, useFactory: () => new SubmitLiveAnswerUseCase() },
+    { provide: StartLiveSessionUseCase, useFactory: () => new StartLiveSessionUseCase() },
+    { provide: NavigateLiveQuestionUseCase, useFactory: () => new NavigateLiveQuestionUseCase() },
+    { provide: ToggleLiveStatsUseCase, useFactory: () => new ToggleLiveStatsUseCase() },
+    { provide: EndLiveSessionUseCase, useFactory: () => new EndLiveSessionUseCase() },
+    { provide: PingLiveSessionUseCase, useFactory: () => new PingLiveSessionUseCase() },
+    { provide: PayLiveSessionUseCase, useFactory: () => new PayLiveSessionUseCase() },
+    { provide: ListMyLiveSessionsUseCase, useFactory: () => new ListMyLiveSessionsUseCase() },
+    { provide: ListLiveSessionTiersUseCase, useFactory: () => new ListLiveSessionTiersUseCase() },
+    { provide: CreateLiveSessionTierUseCase, useFactory: () => new CreateLiveSessionTierUseCase() },
+    { provide: UpdateLiveSessionTierUseCase, useFactory: () => new UpdateLiveSessionTierUseCase() },
+    { provide: DeleteLiveSessionTierUseCase, useFactory: () => new DeleteLiveSessionTierUseCase() },
+    { provide: GetLiveSessionByCodeUseCase, useFactory: () => new GetLiveSessionByCodeUseCase() },
+    { provide: CreateRound2LiveSessionUseCase, useFactory: () => new CreateRound2LiveSessionUseCase() },
+    { provide: GetLiveSessionComparisonUseCase, useFactory: () => new GetLiveSessionComparisonUseCase() },
     // TestPackage CRUD
     PrismaTestPackageRepository,
     {

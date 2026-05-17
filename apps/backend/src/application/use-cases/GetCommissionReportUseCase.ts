@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/database/prisma';
+import type { CommissionRateHistory } from '@prisma/client';
 
 /**
  * Komisyon raporunda her eğitici için döndürülen tek kalem.
@@ -26,13 +27,23 @@ export interface CommissionReportItem {
   totalPayoutCents: number; // normalPayoutCents + liveSalesCents
 }
 
+/** Rapor döneminde geçerli olan oran aralığı */
+export interface RateHistoryRange {
+  commissionPercent: number;
+  effectiveFrom: Date;
+  effectiveTo: Date | null; // null → hâlâ geçerli
+}
+
 /**
  * Komisyon raporunun tamamını temsil eder.
  * Hem kalem bazlı hem de genel toplamları içerir.
  */
 export interface CommissionReportResult {
   items: CommissionReportItem[];
+  /** Mevcut (en güncel) komisyon oranı — geriye dönük uyumluluk */
   commissionPercent: number;
+  /** Rapor döneminde geçerli olan oran aralıkları */
+  rateHistory: RateHistoryRange[];
   year: number;
   month: number;
   totalNormalSalesCents: number;
@@ -74,17 +85,60 @@ interface RawRow {
  *   - Invalid year / Invalid month: sınır dışı değer girilirse Error fırlatılır
  */
 export class GetCommissionReportUseCase {
+  /**
+   * Verilen tarihe göre geçerli komisyon oranını döndürür.
+   * Tarihten önceki en son kaydı bulur; kayıt yoksa fallback oranı kullanılır.
+   */
+  private getRateAtDate(
+    rateHistory: CommissionRateHistory[],
+    purchaseDate: Date,
+    fallback: number,
+  ): number {
+    // rateHistory effectiveFrom azalan sırada sıralı; ilk eşleşeni döndür
+    const match = rateHistory.find((r) => r.effectiveFrom <= purchaseDate);
+    return match ? match.commissionPercent : fallback;
+  }
+
   async execute(year: number, month: number): Promise<CommissionReportResult> {
     // Yıl ve ay parametrelerini doğrula
     if (!Number.isInteger(year) || year < 2020 || year > 2100) throw new Error('Invalid year');
     if (!Number.isInteger(month) || month < 1 || month > 12) throw new Error('Invalid month');
 
-    // Admin ayarlarından komisyon yüzdesini oku; kayıt yoksa %20 varsayılan
+    // Admin ayarlarından mevcut komisyon yüzdesini oku; kayıt yoksa %20 varsayılan
     const settings = await prisma.adminSettings.findFirst({ where: { id: 1 } });
-    const commissionPercent = settings?.commissionPercent ?? 20;
+    const currentCommissionPercent = settings?.commissionPercent ?? 20;
+
+    // Tüm oran geçmişini effectiveFrom azalan sırada getir
+    const allHistory = await prisma.commissionRateHistory.findMany({
+      orderBy: { effectiveFrom: 'desc' },
+    });
+
+    // Rapor döneminin başı ve sonu
+    const periodStart = new Date(year, month - 1, 1);
+    const periodEnd = new Date(year, month, 1); // exclusive
+
+    // Rapor döneminde geçerli olan oran aralıkları
+    const rateHistory: RateHistoryRange[] = allHistory
+      .map((entry, idx) => ({
+        commissionPercent: entry.commissionPercent,
+        effectiveFrom: entry.effectiveFrom,
+        effectiveTo: idx === 0 ? null : allHistory[idx - 1].effectiveFrom,
+      }))
+      .filter((range) => {
+        // Aralık döneme tamamen sonradan başladıysa dahil etme
+        if (range.effectiveFrom >= periodEnd) return false;
+        // Aralık dönemden önce kapandıysa dahil etme
+        if (range.effectiveTo !== null && range.effectiveTo <= periodStart) return false;
+        return true;
+      });
 
     // isTimed sütunu GROUP BY'a eklendi — aynı eğitici için iki satır gelebilir (normal + canlı)
-    const rows = await prisma.$queryRawUnsafe<RawRow[]>(`
+    // Her satın alma için tarihi de çekiyoruz (oran hesabı için)
+    interface RawRowWithDate extends RawRow {
+      purchaseDate: Date;
+    }
+
+    const rows = await prisma.$queryRawUnsafe<RawRowWithDate[]>(`
       SELECT
         u.id               AS "educatorId",
         u.username,
@@ -93,6 +147,7 @@ export class GetCommissionReportUseCase {
         up.preferences->>'bankName'       AS "bankName",
         up.preferences->>'accountHolder'  AS "accountHolder",
         et."isTimed",
+        p."createdAt"                     AS "purchaseDate",
         COUNT(p.id)::bigint               AS "saleCount",
         COALESCE(SUM(p."amountCents"), 0)::bigint AS "totalSalesCents"
       FROM users u
@@ -105,16 +160,19 @@ export class GetCommissionReportUseCase {
         AND p."deletedAt" IS NULL
         AND p.status = 'ACTIVE'
         AND u."deletedAt" IS NULL
-      GROUP BY u.id, u.username, u.email, up.preferences, et."isTimed"
+      GROUP BY u.id, u.username, u.email, up.preferences, et."isTimed", p."createdAt"
       ORDER BY "totalSalesCents" DESC
     `);
 
     // Eğitici bazlı birleştirme: Map<educatorId, CommissionReportItem>
+    // commissionPercent her satır için ayrı hesaplanır; eğiticinin toplam komisyonu biriktirilir
     const map = new Map<string, CommissionReportItem>();
 
     for (const r of rows) {
       const saleCount = Number(r.saleCount);
       const salesCents = Number(r.totalSalesCents);
+      // Bu satın alma zamanındaki komisyon oranını bul
+      const rateAtPurchase = this.getRateAtDate(allHistory, new Date(r.purchaseDate), currentCommissionPercent);
 
       if (!map.has(r.educatorId)) {
         // Eğitici ilk kez görülüyor — başlangıç değerleriyle kaydı oluştur
@@ -127,7 +185,7 @@ export class GetCommissionReportUseCase {
           accountHolder: r.accountHolder ?? null,
           normalSaleCount: 0,
           normalSalesCents: 0,
-          commissionPercent,
+          commissionPercent: currentCommissionPercent,
           commissionCents: 0,
           normalPayoutCents: 0,
           liveSaleCount: 0,
@@ -145,13 +203,15 @@ export class GetCommissionReportUseCase {
         item.liveSaleCount += saleCount;
         item.liveSalesCents += salesCents;
       } else {
-        // Normal paket satışı — komisyon uygulanır
+        // Normal paket satışı — komisyon, satın alma zamanındaki orana göre hesaplanır
         item.normalSaleCount += saleCount;
         item.normalSalesCents += salesCents;
+        // commissionCents'i burada biriktirelim (satır bazlı doğru oran ile)
+        item.commissionCents += Math.round((salesCents * rateAtPurchase) / 100);
       }
     }
 
-    // Komisyon ve toplam alanlarını hesapla; genel toplamları biriktir
+    // Toplam alanlarını hesapla; genel toplamları biriktir
     let sumNormalSales = 0;
     let sumCommission = 0;
     let sumNormalPayout = 0;
@@ -160,8 +220,7 @@ export class GetCommissionReportUseCase {
     const items: CommissionReportItem[] = [];
 
     for (const item of map.values()) {
-      // Komisyon yalnızca normal satışlar üzerinden hesaplanır
-      item.commissionCents = Math.round((item.normalSalesCents * commissionPercent) / 100);
+      // normalPayoutCents = toplam normal satış - toplam komisyon (tarihsel oran dahil)
       item.normalPayoutCents = item.normalSalesCents - item.commissionCents;
 
       item.totalSaleCount = item.normalSaleCount + item.liveSaleCount;
@@ -182,7 +241,8 @@ export class GetCommissionReportUseCase {
 
     return {
       items,
-      commissionPercent,
+      commissionPercent: currentCommissionPercent,
+      rateHistory,
       year,
       month,
       totalNormalSalesCents: sumNormalSales,

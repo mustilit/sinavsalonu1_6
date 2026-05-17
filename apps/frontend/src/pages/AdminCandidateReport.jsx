@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Users, Mail, Star, ChevronUp, ChevronDown } from "lucide-react";
+import { Pagination } from "@/components/ui/Pagination";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -58,6 +59,7 @@ export default function AdminCandidateReport() {
 
   const [appliedFilters, setAppliedFilters] = useState({});
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [sortBy, setSortBy] = useState("registeredAt");
   const [order, setOrder] = useState("desc");
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -89,7 +91,7 @@ export default function AdminCandidateReport() {
     if (f.minCorrectRate) params.append("minCorrectRate", f.minCorrectRate);
     if (f.maxCorrectRate) params.append("maxCorrectRate", f.maxCorrectRate);
     params.append("page", page);
-    params.append("limit", 50);
+    params.append("limit", pageSize);
     params.append("sortBy", sortBy);
     params.append("order", order);
     return params.toString();
@@ -97,7 +99,7 @@ export default function AdminCandidateReport() {
 
   // Fetch candidates
   const { data: reportData = {}, isLoading, error } = useQuery({
-    queryKey: ["candidateReport", appliedFilters, page, sortBy, order],
+    queryKey: ["candidateReport", appliedFilters, page, pageSize, sortBy, order],
     queryFn: async () => {
       const queryStr = buildQueryParams(appliedFilters);
       const { data } = await api.get(
@@ -110,7 +112,7 @@ export default function AdminCandidateReport() {
 
   const candidates = reportData.items || [];
   const totalCount = reportData.total || 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / 50));
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   // Bulk email mutation
   const emailMutation = useMutation({
@@ -720,26 +722,16 @@ export default function AdminCandidateReport() {
       )}
 
       {/* Pagination */}
-      {!isLoading && !error && totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-          <Button
-            variant="outline"
-            onClick={() => handlePageChange(page - 1)}
-            disabled={page === 1}
-          >
-            Önceki
-          </Button>
-          <span className="text-sm text-slate-700">
-            Sayfa <span className="font-semibold">{page}</span> /
-            <span className="font-semibold">{totalPages}</span>
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => handlePageChange(page + 1)}
-            disabled={page === totalPages}
-          >
-            Sonraki
-          </Button>
+      {!isLoading && !error && (
+        <div className="mt-4 bg-white border border-slate-200 rounded-xl">
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={totalCount}
+            onPageChange={handlePageChange}
+            onPageSizeChange={(newSize) => { setPageSize(newSize); handlePageChange(1); }}
+            pageSizeOptions={[25, 50, 100]}
+          />
         </div>
       )}
 

@@ -86,7 +86,7 @@ function PackageCard({ pkg }) {
             </span>
           )}
           {pkg.isTimed && (
-            <span className="text-xs text-slate-400 flex items-center gap-1">
+            <span className="text-xs text-slate-500 flex items-center gap-1">
               <Clock className="w-3 h-3" /> Süreli
             </span>
           )}
@@ -108,7 +108,7 @@ function PackageCard({ pkg }) {
         )}
 
         {/* stats row */}
-        <div className="flex items-center gap-4 text-xs text-slate-400 mt-auto pt-1">
+        <div className="flex items-center gap-4 text-xs text-slate-500 mt-auto pt-1">
           <span className="flex items-center gap-1">
             <BookOpen className="w-3.5 h-3.5" />
             {pkg.questionCount} soru
@@ -159,8 +159,11 @@ function EducatorCard({ educator }) {
       to={createPageUrl("EducatorProfile") + `?id=${educator.id}`}
       className="group flex items-start gap-4 p-5 rounded-2xl bg-white border border-slate-100 hover:shadow-lg hover:shadow-slate-200/60 transition-all duration-300"
     >
-      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center flex-shrink-0">
-        <User className="w-7 h-7 text-indigo-500" />
+      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        {educator.avatarUrl
+          ? <img src={educator.avatarUrl} alt={educator.username} className="w-full h-full object-cover" />
+          : <User className="w-7 h-7 text-indigo-500" />
+        }
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -546,7 +549,7 @@ export default function Home() {
                   <Icon className="w-7 h-7 text-white" strokeWidth={1.5} />
                 </div>
                 <p className="text-3xl font-bold text-white">{value}</p>
-                <p className="text-white/70 mt-1">{label}</p>
+                <p className="text-white/80 mt-1">{label}</p>
               </div>
             ))}
           </div>
@@ -646,7 +649,7 @@ export default function Home() {
             </div>
           </div>
           <div className="pt-8 border-t border-white/10">
-            <p className="text-sm text-white/50 text-center">
+            <p className="text-sm text-white/80 text-center">
               © {new Date().getFullYear()} Sınav Salonu. Tüm hakları saklıdır.
             </p>
           </div>

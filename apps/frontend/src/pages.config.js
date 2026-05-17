@@ -1,29 +1,29 @@
 /**
  * pages.config.js - Page routing configuration
- * 
+ *
  * This file is AUTO-GENERATED. Do not add imports or modify PAGES manually.
  * Pages are auto-registered when you create files in the ./pages/ folder.
- * 
+ *
  * THE ONLY EDITABLE VALUE: mainPage
  * This controls which page is the landing page (shown when users visit the app).
- * 
+ *
  * Example file structure:
- * 
+ *
  *   import HomePage from './pages/HomePage';
  *   import Dashboard from './pages/Dashboard';
  *   import Settings from './pages/Settings';
- *   
+ *
  *   export const PAGES = {
  *       "HomePage": HomePage,
  *       "Dashboard": Dashboard,
  *       "Settings": Settings,
  *   }
- *   
+ *
  *   export const pagesConfig = {
  *       mainPage: "HomePage",
  *       Pages: PAGES,
  *   };
- * 
+ *
  * Example with Layout (wraps all pages):
  *
  *   import Home from './pages/Home';
@@ -47,51 +47,58 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import About from './pages/About';
-import AdminAdReport from './pages/AdminAdReport';
-import AdminCandidateReport from './pages/AdminCandidateReport';
-import AdminCommissionReport from './pages/AdminCommissionReport';
-import AdminSystemControls from './pages/AdminSystemControls';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminEducatorReport from './pages/AdminEducatorReport';
-import AdminObjections from './pages/AdminObjections';
-import CompleteProfile from './pages/CompleteProfile';
-import Contact from './pages/Contact';
-import CreateTest from './pages/CreateTest';
-import EditTest from './pages/EditTest';
-import EducatorDashboard from './pages/EducatorDashboard';
-import EducatorProfile from './pages/EducatorProfile';
-import { EducatorRefunds } from './pages/EducatorRefunds';
-import EducatorSettings from './pages/EducatorSettings';
-import Educators from './pages/Educators';
-import ExamTypes from './pages/ExamTypes';
-import Explore from './pages/Explore';
-import ForgotPassword from './pages/ForgotPassword';
-import Home from './pages/Home';
-import ResetPassword from './pages/ResetPassword';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ManageExamTypes from './pages/ManageExamTypes';
-import ManageRefunds from './pages/ManageRefunds';
-import ManageTests from './pages/ManageTests';
-import ManageTopics from './pages/ManageTopics';
-import ManageUsers from './pages/ManageUsers';
-import MyAds from './pages/MyAds';
-import MyDiscountCodes from './pages/MyDiscountCodes';
-import MyResults from './pages/MyResults';
-import MyTopicReport from './pages/MyTopicReport';
-import MySales from './pages/MySales';
-import MyTestPackages from './pages/MyTestPackages';
-import MyTests from './pages/MyTests';
-import Partnership from './pages/Partnership';
-import Privacy from './pages/Privacy';
-import ProfileSettings from './pages/ProfileSettings';
-import QuestionReports from './pages/QuestionReports';
-import SelectExamTypes from './pages/SelectExamTypes';
-import Support from './pages/Support';
-import TakeTest from './pages/TakeTest';
-import TestDetail from './pages/TestDetail';
+import { lazy } from 'react';
 import __Layout from './Layout.jsx';
+
+const About = lazy(() => import('./pages/About'));
+const AdminAdReport = lazy(() => import('./pages/AdminAdReport'));
+const AdminCandidateReport = lazy(() => import('./pages/AdminCandidateReport'));
+const AdminCommissionReport = lazy(() => import('./pages/AdminCommissionReport'));
+const AdminSystemControls = lazy(() => import('./pages/AdminSystemControls'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminEducatorReport = lazy(() => import('./pages/AdminEducatorReport'));
+const AdminObjections = lazy(() => import('./pages/AdminObjections'));
+const CompleteProfile = lazy(() => import('./pages/CompleteProfile'));
+const Contact = lazy(() => import('./pages/Contact'));
+const CreateTest = lazy(() => import('./pages/CreateTest'));
+const EditTest = lazy(() => import('./pages/EditTest'));
+const EducatorDashboard = lazy(() => import('./pages/EducatorDashboard'));
+const EducatorProfile = lazy(() => import('./pages/EducatorProfile'));
+const EducatorRefunds = lazy(() => import('./pages/EducatorRefunds').then(m => ({ default: m.EducatorRefunds })));
+const EducatorSettings = lazy(() => import('./pages/EducatorSettings'));
+const Educators = lazy(() => import('./pages/Educators'));
+const ExamTypes = lazy(() => import('./pages/ExamTypes'));
+const Explore = lazy(() => import('./pages/Explore'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const Home = lazy(() => import('./pages/Home'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ManageExamTypes = lazy(() => import('./pages/ManageExamTypes'));
+const ManageRefunds = lazy(() => import('./pages/ManageRefunds'));
+const ManageTests = lazy(() => import('./pages/ManageTests'));
+const ManageTopics = lazy(() => import('./pages/ManageTopics'));
+const ManageUsers = lazy(() => import('./pages/ManageUsers'));
+const MyAds = lazy(() => import('./pages/MyAds'));
+const MyDiscountCodes = lazy(() => import('./pages/MyDiscountCodes'));
+const MyResults = lazy(() => import('./pages/MyResults'));
+const MyTopicReport = lazy(() => import('./pages/MyTopicReport'));
+const MySales = lazy(() => import('./pages/MySales'));
+const MyTestPackages = lazy(() => import('./pages/MyTestPackages'));
+const MyTests = lazy(() => import('./pages/MyTests'));
+const Partnership = lazy(() => import('./pages/Partnership'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const ProfileSettings = lazy(() => import('./pages/ProfileSettings'));
+const QuestionReports = lazy(() => import('./pages/QuestionReports'));
+const SelectExamTypes = lazy(() => import('./pages/SelectExamTypes'));
+const Support = lazy(() => import('./pages/Support'));
+const TakeTest = lazy(() => import('./pages/TakeTest'));
+const TestDetail = lazy(() => import('./pages/TestDetail'));
+const LiveSessionCreate = lazy(() => import('./pages/LiveSessionCreate'));
+const LiveSessionHost = lazy(() => import('./pages/LiveSessionHost'));
+const LiveSessionJoin = lazy(() => import('./pages/LiveSessionJoin'));
+const ManageLiveTiers = lazy(() => import('./pages/ManageLiveTiers'));
+const MyLiveSessions = lazy(() => import('./pages/MyLiveSessions'));
 
 
 export const PAGES = {
@@ -139,6 +146,11 @@ export const PAGES = {
     "Support": Support,
     "TakeTest": TakeTest,
     "TestDetail": TestDetail,
+    "LiveSessionCreate": LiveSessionCreate,
+    "LiveSessionHost": LiveSessionHost,
+    "LiveSessionJoin": LiveSessionJoin,
+    "ManageLiveTiers": ManageLiveTiers,
+    "MyLiveSessions": MyLiveSessions,
 }
 
 export const pagesConfig = {
