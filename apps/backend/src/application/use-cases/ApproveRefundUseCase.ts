@@ -41,17 +41,7 @@ export class ApproveRefundUseCase {
     // Ödeme iadesi işlemini (ödeme sağlayıcısına geri ödeme vb.) tetikle
     await this.processor.process(updated);
 
-    try {
-      await this.auditRepo.create({
-        action: 'REFUND_APPROVED',
-        entityType: 'REFUND',
-        entityId: refundId,
-        actorId,
-        metadata: {},
-      });
-    } catch {
-      // best-effort: audit log hatası ana akışı kesmez
-    }
+    // Audit log repository'nin kendi transaction'ı içinde yazılıyor — burada tekrar çağrılmaz.
 
     // decidedAt alanı string veya Date tipinde gelebilir; tutarlı ISO formatına çevir
     const decidedAtStr = typeof updated.decidedAt === 'string' ? updated.decidedAt : (updated.decidedAt ? new Date(updated.decidedAt).toISOString() : now.toISOString());

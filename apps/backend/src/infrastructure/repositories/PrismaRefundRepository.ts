@@ -79,17 +79,48 @@ export class PrismaRefundRepository implements IRefundRepository {
   }
 
   async approve(refundId: string, adminId: string, decidedAt: Date, adminNotes?: string): Promise<RefundRequest> {
-    const r = await prisma.refundRequest.update({
-      where: { id: refundId },
-      data: { status: 'APPROVED', decidedBy: adminId, decidedAt, adminNotes: adminNotes ?? null } as any,
+    const refundRow = await prisma.refundRequest.findUnique({ where: { id: refundId } });
+    if (!refundRow) throw new Error('REFUND_NOT_FOUND');
+
+    const r = await prisma.$transaction(async (tx) => {
+      const updated = await tx.refundRequest.update({
+        where: { id: refundId },
+        data: { status: 'APPROVED', decidedBy: adminId, decidedAt, adminNotes: adminNotes ?? null } as any,
+      });
+      await tx.purchase.update({
+        where: { id: (refundRow as any).purchaseId },
+        data: { status: 'REFUNDED' } as any,
+      });
+      await tx.auditLog.create({
+        data: {
+          action: 'REFUND_APPROVED',
+          entityType: 'RefundRequest',
+          entityId: refundId,
+          actorId: adminId,
+          metadata: { purchaseId: (refundRow as any).purchaseId },
+        } as any,
+      });
+      return updated;
     });
     return this.toDomain(r);
   }
 
   async reject(refundId: string, adminId: string, decidedAt: Date, reason?: string): Promise<RefundRequest> {
-    const r = await prisma.refundRequest.update({
-      where: { id: refundId },
-      data: { status: 'REJECTED', decidedBy: adminId, decidedAt, adminNotes: reason ?? null } as any,
+    const r = await prisma.$transaction(async (tx) => {
+      const updated = await tx.refundRequest.update({
+        where: { id: refundId },
+        data: { status: 'REJECTED', decidedBy: adminId, decidedAt, adminNotes: reason ?? null } as any,
+      });
+      await tx.auditLog.create({
+        data: {
+          action: 'REFUND_REJECTED',
+          entityType: 'RefundRequest',
+          entityId: refundId,
+          actorId: adminId,
+          metadata: {},
+        } as any,
+      });
+      return updated;
     });
     return this.toDomain(r);
   }
