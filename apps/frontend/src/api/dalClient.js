@@ -241,12 +241,18 @@ export const entities = {
       }
       const { data } = await api.get('/me/purchases');
       let list = Array.isArray(data) ? data : [];
-      // test_package_id hem testId (eski sistem) hem packageId (yeni sistem) ile eşleşebilir
+      // test_package_id hem testId (eski sistem) hem packageId (yeni sistem)
+      // hem de paketin içerdiği ExamTest ID'leri ile eşleşebilir.
+      // Paket satın alındıysa içindeki tüm testler erişilebilir olmalı.
       if (opts.test_package_id) {
-        list = list.filter((p) =>
-          (p.testId ?? p.test?.id) === opts.test_package_id ||
-          p.packageId === opts.test_package_id
-        );
+        const target = opts.test_package_id;
+        list = list.filter((p) => {
+          if ((p.testId ?? p.test?.id) === target) return true;
+          if (p.packageId === target) return true;
+          // Paket içindeki herhangi bir ExamTest hedef ID ile eşleşiyor mu?
+          const pkgTests = p.package?.tests ?? [];
+          return pkgTests.some((t) => t.id === target);
+        });
       }
       return list.map((p) => {
         // Paketten satın alındıysa packageId üzerinden eşleştir; yoksa testId
@@ -275,6 +281,9 @@ export const entities = {
           test: p.test,
           package: p.package,
           attempt: p.attempt,
+          // Paketteki tüm testlerin attempt'ları (backend p.attempts) — TakeTest
+          // ve TestProgress için doğru attempt'ı bulmaya yarar
+          attempts: Array.isArray(p.attempts) ? p.attempts : (p.attempt ? [p.attempt] : []),
           payment_status: p.paymentStatus,
           test_package_snapshot: snapshot,
           // ProfileSettings ve diğer sayfalar için düzleştirilmiş alanlar
@@ -406,13 +415,11 @@ export const entities = {
     filter: async (opts = {}, sort) => {
       if (opts.test_package_id || opts.test_id) {
         const id = opts.test_package_id ?? opts.test_id;
-        // Önce ExamTest olarak dene; bulunamazsa marketplace/packages endpoint'ini dene (TestPackage ID)
-        try {
-          const { data } = await api.get(`/tests/${id}`);
-          if (data) return [{ id: data.id, test_package_id: id, order_index: 0, duration_minutes: data.durationMinutes ?? 60, title: data.title, ...data }];
-        } catch (testErr) {
-          // ExamTest bulunamadı — TestPackage ID olabilir
-        }
+        // Önce TestPackage olarak dene (paketin tüm testlerini getirir);
+        // bulunamazsa tekil ExamTest endpoint'ine düş.
+        // NOT: /tests/:id endpoint'i TestPackage CUID verildiğinde paketteki ilk
+        // ExamTest'i döndürdüğü için (fuzzy resolution), paket önce sorgulanır —
+        // yoksa paketin tüm testleri yerine sadece ilki gelir.
         try {
           const { data } = await api.get(`/marketplace/packages/${id}`);
           if (data?.tests?.length) {
@@ -421,11 +428,17 @@ export const entities = {
               title: t.title,
               test_package_id: id,
               order_index: i,
-              duration_minutes: 60,
+              duration_minutes: t.duration ?? t.durationMinutes ?? 60,
               question_count: t.questionCount ?? 0,
             }));
           }
         } catch (pkgErr) {
+          // Paket bulunamadı — tekil ExamTest olabilir
+        }
+        try {
+          const { data } = await api.get(`/tests/${id}`);
+          if (data) return [{ id: data.id, test_package_id: id, order_index: 0, duration_minutes: data.duration ?? data.durationMinutes ?? 60, title: data.title, ...data }];
+        } catch (testErr) {
           // Hiçbir şey bulunamadı
         }
         return [];
@@ -523,14 +536,27 @@ export const entities = {
       const progress = [];
       for (const p of list) {
         const pkgId = p.packageId ?? p.testId;
-        if (opts.test_package_id && p.testId !== opts.test_package_id && p.packageId !== opts.test_package_id) continue;
-        if (opts.is_completed === false && p.attempt && p.attempt.status === 'IN_PROGRESS') {
+        // Hedef paket/test ile eşleşmeyen satırları atla
+        if (opts.test_package_id) {
+          const matchesPurchase =
+            p.testId === opts.test_package_id ||
+            p.packageId === opts.test_package_id ||
+            (p.package?.tests ?? []).some((t) => t.id === opts.test_package_id);
+          if (!matchesPurchase) continue;
+        }
+        // Paketteki tüm testler için attempt'ları kontrol et
+        const allAttempts = Array.isArray(p.attempts) && p.attempts.length > 0
+          ? p.attempts
+          : (p.attempt ? [p.attempt] : []);
+        for (const a of allAttempts) {
+          if (opts.is_completed === false && a.status !== 'IN_PROGRESS') continue;
+          if (opts.is_completed === true && a.status !== 'SUBMITTED' && a.status !== 'TIMEOUT') continue;
           progress.push({
-            id: p.attempt.id,
+            id: a.id,
             user_email: opts.user_email,
             test_package_id: pkgId,
-            test_id: p.testId,
-            is_completed: false,
+            test_id: a.testId,
+            is_completed: a.status === 'SUBMITTED' || a.status === 'TIMEOUT',
           });
         }
       }

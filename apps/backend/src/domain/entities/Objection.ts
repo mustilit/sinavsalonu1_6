@@ -14,6 +14,9 @@ export interface Objection {
   createdAt: Date;
   answeredAt?: Date | null;
   escalatedAt?: Date | null;
+  adminAnswerText?: string | null;
+  adminAnsweredAt?: Date | null;
+  adminAnswererId?: string | null;
 }
 
 /** For ownership check: objection + test educatorId (from attempt.test) */

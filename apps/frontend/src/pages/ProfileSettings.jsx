@@ -634,9 +634,37 @@ export default function ProfileSettings() {
               className="mb-4"
             />
             <div className="space-y-2 max-h-96 overflow-y-auto mb-4">
-              {purchases
-                .filter((p) => p.test_package_title.toLowerCase().includes(searchPurchase.toLowerCase()))
-                .map((purchase) => (
+              {(() => {
+                // Sadece HİÇ açılmamış testler için iade alınabilir:
+                // - purchase.attempts[] herhangi bir attempt içeriyorsa (IN_PROGRESS, PAUSED, SUBMITTED, TIMEOUT)
+                //   test "Devam Et" veya "Gözden Geçir" durumuna gelmiş demektir → listeden çıkar.
+                const eligible = purchases.filter((p) => {
+                  const hasAttempts = Array.isArray(p.attempts) && p.attempts.length > 0;
+                  const hasMainAttempt = !!p.attempt;
+                  return !hasAttempts && !hasMainAttempt;
+                });
+                const filtered = eligible.filter((p) =>
+                  (p.test_package_title ?? "").toLowerCase().includes(searchPurchase.toLowerCase()),
+                );
+                if (filtered.length === 0) {
+                  return (
+                    <div className="text-center py-6 px-3 space-y-2">
+                      <p className="text-sm text-slate-500">
+                        {purchases.length === 0
+                          ? "Henüz satın alma yok"
+                          : eligible.length === 0
+                          ? "İade için uygun test yok"
+                          : "Test bulunamadı"}
+                      </p>
+                      {purchases.length > 0 && eligible.length === 0 && (
+                        <p className="text-xs text-slate-400">
+                          İade talebi yalnızca hiç açılmamış testler için yapılabilir.
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+                return filtered.map((purchase) => (
                   <button
                     key={purchase.id}
                     onClick={() => {
@@ -651,10 +679,8 @@ export default function ProfileSettings() {
                       <span>{new Date(purchase.created_date).toLocaleDateString('tr-TR')}</span>
                     </div>
                   </button>
-                ))}
-              {purchases.filter((p) => p.test_package_title.toLowerCase().includes(searchPurchase.toLowerCase())).length === 0 && (
-                <p className="text-center text-slate-500 py-4">Test bulunamadı</p>
-              )}
+                ));
+              })()}
             </div>
             <Button variant="outline" onClick={() => {
               setRefundModalOpen(false);

@@ -140,7 +140,20 @@ export default function TakeTest() {
   });
 
   const purchase = purchases[0];
-  const attemptFromPurchase = purchase?.attempt;
+  // ÖNEMLİ: Paket satın alımında purchase.attempt, paketin testId alanıyla eşleşen
+  // tek bir testin attempt'ıdır. Paket içindeki BAŞKA bir teste açtığımızda bu
+  // attempt YANLIŞTIR. Bu yüzden:
+  //   1) Önce purchase.attempts[] (paketteki tüm testlerin attempt'ları) içinden
+  //      şu anki testId ile eşleşen attempt'ı ara,
+  //   2) yoksa purchase.attempt'ı sadece testId eşleşiyorsa kullan.
+  const attemptFromPackage = Array.isArray(purchase?.attempts)
+    ? purchase.attempts.find((a) => a?.testId === testId) ?? null
+    : null;
+  const attemptFromPurchase =
+    attemptFromPackage ??
+    (purchase?.test?.id === testId || purchase?.testId === testId
+      ? purchase?.attempt
+      : null);
   const resolvedAttemptId = activeAttemptId || attemptFromPurchase?.id;
 
   useEffect(() => {
@@ -337,12 +350,18 @@ export default function TakeTest() {
   // ─── Offline & cevap kuyruğu ─────────────────────────────────────────────
 
   // saveAndExit tanımı — offline auto-exit callback'i için önceden tanımla
-  const handleSaveAndExit = useCallback(() => {
+  const handleSaveAndExit = useCallback(async () => {
     toast.info("Bağlantı kesildi — ilerlemeniz kaydedildi, çıkılıyor...");
+    // Offline'sa pause çağrısı muhtemelen başarısız ama deneriz
+    if (activeAttemptId || attemptFromPurchase?.id) {
+      try {
+        await api.post(`/attempts/${activeAttemptId ?? attemptFromPurchase?.id}/pause`);
+      } catch {}
+    }
     setTimeout(() => {
       navigate(createPageUrl("MyTests"), { replace: true });
     }, 1500);
-  }, [navigate]);
+  }, [navigate, activeAttemptId, attemptFromPurchase]);
 
   // Bağlantı kesintisi yönetimi: 30 saniye bağlanamazsa otomatik çık
   const { isOffline, remainingSeconds } = useOffline({
@@ -373,6 +392,9 @@ export default function TakeTest() {
       } else if (test?.is_timed && test?.duration_minutes) {
         setTimeLeft(test.duration_minutes * 60);
       }
+      // PAUSED → IN_PROGRESS geçişinden sonra attemptState taze çekilmeli
+      // (önceden seçili cevaplar UI'da işaretlensin)
+      queryClient.invalidateQueries({ queryKey: ["attemptState", data.attemptId] });
     },
     onError: (err) => {
       const code = err?.response?.data?.code ?? err?.code;
@@ -517,10 +539,22 @@ export default function TakeTest() {
     startAttemptMutation.mutate();
   };
 
-  const saveAndExit = () => {
+  const saveAndExit = async () => {
     // Süresiz testte geçen süreyi localStorage'a kaydet
     if (resolvedAttemptId && !test?.is_timed) {
       localStorage.setItem(`elapsed_${resolvedAttemptId}`, String(elapsedSec));
+    }
+    // Süreli teste DURAKLAT — backend lastResumedAt'ten itibaren geçen süreyi
+    // remainingSec'ten düşer ve attempt'ı PAUSED yapar. Aksi takdirde kullanıcı
+    // çıkışta ve geri dönerken zaman kaybeder (toast + navigate + load süresi
+    // hâlâ "elapsed" olarak sayılır).
+    if (resolvedAttemptId && test?.is_timed) {
+      try {
+        await api.post(`/attempts/${resolvedAttemptId}/pause`);
+      } catch (e) {
+        // Pause başarısız olursa kullanıcı yine de çıksın — ama uyaralım
+        console.warn('[TakeTest] pause failed:', e?.message ?? e);
+      }
     }
     toast.success("İlerlemeniz kaydedildi");
     setTimeout(() => {

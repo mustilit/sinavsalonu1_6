@@ -115,7 +115,7 @@ export default function TestPackageCard({ test, onBuy, isPurchased, isCompleted,
           </div>
           {isPurchased ?
           <Link to={createPageUrl("TestDetail") + `?id=${test.id}${isCompleted ? '&review=true' : ''}`}>
-              <Button size="sm" style={{backgroundColor: isCompleted ? '#475569' : isInProgress ? '#c2410c' : '#047857'}} className="hover:opacity-90 flex items-center gap-1">
+              <Button size="sm" style={{backgroundColor: isCompleted ? '#64748b' : isInProgress ? '#f59e0b' : '#047857'}} className="hover:opacity-90 flex items-center gap-1">
                 {isCompleted ? (
                   <><Eye className="w-4 h-4" /> Gözden Geçir</>
                 ) : isInProgress ? (

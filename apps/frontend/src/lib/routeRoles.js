@@ -38,6 +38,8 @@ export const PAGE_ROLES = {
   MyResults: [ROLES.CANDIDATE],
   // MyTopicReport: Konu bazlı performans raporu — yalnızca adaylar
   MyTopicReport: [ROLES.CANDIDATE],
+  // MyObjections: Adayın açtığı hata bildirimleri (salt-okunur izleme)
+  MyObjections: [ROLES.CANDIDATE],
   ProfileSettings: [ROLES.CANDIDATE],
   TakeTest: [ROLES.CANDIDATE],
   CompleteProfile: [ROLES.CANDIDATE],
@@ -75,6 +77,10 @@ export const PAGE_ROLES = {
   ManageTests: [ROLES.ADMIN],
   ManageRefunds: [ROLES.ADMIN],
   AdminObjections: [ROLES.ADMIN],
+  // Talepler — İade Talepleri + Hata Bildirimleri tek sayfada
+  AdminClaims: [ROLES.ADMIN],
+  // Gelirler — Komisyon + Reklam raporları tek sayfada
+  AdminRevenue: [ROLES.ADMIN],
   // Canlı test kapasite paketleri yönetimi — yalnızca admin
   ManageLiveTiers: [ROLES.ADMIN],
 

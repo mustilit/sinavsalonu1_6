@@ -78,12 +78,27 @@ export class RequestRefundUseCase {
     if (!purchase.testId) {
       throw new AppError('PURCHASE_NOT_FOUND', 'Purchase has no associated test', 404);
     }
-    // Test denemesi başlatılmışsa iade yapılamaz
-    const hasAttempt = await this.attemptRepo.hasAnyAttempt(purchase.testId, actorId);
-    if (hasAttempt) {
+
+    // Test denemesi başlatılmışsa iade yapılamaz.
+    // Paket satın alımında purchase.testId yalnızca paketin ilk testidir;
+    // candidate paketteki BAŞKA bir teste de attempt açmış olabilir.
+    // Bu nedenle paketin tüm test ID'lerini topla ve hepsini kontrol et.
+    const packageId = (purchase as any).packageId ?? null;
+    const packageTestIds: string[] = packageId
+      ? (await prisma.examTest.findMany({
+          where: { packageId, deletedAt: null },
+          select: { id: true },
+        })).map((t) => t.id)
+      : [];
+    const testIdsToCheck = Array.from(new Set([purchase.testId as string, ...packageTestIds]));
+
+    const attemptCount = await prisma.testAttempt.count({
+      where: { candidateId: actorId, testId: { in: testIdsToCheck } },
+    });
+    if (attemptCount > 0) {
       throw new AppError(
         'REFUND_NOT_ALLOWED_ATTEMPT_STARTED',
-        'Refund not allowed: you have already started an attempt for this test',
+        'Refund not allowed: you have already started an attempt for a test in this package',
         409,
       );
     }

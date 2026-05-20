@@ -23,10 +23,6 @@ import {
   RefreshCw,
   Zap,
   Mail,
-  PowerOff,
-  Server,
-  FileText,
-  ShieldX,
   Shield,
 } from "lucide-react";
 
@@ -45,6 +41,8 @@ export default function Sidebar({ user, currentPage }) {
     { name: "Performans Raporları", page: "MyResults", icon: BarChart3 },
     // Konu bazlı performans raporu — zamana bağlı konu analizi
     { name: "Konu Performansım", page: "MyTopicReport", icon: BookOpen },
+    // Adayın açtığı hata bildirimleri (salt-okunur izleme)
+    { name: "Hata Bildirimlerim", page: "MyObjections", icon: AlertTriangle },
     { name: "Profil Ayarları", page: "ProfileSettings", icon: User },
   ];
 
@@ -73,11 +71,10 @@ export default function Sidebar({ user, currentPage }) {
     { name: "Soru Konuları", page: "ManageTopics", icon: BookOpen },
     { name: "Kullanıcılar", page: "ManageUsers", icon: Users },
     { name: "Tüm Testler", page: "ManageTests", icon: BookOpen },
-    { name: "İade Talepleri", page: "ManageRefunds", icon: ShoppingBag },
-    { name: "Hata Bildirimleri", page: "AdminObjections", icon: AlertTriangle },
-    { name: "Komisyon Raporu", page: "AdminCommissionReport", icon: Banknote },
-    // Reklam satın alım raporu — eğiticilerin öne çıkarma aktivitesini gösterir
-    { name: "Reklam Raporu", page: "AdminAdReport", icon: Megaphone },
+    // Talepler — İade Talepleri + Hata Bildirimleri tek sayfada sekmeli
+    { name: "Talepler", page: "AdminClaims", icon: ShoppingBag },
+    // Gelirler — Komisyon Raporu + Reklam Raporu tek sayfada sekmeli
+    { name: "Gelirler", page: "AdminRevenue", icon: Banknote },
     { name: "Sistem Kontrolleri", page: "AdminSystemControls", icon: ShieldAlert },
     { name: "Canlı Test Paketleri", page: "ManageLiveTiers", icon: Zap },
     // ── Mail Yönetimi (6 alt modül tek sayfada sekmeli) ───────────────
@@ -157,11 +154,19 @@ export default function Sidebar({ user, currentPage }) {
 
         {/* Kullanıcı bilgisi */}
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-sm font-semibold text-slate-600 dark:text-gray-200">
-              {(user?.full_name || user?.username || "?")[0]?.toUpperCase()}
-            </span>
-          </div>
+          {(user?.profile_image_url || user?.metadata?.profile_image_url) ? (
+            <img
+              src={user.profile_image_url || user.metadata.profile_image_url}
+              alt={user?.full_name || user?.username || "Profil"}
+              className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200 dark:border-gray-700"
+            />
+          ) : (
+            <div className="w-10 h-10 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center shrink-0">
+              <span className="text-sm font-semibold text-slate-600 dark:text-gray-200">
+                {(user?.full_name || user?.username || "?")[0]?.toUpperCase()}
+              </span>
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-slate-900 dark:text-gray-100 truncate">{user?.full_name || user?.username}</p>
             <p className="text-xs text-slate-500 dark:text-gray-500 truncate">

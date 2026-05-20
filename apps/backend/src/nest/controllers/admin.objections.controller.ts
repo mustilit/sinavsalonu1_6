@@ -1,10 +1,18 @@
-import { Controller, Get, Query, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Inject, Req } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
 import { ListObjectionsQueryDto } from './dto/list-objections-query.dto';
 import { ListEscalatedObjectionsUseCase } from '../../application/use-cases/objection/ListEscalatedObjectionsUseCase';
 import { ListAllObjectionsUseCase } from '../../application/use-cases/objection/ListAllObjectionsUseCase';
 import { ListTestReportStatsUseCase } from '../../application/use-cases/report/ListTestReportStatsUseCase';
+import { AnswerObjectionByAdminUseCase } from '../../application/use-cases/objection/AnswerObjectionByAdminUseCase';
+import { IsString, MinLength } from 'class-validator';
+
+class AdminAnswerObjectionDto {
+  @IsString()
+  @MinLength(5, { message: 'En az 5 karakter olmalı' })
+  adminAnswerText!: string;
+}
 
 /**
  * Admin itiraz yönetimi — tüm itirazları, yalnızca eskalatlanmışları listeler
@@ -18,6 +26,7 @@ export class AdminObjectionsController {
     @Inject(ListEscalatedObjectionsUseCase) private readonly listEscalated: ListEscalatedObjectionsUseCase,
     @Inject(ListAllObjectionsUseCase) private readonly listAll: ListAllObjectionsUseCase,
     @Inject(ListTestReportStatsUseCase) private readonly listStats: ListTestReportStatsUseCase,
+    @Inject(AnswerObjectionByAdminUseCase) private readonly adminAnswerUC: AnswerObjectionByAdminUseCase,
   ) {}
 
   @Get()
@@ -56,5 +65,22 @@ export class AdminObjectionsController {
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async testStats() {
     return this.listStats.execute();
+  }
+
+  @Post(':id/admin-answer')
+  @Roles('ADMIN')
+  @ApiBearerAuth('bearer')
+  @ApiOkResponse({ description: 'Admin answer saved (independent of educator answer)' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  async adminAnswer(
+    @Param('id') objectionId: string,
+    @Body() body: AdminAnswerObjectionDto,
+    @Req() req: any,
+  ) {
+    const actorId = (req as any).user?.id;
+    return this.adminAnswerUC.execute(
+      { objectionId, adminAnswerText: body.adminAnswerText },
+      actorId,
+    );
   }
 }

@@ -52,6 +52,8 @@ import __Layout from './Layout.jsx';
 
 const About = lazy(() => import('./pages/About'));
 const AdminAdReport = lazy(() => import('./pages/AdminAdReport'));
+const AdminClaims = lazy(() => import('./pages/AdminClaims'));
+const AdminRevenue = lazy(() => import('./pages/AdminRevenue'));
 const AdminCandidateReport = lazy(() => import('./pages/AdminCandidateReport'));
 const AdminCommissionReport = lazy(() => import('./pages/AdminCommissionReport'));
 const AdminSystemControls = lazy(() => import('./pages/AdminSystemControls'));
@@ -91,6 +93,7 @@ const Pricing = lazy(() => import('./pages/Pricing'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const ProfileSettings = lazy(() => import('./pages/ProfileSettings'));
 const QuestionReports = lazy(() => import('./pages/QuestionReports'));
+const MyObjections = lazy(() => import('./pages/MyObjections'));
 const SelectExamTypes = lazy(() => import('./pages/SelectExamTypes'));
 const Support = lazy(() => import('./pages/Support'));
 const TakeTest = lazy(() => import('./pages/TakeTest'));
@@ -125,6 +128,8 @@ const RiskyContent = lazy(() => import('./pages/RiskyContent'));
 export const PAGES = {
     "About": About,
     "AdminAdReport": AdminAdReport,
+    "AdminClaims": AdminClaims,
+    "AdminRevenue": AdminRevenue,
     "AdminCandidateReport": AdminCandidateReport,
     "AdminCommissionReport": AdminCommissionReport,
     "AdminSystemControls": AdminSystemControls,
@@ -164,6 +169,7 @@ export const PAGES = {
     "Privacy": Privacy,
     "ProfileSettings": ProfileSettings,
     "QuestionReports": QuestionReports,
+    "MyObjections": MyObjections,
     "SelectExamTypes": SelectExamTypes,
     "Support": Support,
     "TakeTest": TakeTest,

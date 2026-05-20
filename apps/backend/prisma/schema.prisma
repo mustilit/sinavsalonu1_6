@@ -54,8 +54,10 @@ enum UserStatus {
 
 enum AttemptStatus {
   IN_PROGRESS
+  PAUSED
   SUBMITTED
   TIMEOUT
+  EXPIRED
 }
 
 enum TestStatus {
@@ -318,6 +320,7 @@ model User {
   notificationPreferences NotificationPreference[]
   createdDiscountCodes    DiscountCode[]           @relation("DiscountCodeCreatedBy")
   reportedObjections      Objection[]              @relation("ObjectionReporter")
+  adminAnsweredObjections Objection[]              @relation("ObjectionAdminAnswerer")
   contractAcceptances     ContractAcceptance[]
   userPreference          UserPreference?
   adPurchases             AdPurchase[]             @relation("educatorAdPurchases")
@@ -700,10 +703,15 @@ model Objection {
   answeredAt         DateTime?
   escalatedAt        DateTime?
   moderationResultId String?
+  // Admin yanıtı — eğitici cevabı vermese de admin müdahale edip yazabilir
+  adminAnswerText    String?
+  adminAnsweredAt    DateTime?
+  adminAnswererId    String?
 
-  attempt  TestAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  reporter User         @relation("ObjectionReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  attempt       TestAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question      ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  reporter      User         @relation("ObjectionReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  adminAnswerer User?        @relation("ObjectionAdminAnswerer", fields: [adminAnswererId], references: [id], onDelete: SetNull)
 
   @@map("objections")
 }

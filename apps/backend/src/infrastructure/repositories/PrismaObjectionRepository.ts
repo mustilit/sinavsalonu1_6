@@ -7,18 +7,7 @@ import { ObjectionStatus as PrismaObjectionStatus } from '@prisma/client';
 const SLA_DAYS = 10;
 const toDeadline = (d: Date) => new Date(d.getTime() + SLA_DAYS * 24 * 60 * 60 * 1000);
 
-function toObjection(row: {
-  id: string;
-  attemptId: string;
-  questionId: string;
-  reporterId: string;
-  reason: string;
-  status: string;
-  answerText: string | null;
-  createdAt: Date;
-  answeredAt: Date | null;
-  escalatedAt: Date | null;
-}): Objection {
+function toObjection(row: any): Objection {
   return {
     id: row.id,
     attemptId: row.attemptId,
@@ -30,6 +19,9 @@ function toObjection(row: {
     createdAt: row.createdAt,
     answeredAt: row.answeredAt ?? undefined,
     escalatedAt: row.escalatedAt ?? undefined,
+    adminAnswerText: row.adminAnswerText ?? undefined,
+    adminAnsweredAt: row.adminAnsweredAt ?? undefined,
+    adminAnswererId: row.adminAnswererId ?? undefined,
   };
 }
 
@@ -39,13 +31,14 @@ const ENRICHED_INCLUDE = {
       test: {
         select: {
           id: true, title: true, educatorId: true,
-          educator: { select: { name: true } },
+          educator: { select: { username: true } },
         },
       },
     },
   },
   question: { select: { content: true } },
-  reporter: { select: { name: true, email: true } },
+  reporter: { select: { username: true, email: true } },
+  adminAnswerer: { select: { username: true, email: true } },
 } as const;
 
 function toEnriched(row: any): EnrichedObjection {
@@ -64,9 +57,13 @@ function toEnriched(row: any): EnrichedObjection {
     testId: test?.id ?? '',
     testTitle: test?.title ?? '',
     reporterId: row.reporterId,
-    reporterName: row.reporter?.name ?? row.reporter?.email ?? 'Bilinmiyor',
+    reporterName: row.reporter?.username ?? row.reporter?.email ?? 'Bilinmiyor',
     educatorId: test?.educatorId ?? null,
-    educatorName: test?.educator?.name ?? null,
+    educatorName: test?.educator?.username ?? null,
+    adminAnswerText: row.adminAnswerText ?? null,
+    adminAnsweredAt: row.adminAnsweredAt ?? null,
+    adminAnswererId: row.adminAnswererId ?? null,
+    adminAnswererName: row.adminAnswerer?.username ?? row.adminAnswerer?.email ?? null,
   };
 }
 
@@ -87,6 +84,28 @@ export class PrismaObjectionRepository implements IObjectionRepository {
     const row = await prisma.objection.findFirst({ where: { attemptId, questionId } });
     if (!row) return null;
     return toObjection(row);
+  }
+
+  async findById(objectionId: string): Promise<Objection | null> {
+    const row = await prisma.objection.findUnique({ where: { id: objectionId } });
+    return row ? toObjection(row) : null;
+  }
+
+  async updateAdminAnswer(
+    objectionId: string,
+    data: { adminAnswerText: string; adminAnsweredAt: Date; adminAnswererId: string },
+  ): Promise<Objection | null> {
+    const upd = await (prisma.objection as any).updateMany({
+      where: { id: objectionId },
+      data: {
+        adminAnswerText: data.adminAnswerText,
+        adminAnsweredAt: data.adminAnsweredAt,
+        adminAnswererId: data.adminAnswererId,
+      },
+    });
+    if (upd.count === 0) return null;
+    const row = await prisma.objection.findUnique({ where: { id: objectionId } });
+    return row ? toObjection(row) : null;
   }
 
   async findByIdWithTestOwner(objectionId: string): Promise<ObjectionWithTestOwner | null> {
@@ -150,6 +169,20 @@ export class PrismaObjectionRepository implements IObjectionRepository {
     return rows.map(toEnriched);
   }
 
+  async listByReporter(reporterId: string, filters?: { status?: string }): Promise<EnrichedObjection[]> {
+    const where: any = { reporterId };
+    if (filters?.status) {
+      const statuses = filters.status.split(',').map(s => s.trim()).filter(Boolean);
+      where.status = statuses.length === 1 ? statuses[0] : { in: statuses };
+    }
+    const rows = await (prisma.objection as any).findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: ENRICHED_INCLUDE,
+    });
+    return rows.map(toEnriched);
+  }
+
   async listAll(filters?: { status?: string; from?: Date; to?: Date }): Promise<EnrichedObjection[]> {
     const where: any = {};
     if (filters?.status) {
@@ -178,7 +211,7 @@ export class PrismaObjectionRepository implements IObjectionRepository {
             test: {
               select: {
                 id: true, title: true, educatorId: true,
-                educator: { select: { name: true } },
+                educator: { select: { username: true } },
               },
             },
           },
@@ -194,7 +227,7 @@ export class PrismaObjectionRepository implements IObjectionRepository {
           testId: test.id,
           testTitle: test.title ?? '',
           educatorId: test.educatorId ?? null,
-          educatorName: test.educator?.name ?? null,
+          educatorName: test.educator?.username ?? null,
           totalCount: 0, openCount: 0, answeredCount: 0, escalatedCount: 0,
         });
       }

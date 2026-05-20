@@ -27,7 +27,15 @@ export class PrismaPurchaseRepository implements IPurchaseRepository {
       orderBy: { createdAt: 'desc' },
       include: {
         test: { select: { id: true, title: true, status: true, examTypeId: true, _count: { select: { questions: true } } } },
-        package: { select: { id: true, title: true, priceCents: true } },
+        package: {
+          select: {
+            id: true,
+            title: true,
+            priceCents: true,
+            // Paket kapsamındaki tüm ExamTest ID'leri — frontend "bu test bu paketteki mi" kontrolünde kullanır
+            tests: { where: { deletedAt: null }, select: { id: true, title: true } },
+          },
+        },
       },
     });
 
@@ -48,20 +56,28 @@ export class PrismaPurchaseRepository implements IPurchaseRepository {
     });
     const attemptByTest = new Map(attempts.map((a) => [a.testId, a]));
 
+    // Tek attempt'ı zenginleştir (correct/wrong/empty count ekler)
+    const enrich = (a: any) => {
+      const answers: Array<{ isCorrect: boolean | null; selectedOptionId: string | null }> =
+        a.answers ?? [];
+      const correctCount = answers.filter((x) => x.isCorrect === true).length;
+      const wrongCount = answers.filter((x) => x.isCorrect === false && x.selectedOptionId != null).length;
+      const emptyCount = answers.filter((x) => !x.selectedOptionId).length;
+      const { answers: _answers, ...rest } = a;
+      return { ...rest, correctCount, wrongCount, emptyCount };
+    };
+
     return (withRelations as any[]).map((p) => {
       const rawAttempt = p.testId ? (attemptByTest.get(p.testId) ?? null) : null;
-      let attempt: any = null;
-      if (rawAttempt) {
-        const answers: Array<{ isCorrect: boolean | null; selectedOptionId: string | null }> =
-          rawAttempt.answers ?? [];
-        const correctCount = answers.filter((a) => a.isCorrect === true).length;
-        const wrongCount = answers.filter(
-          (a) => a.isCorrect === false && a.selectedOptionId != null,
-        ).length;
-        const emptyCount = answers.filter((a) => !a.selectedOptionId).length;
-        const { answers: _answers, ...rest } = rawAttempt;
-        attempt = { ...rest, correctCount, wrongCount, emptyCount };
-      }
+      const attempt = rawAttempt ? enrich(rawAttempt) : null;
+
+      // Paket içindeki TÜM testlerin attempt'larını ekle —
+      // frontend "in progress" durumunu doğru tesste gösterebilsin
+      const pkgTestIds: string[] = (p.package?.tests ?? []).map((t: any) => t.id);
+      const attemptsAll = pkgTestIds
+        .map((tid) => attemptByTest.get(tid))
+        .filter(Boolean)
+        .map((a: any) => enrich(a));
 
       return {
         id: p.id,
@@ -74,7 +90,8 @@ export class PrismaPurchaseRepository implements IPurchaseRepository {
         test: p.test ?? null,
         package: p.package ?? null,
         attempt,
-      };
+        attempts: attemptsAll,
+      } as any;
     });
   }
 }

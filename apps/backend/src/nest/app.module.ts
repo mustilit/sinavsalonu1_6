@@ -41,6 +41,7 @@ import { AdminAuditController } from './controllers/admin.audit.controller';
 import { AdminAdPackagesController } from './controllers/admin.ad-packages.controller';
 import { AdPackagesController } from './controllers/ad-packages.controller';
 import { MeRefundsController } from './controllers/me.refunds.controller';
+import { MeObjectionsController } from './controllers/me.objections.controller';
 import { MePurchasesController } from './controllers/me.purchases.controller';
 import { MePreferencesController } from './controllers/me.preferences.controller';
 import { AdminUsersController } from './controllers/admin.users.controller';
@@ -67,6 +68,7 @@ import { PrismaExamRepository } from '../infrastructure/repositories/PrismaExamR
 import { getRedisUrl } from '../config/redis';
 import { CreateObjectionUseCase } from '../application/use-cases/objection/CreateObjectionUseCase';
 import { AnswerObjectionUseCase } from '../application/use-cases/objection/AnswerObjectionUseCase';
+import { AnswerObjectionByAdminUseCase } from '../application/use-cases/objection/AnswerObjectionByAdminUseCase';
 import { ListEscalatedObjectionsUseCase } from '../application/use-cases/objection/ListEscalatedObjectionsUseCase';
 import { ListEducatorObjectionsUseCase } from '../application/use-cases/objection/ListEducatorObjectionsUseCase';
 import { ListAllObjectionsUseCase } from '../application/use-cases/objection/ListAllObjectionsUseCase';
@@ -74,6 +76,7 @@ import { ListTestReportStatsUseCase } from '../application/use-cases/report/List
 import { ApproveRefundUseCase } from '../application/use-cases/refund/ApproveRefundUseCase';
 import { RejectRefundUseCase } from '../application/use-cases/refund/RejectRefundUseCase';
 import { ListMyRefundsUseCase } from '../application/use-cases/refund/ListMyRefundsUseCase';
+import { ListMyObjectionsUseCase } from '../application/use-cases/objection/ListMyObjectionsUseCase';
 import { ListMyPurchasesUseCase } from '../application/use-cases/purchase/ListMyPurchasesUseCase';
 import { PrismaPurchaseRepository } from '../infrastructure/repositories/PrismaPurchaseRepository';
 import { ListPendingRefundsUseCase } from '../application/use-cases/refund/ListPendingRefundsUseCase';
@@ -281,7 +284,7 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
     ContractsModule,
     ContentSafetyModule,
   ],
-  controllers: [RootController, HealthController, NotificationsController, AdminDlqController, TestsPerformanceController, HomeController, SiteController, ReviewsController, EducatorsController, FollowsController, CspReportController, AdminExamTypesController, AdminTopicsController, AdminEducatorsController, AdminUsersController, ObjectionsController, EducatorObjectionsController, AdminObjectionsController, AdminRefundsController, AdminSettingsController, AdminSiteSettingsController, AdminContractsController, AdminAuditController, AdminAdPackagesController, AdPackagesController, MeRefundsController, MePurchasesController, MePreferencesController, MetricsController, AdminCandidatesController, AdminEducatorReportController, AdminCommissionController, AdminAdReportController, MePerformanceController, MeHeartbeatController, AdminWorkersController, PackagesController, UploadController, AttemptsController, EducatorRefundsController, AdminStatsController, LiveSessionsController,
+  controllers: [RootController, HealthController, NotificationsController, AdminDlqController, TestsPerformanceController, HomeController, SiteController, ReviewsController, EducatorsController, FollowsController, CspReportController, AdminExamTypesController, AdminTopicsController, AdminEducatorsController, AdminUsersController, ObjectionsController, EducatorObjectionsController, AdminObjectionsController, AdminRefundsController, AdminSettingsController, AdminSiteSettingsController, AdminContractsController, AdminAuditController, AdminAdPackagesController, AdPackagesController, MeRefundsController, MeObjectionsController, MePurchasesController, MePreferencesController, MetricsController, AdminCandidatesController, AdminEducatorReportController, AdminCommissionController, AdminAdReportController, MePerformanceController, MeHeartbeatController, AdminWorkersController, PackagesController, UploadController, AttemptsController, EducatorRefundsController, AdminStatsController, LiveSessionsController,
     // Aşama 6 — wire-up: yeni controller'lar
     WebhookController,
     BillingController,
@@ -385,6 +388,14 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
       inject: [OBJECTION_REPO, USER_REPO, PrismaAuditLogRepository],
     },
     {
+      provide: AnswerObjectionByAdminUseCase,
+      useFactory: (
+        objectionRepo: PrismaObjectionRepository,
+        auditRepo: PrismaAuditLogRepository,
+      ) => new AnswerObjectionByAdminUseCase(objectionRepo, auditRepo),
+      inject: [OBJECTION_REPO, PrismaAuditLogRepository],
+    },
+    {
       provide: ListEscalatedObjectionsUseCase,
       useFactory: (objectionRepo: PrismaObjectionRepository) => new ListEscalatedObjectionsUseCase(objectionRepo),
       inject: [OBJECTION_REPO],
@@ -427,6 +438,11 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
       provide: ListMyRefundsUseCase,
       useFactory: (refundRepo: PrismaRefundRepository) => new ListMyRefundsUseCase(refundRepo),
       inject: [PrismaRefundRepository],
+    },
+    {
+      provide: ListMyObjectionsUseCase,
+      useFactory: (objectionRepo: PrismaObjectionRepository) => new ListMyObjectionsUseCase(objectionRepo),
+      inject: [OBJECTION_REPO],
     },
     PrismaPurchaseRepository,
     {

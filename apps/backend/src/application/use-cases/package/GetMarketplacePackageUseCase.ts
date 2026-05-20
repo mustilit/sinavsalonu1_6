@@ -6,6 +6,7 @@ export interface MarketplacePackageTestItem {
   id: string;
   title: string;
   questionCount: number;
+  duration: number | null; // dakika cinsinden, süresiz testlerde null
 }
 
 /** Paket detay endpoint'inin dönüş şekli. */
@@ -53,6 +54,8 @@ export class GetMarketplacePackageUseCase {
           select: {
             id: true,
             title: true,
+            duration: true,
+            isTimed: true,
             examTypeId: true,
             examType: {
               select: { id: true, name: true },
@@ -86,6 +89,7 @@ export class GetMarketplacePackageUseCase {
       id: t.id,
       title: t.title,
       questionCount: t._count?.questions ?? 0,
+      duration: t.isTimed ? (t.duration ?? null) : null,
     }));
 
     return {

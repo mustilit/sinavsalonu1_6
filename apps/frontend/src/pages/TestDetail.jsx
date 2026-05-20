@@ -411,7 +411,11 @@ export default function TestDetail() {
               <div className="space-y-3">
                 <h3 className="font-semibold text-slate-900 mb-3">Testler</h3>
                 {tests.map((testItem) => {
-                  const testQuestionsCount = questions.filter(q => q.test_id === testItem.id).length;
+                  // Önce paket detayından gelen question_count'u kullan (her testin gerçek sayısı);
+                  // yoksa eski yedek — bu test'e ait toplam soru listesinden filtrele.
+                  const testQuestionsCount =
+                    testItem.question_count ??
+                    questions.filter((q) => q.test_id === testItem.id).length;
                   const testResult = allTestResults.find(r => r.test_id === testItem.id);
                   const testProgress = allTestProgress.find(p => p.test_id === testItem.id);
                   
