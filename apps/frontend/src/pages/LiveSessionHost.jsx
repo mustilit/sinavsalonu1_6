@@ -496,10 +496,12 @@ export default function LiveSessionHost() {
           )}
 
         {/* ── Alt satır: sol Aktif Katılımcılar + İlerleme, sağ QR (küçük) ──
-            Round 2 ENDED iken katılım kodu ve aktif katılımcı blokları anlamsız:
-            yeni kimse katılamaz, herkes çıkmıştır; ComparisonPanel zaten yukarıda
-            tüm istatistikleri verir. Bu yüzden gizleniyor. */}
-        {!(isEnded && state.roundNumber === 2) && (
+            ENDED durumunda (hangi tur olursa olsun) bu kartlar anlamsız:
+              - Join kodu → kimse katılamaz, kod gereksiz
+              - Aktif katılımcı → herkes çıkmıştır, sayı her zaman 0
+            'İncele' akışı tek bir sayfa üzerinden işliyor; review modunda
+            sadece sonuç ekranı + ComparisonPanel görülür. */}
+        {!isEnded && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           {/* Sol: Aktif katılımcılar — İlerleme zaten soru kartı başlığında var, ayrı bloka gerek yok */}
           <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
