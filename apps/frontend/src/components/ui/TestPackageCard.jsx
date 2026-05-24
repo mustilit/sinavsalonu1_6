@@ -98,7 +98,9 @@ export default function TestPackageCard({ test, onBuy, isPurchased, isCompleted,
               <span>{test.average_rating.toFixed(1)}</span>
             </div>
           }
-          {/* Tamamlanan test için kullanılan süre — önce localStorage'daki timer değeri, yoksa DB farkı */}
+          {/* Tamamlanan test için kullanılan süre — sadece dakika cinsinden,
+              rating'in hemen sağında kompakt gösterim. Saat+dk format kart yüksekliğini
+              uzattığı için kaldırıldı. Örnek: '★ 3.0   204 dk' */}
           {attempt && isCompleted && (() => {
             const stored = parseInt(localStorage.getItem(`elapsed_${attempt.id}`) || '0', 10);
             const sec = stored > 0
@@ -107,15 +109,11 @@ export default function TestPackageCard({ test, onBuy, isPurchased, isCompleted,
                   ? Math.max(0, Math.floor((new Date(attempt.submittedAt || attempt.completedAt) - new Date(attempt.startedAt)) / 1000))
                   : 0);
             if (!sec) return null;
-            const m = Math.floor(sec / 60);
-            const s = sec % 60;
-            const label = m >= 60
-              ? t("pages:testCard.durationFull", { h: Math.floor(m / 60), m: m % 60 })
-              : t("pages:testCard.durationShort", { m, s });
+            const m = Math.max(1, Math.round(sec / 60)); // 1 dk altı süreyi de 1 dk göster
             return (
               <div className="flex items-center gap-1 text-indigo-600">
                 <Clock className="w-4 h-4" />
-                <span>{label}</span>
+                <span>{t("pages:testCard.minutes", { count: m })}</span>
               </div>
             );
           })()}
