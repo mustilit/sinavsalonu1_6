@@ -1,19 +1,47 @@
-let requestCount = 0;
-const startedAt = Date.now();
+import { Counter, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
 
-export function incrementRequestCount() {
-  requestCount += 1;
-}
+/**
+ * prom-client tabanlı merkezi metrik kayıt deposu.
+ * Default metrics (process_cpu, nodejs_eventloop_lag, gc, heap, fds…) ile birlikte
+ * HTTP request histogram + exception counter sunar.
+ *
+ * Restart sonrası counter'lar sıfırlanır (Prometheus zaten delta hesaplar).
+ * Multi-replica: her replica kendi /metrics endpoint'inden scrape edilir;
+ * Prometheus toplam aggregate'i yapar.
+ */
 
-export function getMetricsSnapshot() {
-  const uptimeSeconds = Math.round(process.uptime());
-  const memory = process.memoryUsage();
+export const metricsRegistry = new Registry();
+metricsRegistry.setDefaultLabels({ app: 'dal' });
 
-  return {
-    requestCount,
-    uptimeSeconds,
-    memory,
-    startedAt,
-  };
-}
+collectDefaultMetrics({ register: metricsRegistry });
 
+export const httpRequestsTotal = new Counter({
+  name: 'dal_http_requests_total',
+  help: 'Toplam HTTP isteği sayısı (route, method, status_code label\'lı)',
+  labelNames: ['route', 'method', 'status_code'],
+  registers: [metricsRegistry],
+});
+
+export const httpRequestDurationSeconds = new Histogram({
+  name: 'dal_http_request_duration_seconds',
+  help: 'HTTP istek süresi (saniye) — route, method, status_code label\'lı',
+  labelNames: ['route', 'method', 'status_code'],
+  // 5ms → 10s arası geniş kova: API + ağır rapor sorgularını birlikte gözler.
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+  registers: [metricsRegistry],
+});
+
+export const httpExceptionsTotal = new Counter({
+  name: 'dal_http_exceptions_total',
+  help: 'Throw edilmiş exception sayısı (status_code, error_code label\'lı)',
+  labelNames: ['status_code', 'error_code'],
+  registers: [metricsRegistry],
+});
+
+/**
+ * Eski API uyumluluğu — request count'u histogram observe'undan çıkar.
+ * Yeni kodlar httpRequestsTotal / httpRequestDurationSeconds kullansın.
+ */
+export const incrementRequestCount = (): void => {
+  httpRequestsTotal.inc({ route: 'unknown', method: 'UNKNOWN', status_code: '0' });
+};

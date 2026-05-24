@@ -1,4 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
+import { runWithTenant } from '../common/tenantContext';
+import { getDefaultTenantId } from '../common/tenant';
 
 export interface TenantContext {
   id?: string;
@@ -25,9 +27,12 @@ export function tenantMiddleware(req: Request, _res: Response, next: NextFunctio
         }
       : undefined;
 
-  // Şimdilik sadece context'e ekliyoruz, ileride DB lookup + 404 enforcement eklenecek.
+  // Express request'inde de eski uyumluluk için tutuyoruz (mevcut kullanıcılar var).
   (req as any).tenant = tenant;
 
-  next();
+  // AsyncLocalStorage tabanlı tenant context — prisma extension bu store'u okur
+  // ve tenantId'li modellere otomatik filter inject eder.
+  const resolvedTenantId = headerTenantId || getDefaultTenantId();
+  runWithTenant({ tenantId: resolvedTenantId }, () => next());
 }
 

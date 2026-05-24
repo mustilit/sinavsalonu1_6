@@ -3,7 +3,6 @@ import { Roles } from '../decorators/roles.decorator';
 import { Public } from '../decorators/public.decorator';
 import { CreateTestUseCase } from '../../application/use-cases/test/CreateTestUseCase';
 import { CreateQuestionUseCase } from '../../application/use-cases/question/CreateQuestionUseCase';
-import { ListMarketplaceTestsUseCase } from '../../application/use-cases/test/ListMarketplaceTestsUseCase';
 import { GetTestUseCase } from '../../application/use-cases/test/GetTestUseCase';
 import { PublishTestUseCase } from '../../application/use-cases/test/PublishTestUseCase';
 import { UnpublishTestUseCase } from '../../application/use-cases/test/UnpublishTestUseCase';
@@ -26,7 +25,6 @@ export class TestsController {
   constructor(
     @Inject(CreateTestUseCase) private readonly createTestUC: CreateTestUseCase,
     @Inject(CreateQuestionUseCase) private readonly createQuestionUC: CreateQuestionUseCase,
-    @Inject(ListMarketplaceTestsUseCase) private readonly listUC: ListMarketplaceTestsUseCase,
     @Inject(GetTestUseCase) private readonly getUC: GetTestUseCase,
     @Inject(PublishTestUseCase) private readonly publishUC: PublishTestUseCase,
     @Inject(UnpublishTestUseCase) private readonly unpublishUC: UnpublishTestUseCase,
@@ -136,12 +134,6 @@ export class TestsController {
     const actorId = (req as any).user?.id;
     await this.deleteQuestionUC.execute(testId, questionId, actorId);
     return { success: true };
-  }
-
-  @Public()
-  @Get('marketplace/tests')
-  list() {
-    return this.listUC.execute();
   }
 
   @Public()

@@ -110,7 +110,8 @@
       "systemControls": "Systemsteuerung",
       "liveTiers": "Live-Testpakete",
       "emailManagement": "E-Mail-Verwaltung",
-      "riskyContent": "Riskante Inhalte"
+      "riskyContent": "Riskante Inhalte",
+      "backup": "Sicherung"
     },
     "collapseAria": "Seitenleiste einklappen",
     "expandAria": "Seitenleiste ausklappen"

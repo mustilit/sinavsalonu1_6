@@ -4,12 +4,13 @@ Test marketplace uygulaması. Eğiticiler (educators) sınav (test) oluşturur v
 
 ## Stack
 
-- **Frontend:** React 18 + Vite, JavaScript (JSX), Tailwind CSS, React Router DOM v6, TanStack Query, next-themes (dark mode)
+- **Frontend:** React 18 + Vite, JavaScript (JSX), Tailwind CSS, React Router DOM v6, TanStack Query, next-themes (dark mode), react-i18next (i18n: tr/en/es/zh/de), PostHog (consent-gated ürün analitiği)
 - **Backend:** NestJS (REST + DTO + Validation), Clean Architecture (Use Cases katmanı)
 - **Veritabanı:** PostgreSQL + Prisma ORM (cursor pagination + tsvector full-text search)
+- **Ödeme:** Stripe (abonelik + checkout) + Iyzico; webhook imza doğrulama + replay koruması
 - **Test:** Vitest + Testing Library (frontend), Jest (NestJS), Playwright (e2e), @axe-core/playwright (a11y)
 - **Paket yöneticisi:** npm (backend ve frontend ayrı `package.json`; kök `package.json` yalnızca Husky + lint-staged içerir)
-- **Konteyner:** Docker Compose (geliştirme + üretim + yerel staging)
+- **Konteyner & Orkestrasyon:** Docker Compose (geliştirme + üretim + CI) ve Helm chart (Kubernetes deploy)
 
 ## Dizin Yapısı (gerçek)
 
@@ -18,8 +19,10 @@ apps/
   backend/               → NestJS backend
     src/
       application/
-        use-cases/           → İş mantığı buradadır — 17 domain alt klasörüne ayrılmış
-          auth/              → Kayıt, giriş, şifre sıfırlama
+        use-cases/           → İş mantığı buradadır — 19 domain alt klasörüne ayrılmış
+          auth/              → Kayıt, giriş, şifre sıfırlama, 2FA (Setup/Disable/VerifyTwoFactorLogin), cihaz doğrulama (VerifyDevice/NotifyNewDeviceLogin)
+          billing/           → Abonelik & ödeme: StartCheckout, CreatePortalLink, GetMySubscription, HandleStripeWebhook, HandleIyzicoWebhook
+          moderation/        → AI içerik moderasyonu: ModerateQuestionContent, ProcessModerationJob, BlockedTerm CRUD, risk skoru, ihlal/aksiyon yönetimi (17 use-case)
           educator/          → Eğitici profil, takip
           test/              → Test CRUD, yayımlama, arama
           question/          → Soru & seçenek CRUD
@@ -49,9 +52,10 @@ apps/
         controllers/dto/ → DTO sınıfları (class-validator)
         guards/          → JWT, Roles, WorkerPermissions
         decorators/      → @Public, @Roles, @WorkerPermissions
+        interceptors/    → idempotency.interceptor.ts (Idempotency-Key → Redis, çift fatura koruması)
         modules/         → NestJS modülleri (cron, vb.)
         services/        → BackupSchedulerService vb. NestJS servisleri
-        security/        → CSP builder
+        security/        → CSP builder, verifyWebhookSignature.ts (Stripe HMAC-SHA256 + Iyzico SHA-1, timing-safe)
     prisma/
       schema.prisma      → Tek şema dosyası
       migrations/        → Numbered migration SQL dosyaları
@@ -66,6 +70,9 @@ apps/
       api/
         dalClient.js     → Tüm API çağrıları burada merkezi
       lib/               → Util fonksiyonları, hook'lar
+        i18n.js          → react-i18next init (LanguageDetector; tr/en/es/zh/de; namespace: common/auth/pages/onboarding)
+        analytics.js     → PostHog wrapper (track/identify/reset; KVKK/GDPR consent-gated; session replay opt-in)
+      locales/           → Çeviri JSON dosyaları: <lang>/<namespace>.json
       pages.config.js    → Sayfa-route eşlemesi (React.lazy ile)
       lib/routeRoles.js  → Sayfa bazlı rol erişim kontrolü
       e2e/specs/a11y.spec.ts → axe-core ile a11y testleri
@@ -73,14 +80,16 @@ infra/
   docker/
     docker-compose.yml            → Geliştirme ortamı
     docker-compose.prod.yml       → Üretim ortamı
-    docker-compose.local-staging.yml → Yerel staging ortamı
+    docker-compose.ci.yml         → CI ortamı
     docker-compose.pgbouncer.yml  → PgBouncer connection pooling
     backend.Dockerfile
     frontend.Dockerfile           → Nginx tabanlı (CSP başlıkları dahil)
+  helm/
+    sinavsalonu/                  → Kubernetes Helm chart (Chart.yaml v0.1.0, appVersion 1.0.0)
+      values.yaml                 → Yapılandırılabilir değerler
+      templates/                  → backend/frontend/worker-deployment, configmap, secret, migration-job, ingress, _helpers.tpl
   nginx/
     default.conf         → CSP-Report-Only, SPA fallback, gzip, asset cache
-scripts/
-  staging.sh             → Yerel staging ortamı yönetim betiği
 .github/
   dependabot.yml         → Otomatik bağımlılık güncelleme (haftalık, gruplu)
   workflows/             → CI/CD (npm audit dahil)
@@ -102,6 +111,12 @@ scripts/
 - **DiscountCode:** Eğiticinin oluşturduğu indirim kodu.
 - **AdPackage / AdPurchase:** Reklam paketi ve satın alma kaydı.
 - **Tenant:** Multi-tenant foundation; her veri kaydı `tenantId` ile bir tenant'a bağlı.
+- **Subscription:** Tenant/educator aboneliği. `tier` (FREE…), `status`, `providerRef` (Stripe Subscription ID), `customerRef`, trial ve `currentPeriodStart/End`, `cancelAtPeriodEnd`. Enum'lar: `SubscriberKind`, `SubscriptionTier`, `SubscriptionStatus`.
+- **PaymentSettings:** Admin panelinden yönetilen ödeme yapılandırması (test/live mode, Iyzico/GooglePay/AmazonPay anahtarları, şirket fatura bilgileri). Tek satırlık singleton (`id = 1`).
+- **WebhookEvent:** Ödeme sağlayıcı webhook'larının idempotent işlenmesi için **replay koruması**. `@@unique([provider, providerEventId])` — aynı event ikinci kez işlenmez.
+- **IdempotencyKey:** Para akışlı POST/PUT isteklerinde çift işlem koruması. `@@unique([userId, route, key])`. Çalışma zamanında Redis kullanılır (24h TTL, 60s lock); model kalıcı kayıt/audit içindir.
+- **UserDevice:** Kullanıcının giriş yaptığı cihazlar. `fingerprint`, `trusted`, `trustToken`. Yeni/bilinmeyen cihazda uyarı e-postası tetiklenir (`NotifyNewDeviceLogin`).
+- **Moderation (AI içerik moderasyonu):** `ModerationResult` (içerik tarama sonucu), `BlockedTerm` (yasaklı terim listesi), `ModerationViolation` (ihlal kaydı), `ModerationAction` (uygulanan yaptırım), `EducatorRiskScore` (eğitici risk skoru). Enum'lar: `ModerationStatus`, `ModerationCategory`, `ModerationProvider`, `EducatorRiskLevel`, `ModerationActionType`.
 
 ## Komutlar
 
@@ -119,12 +134,6 @@ npm test              # Vitest
 npm run lint          # ESLint
 npm run typecheck     # tsc --noEmit (jsconfig.json)
 npm run test:e2e      # Playwright (a11y + akış testleri)
-
-# Yerel Staging (repo kökünden)
-./scripts/staging.sh up          # Derle ve başlat
-./scripts/staging.sh down        # Durdur
-./scripts/staging.sh reset       # DB sıfırla
-./scripts/staging.sh logs        # Canlı log
 
 # Güvenlik
 cd apps/backend && npm audit --audit-level=high
@@ -165,17 +174,25 @@ cd apps/frontend && npm audit --audit-level=high
 - **Yedekleme zamanlayıcısı:** Admin panelinden saat ve dizin seçilerek otomatik `pg_dump` → gzip yedekleme.
 - **Kopya soru tespiti:** Eğitici soru girerken (blur), Jaccard benzerliği ≥ %75 ise amber uyarı.
 - **Nginx (CSP):** Frontend `Content-Security-Policy-Report-Only` başlığıyla sunulur.
-- **Yerel staging:** `docker-compose.local-staging.yml` + `scripts/staging.sh` ile izole ortam.
 - **Cursor pagination + composite index disiplini:** Büyüyebilen tüm listeler cursor tabanlı, sıralama anahtarları indexed.
 - **tsvector full-text search:** Test/Educator/Topic isim aramaları için GIN-indexed `searchVector`.
 - **Frontend code splitting:** `pages.config.js` `React.lazy` ile route-bazlı chunk; ilk yüklemede 47 sayfa indirilmiyor.
 - **Dark mode:** `next-themes` ile aktif, `<html class="dark">` toggle, localStorage persist.
 - **A11y testleri:** Playwright + axe-core ile kritik sayfalar WCAG 2.1 AA bekçisinde.
 - **Canlı sınav (LiveSession):** Educator oturum oluşturur/yönetir; candidate koda girerek katılır, soruları cevaplar. HTTP polling (2s) + heartbeat (15s). 6 yeni Prisma modeli: `LiveSessionTier`, `LiveSession`, `LiveQuestion`, `LiveOption`, `LiveParticipant`, `LiveAnswer`.
-- **Use-case domain refaktörü:** 149 use-case `application/use-cases/` altında 17 domain alt klasörüne taşındı (auth, educator, test, question, attempt, purchase, refund, discount, review, objection, ad, package, live, admin, contract, report, notification).
+- **Use-case domain refaktörü:** Use-case'ler `application/use-cases/` altında domain alt klasörlerine taşındı. Başlangıçta 17 domain (auth, educator, test, question, attempt, purchase, refund, discount, review, objection, ad, package, live, admin, contract, report, notification); sonradan `billing` ve `moderation` eklenerek **19 domain** oldu.
 - **Sentry hata izleme:** Backend `src/instrument.ts` + `HttpExceptionFilter` (5xx → captureException); frontend `main.jsx` + `ErrorBoundary`. DSN yoksa devre dışı. Sample rate prod'da %10. PII filtresi: authorization ve cookie header'ları event'ten kaldırılır.
 - **Bundle analyzer:** `ANALYZE=1 npm run build` → `dist/stats.html` treemap. CI'da `frontend_build` job'ı artifact yükler.
 - **settings.local.json wildcard izinler:** `Bash(*) PowerShell(*) Read(*) Write(*) Edit(*) Glob(*) Grep(*)` — yerel araçlarda onay istenmez.
+- **Abonelik & ödeme (Stripe + Iyzico):** `use-cases/billing/` — checkout başlatma, Stripe customer portal linki, abonelik sorgulama, Stripe/Iyzico webhook handler'ları. `Subscription` + `PaymentSettings` modelleri. Webhook imzaları `verifyWebhookSignature.ts` ile doğrulanır (Stripe HMAC-SHA256 + 5dk tolerans, Iyzico SHA-1 base64, `timingSafeEqual`).
+- **Webhook replay koruması:** `WebhookEvent` modeli `@@unique([provider, providerEventId])` ile aynı sağlayıcı event'inin iki kez işlenmesini engeller (idempotent webhook).
+- **IdempotencyKey interceptor:** `nest/interceptors/idempotency.interceptor.ts` — para akışlı POST/PUT'larda `Idempotency-Key` header'ı ile "ağ retry → çift fatura" hatasını önler. Redis tabanlı: completed response 24h cache'lenir, in-progress lock 60s, body hash uyuşmazlığında 409.
+- **AI içerik moderasyonu:** `use-cases/moderation/` (17 use-case) — soru içeriği AI ile taranır (`ModerateQuestionContent`, `ProcessModerationJob`), yasaklı terim listesi, ihlal kaydı, yaptırım uygulama ve eğitici risk skoru. `ModerationResult`, `BlockedTerm`, `ModerationViolation`, `ModerationAction`, `EducatorRiskScore` modelleri.
+- **2FA (iki faktörlü doğrulama):** `use-cases/auth/` — `SetupTwoFactorUseCase`, `DisableTwoFactorUseCase`, `VerifyTwoFactorLoginUseCase`.
+- **Yeni cihaz uyarısı (UserDevice):** Girişlerde cihaz parmak izi takip edilir; bilinmeyen cihazda `NotifyNewDeviceLoginUseCase` ile uyarı e-postası, `VerifyDeviceUseCase` ile güven token'ı. `UserDevice` modeli.
+- **i18n (çoklu dil):** `frontend/src/lib/i18n.js` — react-i18next + LanguageDetector. Diller: tr/en/es/zh/de. Namespace'ler: common/auth/pages/onboarding. Çeviriler `src/locales/<lang>/<namespace>.json`.
+- **Frontend ürün analitiği:** `frontend/src/lib/analytics.js` — PostHog wrapper (EU host). `track`/`identify`/`reset`. KVKK/GDPR uyumu: consent verilmeden PII gönderilmez, session replay default kapalı + opt-in.
+- **Helm / Kubernetes deploy:** `infra/helm/sinavsalonu/` — backend/frontend/worker deployment, configmap, secret, migration-job, ingress template'leri. Docker Compose'a ek olarak K8s'e deploy için.
 
 ## Delege Rehberi
 

@@ -110,7 +110,8 @@
       "systemControls": "Sistem Kontrolleri",
       "liveTiers": "Canlı Test Paketleri",
       "emailManagement": "Mail Yönetimi",
-      "riskyContent": "Riskli İçerik"
+      "riskyContent": "Riskli İçerik",
+      "backup": "Yedekleme"
     },
     "collapseAria": "Yan menüyü kapat",
     "expandAria": "Yan menüyü genişlet"

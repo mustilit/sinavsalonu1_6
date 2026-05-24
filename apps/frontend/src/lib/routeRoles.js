@@ -114,6 +114,9 @@ export const PAGE_ROLES = {
 
   // Eğitici moderasyon durumu — eğitici ve admin
   MyModerationStatus: [ROLES.EDUCATOR, ROLES.ADMIN],
+
+  // Yedekleme Yönetimi — yalnızca admin
+  BackupManagement: [ROLES.ADMIN],
 };
 
 /** Rolü büyük harfe normalize et (backend bazen küçük harf dönebilir) */

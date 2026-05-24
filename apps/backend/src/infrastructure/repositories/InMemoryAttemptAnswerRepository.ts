@@ -1,3 +1,5 @@
+// ⚠️ TEST/FIXTURE KULLANIMI İÇİN — production wiring'inde KULLANMAYIN.
+// Prisma karşılığı: aynı isimde Prisma prefix'li sınıf. NestJS modülleri Prisma'yı inject eder.
 import { IAttemptAnswerRepository, AttemptAnswerRow } from '../../domain/interfaces/IAttemptAnswerRepository';
 
 export class InMemoryAttemptAnswerRepository implements IAttemptAnswerRepository {

@@ -1,3 +1,5 @@
+// ⚠️ TEST/FIXTURE KULLANIMI İÇİN — production wiring'inde KULLANMAYIN.
+// Prisma karşılığı: aynı isimde Prisma prefix'li sınıf. NestJS modülleri Prisma'yı inject eder.
 import { AuditLog } from '../../domain/entities/AuditLog';
 import { CreateAuditLogInput, IAuditLogRepository, ListAuditLogsFilters } from '../../domain/interfaces/IAuditLogRepository';
 import { randomUUID } from 'crypto';

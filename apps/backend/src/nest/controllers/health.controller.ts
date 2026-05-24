@@ -1,5 +1,6 @@
 import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
 import { Public } from '../decorators/public.decorator';
+import { InternalOnly } from '../decorators/internal-only.decorator';
 import { prisma } from '../../infrastructure/database/prisma';
 import { ReportingTestRepository } from '../../infrastructure/repositories/ReportingTestRepository';
 import Redis from 'ioredis';
@@ -7,8 +8,11 @@ import { getRedisUrl, isRedisDisabled } from '../../config/redis';
 
 /**
  * Sağlık kontrolü endpoint'leri — load balancer ve monitoring sistemleri için.
- * /health: temel servis durumu; /health/redis: Redis bağlantı kontrolü.
- * Her iki endpoint de herkese açıktır (@Public).
+ *
+ * /health (liveness): sadece servisin yaşıyor olduğunu söyler, kimsiz açıktır.
+ * Diğer /health/* + /ready endpoint'leri DB/Redis/replica iç durumunu sızdırır,
+ * bu yüzden InternalOnly ile yalnızca METRICS_ALLOWED_IPS allowlist'inden ulaşılır.
+ * Kubernetes readinessProbe için pod CIDR'sini allowlist'e ekleyin.
  */
 @Controller()
 export class HealthController {
@@ -21,6 +25,7 @@ export class HealthController {
   }
 
   @Public()
+  @InternalOnly()
   @Get('health/replica')
   async replica() {
     const enabled = !!process.env.DATABASE_REPLICA_URL;
@@ -29,6 +34,7 @@ export class HealthController {
   }
 
   @Public()
+  @InternalOnly()
   @Get('health/redis')
   async redisHealth() {
     if (isRedisDisabled()) {
@@ -68,6 +74,7 @@ export class HealthController {
   }
 
   @Public()
+  @InternalOnly()
   @Get('health/db')
   async dbHealth() {
     try {
@@ -95,6 +102,7 @@ export class HealthController {
   }
 
   @Public()
+  @InternalOnly()
   @Get('ready')
   async ready() {
     const checks: { db: boolean; redis: boolean | 'disabled' } = {

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { canAccessPage, getHomeForRole } from './routeRoles';
+import {
+  canAccessPage,
+  getHomeForRole,
+  normalizeRole,
+  isProtectedPage,
+  AUTH_PAGES,
+  ROLES,
+} from './routeRoles';
 
 describe('routeRoles', () => {
   describe('canAccessPage', () => {
@@ -65,6 +72,82 @@ describe('routeRoles', () => {
     it('returns AdminDashboard for WORKER with no pages', () => {
       expect(getHomeForRole('WORKER', { workerPages: [] })).toBe('AdminDashboard');
       expect(getHomeForRole('WORKER', {})).toBe('AdminDashboard');
+    });
+  });
+
+  describe('normalizeRole', () => {
+    it('küçük harfi büyük harfe çevirir', () => {
+      expect(normalizeRole('admin')).toBe('ADMIN');
+      expect(normalizeRole('candidate')).toBe('CANDIDATE');
+    });
+    it('mixed-case temizler', () => {
+      expect(normalizeRole('AdMiN')).toBe('ADMIN');
+    });
+    it('null/undefined/empty → boş string', () => {
+      expect(normalizeRole(null)).toBe('');
+      expect(normalizeRole(undefined)).toBe('');
+      expect(normalizeRole('')).toBe('');
+    });
+    it('zaten büyük harf olanı dokunmaz', () => {
+      expect(normalizeRole('EDUCATOR')).toBe('EDUCATOR');
+    });
+  });
+
+  describe('isProtectedPage', () => {
+    it('public sayfalar korumalı değil', () => {
+      expect(isProtectedPage('Home')).toBe(false);
+      expect(isProtectedPage('Explore')).toBe(false);
+      expect(isProtectedPage('Login')).toBe(false);
+    });
+    it('rol gerektiren sayfalar korumalı', () => {
+      expect(isProtectedPage('AdminDashboard')).toBe(true);
+      expect(isProtectedPage('MyResults')).toBe(true);
+      expect(isProtectedPage('CreateTest')).toBe(true);
+    });
+    it('tanımsız sayfa korumalı değil (PUBLIC defaultu)', () => {
+      expect(isProtectedPage('NonExistentPage')).toBe(false);
+    });
+  });
+
+  describe('AUTH_PAGES', () => {
+    it('giriş/kayıt sayfalarını listeler', () => {
+      expect(AUTH_PAGES).toContain('Login');
+      expect(AUTH_PAGES).toContain('Register');
+      expect(AUTH_PAGES).toContain('ForgotPassword');
+      expect(AUTH_PAGES).toContain('ResetPassword');
+      expect(AUTH_PAGES).toContain('VerifyEmail');
+    });
+  });
+
+  describe('ROLES sabitleri', () => {
+    it('4 rol + PUBLIC tanımlı', () => {
+      expect(ROLES.ADMIN).toBe('ADMIN');
+      expect(ROLES.EDUCATOR).toBe('EDUCATOR');
+      expect(ROLES.CANDIDATE).toBe('CANDIDATE');
+      expect(ROLES.WORKER).toBe('WORKER');
+      expect(ROLES.PUBLIC).toBe('public');
+    });
+  });
+
+  describe('canAccessPage — ek senaryolar', () => {
+    it('ADMIN her sayfaya erişebilir (bilinmeyen sayfa hariç)', () => {
+      // Bilinmeyen sayfa PAGE_ROLES'da yok → public sayılır
+      expect(canAccessPage('UnknownPage', { role: 'ADMIN' })).toBe(true);
+    });
+    it('lowercase role normalize edilir', () => {
+      expect(canAccessPage('AdminDashboard', { role: 'admin' })).toBe(true);
+      expect(canAccessPage('CreateTest', { role: 'educator' })).toBe(true);
+    });
+    it('CANDIDATE admin sayfasına erişemez', () => {
+      expect(canAccessPage('AdminDashboard', { role: 'CANDIDATE' })).toBe(false);
+      expect(canAccessPage('ManageUsers', { role: 'CANDIDATE' })).toBe(false);
+    });
+    it('EDUCATOR aday sayfalarına direkt erişemez (rol uyumsuz)', () => {
+      // MyResults CANDIDATE'a açık, EDUCATOR'a değil
+      expect(canAccessPage('MyResults', { role: 'EDUCATOR' })).toBe(false);
+    });
+    it('WORKER workerPages undefined → admin sayfalarına erişemez', () => {
+      expect(canAccessPage('AdminDashboard', { role: 'WORKER' })).toBe(false);
     });
   });
 });

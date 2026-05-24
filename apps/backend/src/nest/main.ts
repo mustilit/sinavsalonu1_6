@@ -15,6 +15,7 @@ import { RolesGuard } from './guards/roles.guard';
 import { JwtService } from '../infrastructure/services/JwtService';
 import { Reflector } from '@nestjs/core';
 import { HttpExceptionFilter } from './filters/http-exception.filter';
+import { MetricsInterceptor } from './interceptors/metrics.interceptor';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { env } from '../config/env';
 import { tenantMiddleware } from '../middleware/tenant.middleware';
@@ -71,6 +72,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   // Global exception filter for consistent error format
   app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(new MetricsInterceptor());
 
   // ── API versiyonlama ───────────────────────────────────────────────────
   // URI prefix tabanlı: yeni controller'lar `@Controller({ path: 'foo', version: '1' })`
@@ -116,11 +118,15 @@ async function bootstrap() {
   // Böylece auth'dan önce kapı korumayı geçmek gerekir; başarısız bypass'ta JWT bile sorulmaz
   const { OriginProtectionGuard } = await import('./guards/origin-protection.guard');
   const { CaptchaGuard } = await import('./guards/captcha.guard');
+  const { WorkerPermissionsGuard } = await import('./guards/worker-permissions.guard');
+  const { InternalOnlyGuard } = await import('./guards/internal-only.guard');
   app.useGlobalGuards(
     new OriginProtectionGuard(reflector),
     new CaptchaGuard(reflector),
+    new InternalOnlyGuard(reflector),
     new JwtAuthGuard(jwtService, reflector, redisCache),
     new RolesGuard(reflector),
+    new WorkerPermissionsGuard(reflector, redisCache),
   );
   // Uploads klasörünü statik olarak sun
   // CORP: cross-origin — frontend farklı port'tan img src ile erişebilsin
@@ -162,7 +168,20 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'Accept', 'X-Client-App', 'X-Turnstile-Token'],
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'Accept',
+      'X-Client-App',
+      'X-Turnstile-Token',
+      // Cross-origin preflight'da reddedilmemesi için: ödeme/satın alma akışı
+      // ve diğer idempotent POST'lar Idempotency-Key gönderir; tenant context
+      // header'la taşınabilir; istek korelasyonu X-Request-Id ile yapılır.
+      'Idempotency-Key',
+      'X-Tenant-Id',
+      'X-Request-Id',
+    ],
+    exposedHeaders: ['X-Request-Id'],
   });
 
   const port = env.PORT ? Number(env.PORT) : 3000;

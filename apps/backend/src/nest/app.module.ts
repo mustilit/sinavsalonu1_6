@@ -18,6 +18,7 @@ import { PurchasesModule } from './modules/purchases/purchases.module';
 import { AttemptsModule } from './modules/attempts/attempts.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CronModule } from './modules/cron/cron.module';
+import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsController } from './controllers/notifications.controller';
 import { AdminDlqController } from './controllers/admin.dlq.controller';
 import { TestsPerformanceController } from './controllers/tests.performance.controller';
@@ -139,6 +140,12 @@ import { AdminWorkersController } from './controllers/admin.workers.controller';
 import { CreateWorkerUseCase } from '../application/use-cases/admin/CreateWorkerUseCase';
 import { GetWorkerPermissionsUseCase } from '../application/use-cases/admin/GetWorkerPermissionsUseCase';
 import { UpdateWorkerPermissionsUseCase } from '../application/use-cases/admin/UpdateWorkerPermissionsUseCase';
+import { GetBackupSettingsUseCase } from '../application/use-cases/admin/GetBackupSettingsUseCase';
+import { UpdateBackupSettingsUseCase } from '../application/use-cases/admin/UpdateBackupSettingsUseCase';
+import { RunBackupNowUseCase } from '../application/use-cases/admin/RunBackupNowUseCase';
+import { ListBackupLogsUseCase } from '../application/use-cases/admin/ListBackupLogsUseCase';
+import { BackupSchedulerService } from './services/BackupSchedulerService';
+import { AdminBackupController } from './controllers/admin.backup.controller';
 import { PackagesController } from './controllers/packages.controller';
 import { DraftsController } from './controllers/drafts.controller';
 import { PrismaTestPackageRepository } from '../infrastructure/repositories/PrismaTestPackageRepository';
@@ -284,6 +291,10 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
     PurchasesModule,
     AttemptsModule,
     AuditModule,
+    // BackupSchedulerService SchedulerRegistry'ye ihtiyaç duyduğu için
+    // ScheduleModule cron-disabled ortamda da yüklenir; saatlik @Cron handler'ları
+    // içeren CronModule sadece etkin ortamlarda eklenir.
+    ScheduleModule.forRoot(),
     ...(process.env.CRON_DISABLED === '1' ? [] : [CronModule]),
     // Refunds
     (require('./modules/refunds/refunds.module').RefundsModule),
@@ -297,6 +308,7 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
     TwoFactorController,
     // İçerik Moderasyonu
     AdminModerationController,
+    AdminBackupController,
     MeModerationController,
     // Email Trafiği Modülü
     AdminEmailController,
@@ -597,6 +609,21 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
     { provide: CreateWorkerUseCase, useFactory: () => new CreateWorkerUseCase() },
     { provide: GetWorkerPermissionsUseCase, useFactory: () => new GetWorkerPermissionsUseCase() },
     { provide: UpdateWorkerPermissionsUseCase, useFactory: () => new UpdateWorkerPermissionsUseCase() },
+    // Yedekleme — BackupSchedulerService SchedulerRegistry inject olur (CronModule
+    // ScheduleModule.forRoot() ile registry'yi sağlar).
+    BackupSchedulerService,
+    { provide: GetBackupSettingsUseCase, useFactory: () => new GetBackupSettingsUseCase() },
+    {
+      provide: UpdateBackupSettingsUseCase,
+      useFactory: (s: BackupSchedulerService) => new UpdateBackupSettingsUseCase(s),
+      inject: [BackupSchedulerService],
+    },
+    {
+      provide: RunBackupNowUseCase,
+      useFactory: (s: BackupSchedulerService) => new RunBackupNowUseCase(s),
+      inject: [BackupSchedulerService],
+    },
+    { provide: ListBackupLogsUseCase, useFactory: () => new ListBackupLogsUseCase() },
     // Admin stats dashboard — bağımlılıksız, doğrudan prisma kullanır
     GetAdminStatsUseCase,
     // LiveSession use-cases — singleton prisma kullanır, bağımlılıksız

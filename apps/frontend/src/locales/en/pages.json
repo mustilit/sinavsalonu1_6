@@ -1619,5 +1619,64 @@
       "examsRequired": "Select at least one area of expertise",
       "saveFailed": "Profile could not be saved"
     }
+  },
+  "backup": {
+    "title": "Backup Management",
+    "subtitle": "Database backup scheduler and log history",
+    "settings": {
+      "heading": "Scheduler Settings",
+      "enabled": "Automatic backup enabled",
+      "cron": "Cron expression",
+      "cronHelp": "Standard 5-field format: minute hour day month weekday. E.g. \"0 3 * * *\" runs daily at 03:00.",
+      "targetDir": "Target directory",
+      "targetDirHelp": "Absolute path. Must be writable from the container. E.g. /var/backups/sinav-salonu",
+      "retentionDays": "Retention period (days)",
+      "retentionDaysHelp": "Backup files older than this will be deleted automatically. 0 = never delete.",
+      "save": "Save settings",
+      "saved": "Settings saved",
+      "saveFailed": "Failed to save"
+    },
+    "runNow": {
+      "heading": "Manual Backup",
+      "description": "Take a backup immediately without waiting for the scheduler.",
+      "button": "Back up now",
+      "confirmTitle": "Back up now",
+      "confirmBody": "This may take a few minutes and consume disk space. Continue?",
+      "confirmCancel": "Cancel",
+      "confirmProceed": "Yes, start",
+      "starting": "Starting backup…",
+      "success": "Backup completed successfully",
+      "failed": "Backup failed"
+    },
+    "logs": {
+      "heading": "Backup History",
+      "filterAll": "All",
+      "filterSuccess": "Successful",
+      "filterFailed": "Failed",
+      "filterRunning": "Running",
+      "empty": "No backup logs yet",
+      "loadMore": "Load more",
+      "loading": "Loading…",
+      "columns": {
+        "trigger": "Trigger",
+        "status": "Status",
+        "createdAt": "Date",
+        "duration": "Duration",
+        "size": "Size",
+        "fileName": "File",
+        "actor": "Triggered by"
+      },
+      "trigger": {
+        "SCHEDULED": "Scheduled",
+        "MANUAL": "Manual"
+      },
+      "status": {
+        "RUNNING": "Running",
+        "SUCCESS": "Success",
+        "FAILED": "Failed"
+      },
+      "noActor": "System",
+      "unknownFile": "—"
+    }
   }
 }

@@ -50,9 +50,9 @@ describe('ToggleDiscountCodeUseCase', () => {
     await expect(uc.execute('edu-1', 'dc-1')).rejects.toMatchObject({ code: 'USER_NOT_FOUND' });
   });
 
-  it('EDUCATOR olmayan kullanıcı → USER_NOT_EDUCATOR', async () => {
+  it('EDUCATOR/ADMIN olmayan kullanıcı → USER_NOT_AUTHORIZED', async () => {
     const uc = new ToggleDiscountCodeUseCase(makeUserRepo(makeEducator({ role: 'CANDIDATE' })) as any);
-    await expect(uc.execute('edu-1', 'dc-1')).rejects.toMatchObject({ code: 'USER_NOT_EDUCATOR' });
+    await expect(uc.execute('edu-1', 'dc-1')).rejects.toMatchObject({ code: 'USER_NOT_AUTHORIZED' });
   });
 
   it('kod bulunamazsa NOT_FOUND fırlatır', async () => {

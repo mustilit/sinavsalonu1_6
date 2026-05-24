@@ -11,6 +11,7 @@ import { GetAttemptResultUseCase } from '../../application/use-cases/attempt/Get
 import { SubmitAttemptUseCase } from '../../application/use-cases/attempt/SubmitAttemptUseCase';
 import { TimeoutAttemptUseCase } from '../../application/use-cases/attempt/TimeoutAttemptUseCase';
 import { LogAttemptAnomalyUseCase } from '../../application/use-cases/attempt/LogAttemptAnomalyUseCase';
+import { GetQuestionSolutionUseCase } from '../../application/use-cases/question/GetQuestionSolutionUseCase';
 import { PrismaAttemptRepository } from '../../infrastructure/repositories/PrismaAttemptRepository';
 import { PrismaExamRepository } from '../../infrastructure/repositories/PrismaExamRepository';
 import { PrismaAttemptAnswerRepository } from '../../infrastructure/repositories/PrismaAttemptAnswerRepository';
@@ -36,6 +37,7 @@ export class AttemptsController {
   private readonly submitAttemptUC: SubmitAttemptUseCase;
   private readonly timeoutUC: TimeoutAttemptUseCase;
   private readonly anomalyUC: LogAttemptAnomalyUseCase;
+  private readonly getSolutionUC: GetQuestionSolutionUseCase;
   private readonly prisma: PrismaClient;
 
   constructor(@Inject(PrismaService) prismaService: PrismaService) {
@@ -55,6 +57,7 @@ export class AttemptsController {
     this.getStateUC = new GetAttemptStateUseCase(attemptRepo, examRepo, answerRepo);
     this.getResultUC = new GetAttemptResultUseCase(attemptRepo, examRepo, answerRepo);
     this.timeoutUC = new TimeoutAttemptUseCase(attemptRepo, examRepo, answerRepo);
+    this.getSolutionUC = new GetQuestionSolutionUseCase(attemptRepo, examRepo);
   }
 
   /** Yeni deneme başlatır — tenantId çoklu kiracı senaryosu için iletilir */
@@ -170,6 +173,18 @@ export class AttemptsController {
   async get(@Param('id') attemptId: string, @Req() req: any) {
     const userId = (req as any).user?.id;
     return this.getUC.execute(attemptId, userId);
+  }
+
+  /** Submit sonrası soru çözümü — yalnız tamamlanmış attempt için. */
+  @Get('attempts/:id/questions/:questionId/solution')
+  @Roles('CANDIDATE')
+  async getQuestionSolution(
+    @Param('id') attemptId: string,
+    @Param('questionId') questionId: string,
+    @Req() req: any,
+  ) {
+    const userId = (req as any).user?.id;
+    return this.getSolutionUC.execute(attemptId, questionId, userId);
   }
 
   /**

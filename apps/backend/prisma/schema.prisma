@@ -285,46 +285,46 @@ model Tenant {
 // --- Marketplace / Exam domain ---
 
 model User {
-  id                          String     @id @default(uuid())
-  email                       String     @unique
-  username                    String     @unique
+  id                              String     @id @default(uuid())
+  email                           String     @unique
+  username                        String     @unique
   // Eğitici kayıt akışında zorunlu; aday için opsiyonel.
   // username brand-display için kullanılır; firstName/lastName resmi adlandırma içindir.
-  firstName                   String?
-  lastName                    String?
-  passwordHash                String
+  firstName                       String?
+  lastName                        String?
+  passwordHash                    String
   // Google OAuth ile bağlanmışsa Google'ın "sub" alanı; e-posta ile eşleştirme yapılır
-  googleId                    String?    @unique
-  bio                         String?
-  role                        UserRole   @default(CANDIDATE)
-  status                      UserStatus @default(ACTIVE)
-  educatorApprovedAt          DateTime?
-  lastLoginAt                 DateTime?
-  passwordResetToken          String?    @unique
-  passwordResetTokenExpiresAt DateTime?
+  googleId                        String?    @unique
+  bio                             String?
+  role                            UserRole   @default(CANDIDATE)
+  status                          UserStatus @default(ACTIVE)
+  educatorApprovedAt              DateTime?
+  lastLoginAt                     DateTime?
+  passwordResetToken              String?    @unique
+  passwordResetTokenExpiresAt     DateTime?
   // Email doğrulama — yeni kayıtların onboarding adımı (aday e-postası tıklama ile aktive edilir)
-  emailVerified                   Boolean   @default(false)
-  emailVerificationToken          String?   @unique
+  emailVerified                   Boolean    @default(false)
+  emailVerificationToken          String?    @unique
   emailVerificationTokenExpiresAt DateTime?
-  metadata                    Json?
-  twoFactorEnabled            Boolean    @default(false)
-  twoFactorSecret             String? // AES-GCM encrypted; ASLA plain
-  twoFactorRecovery           String[]   @default([]) // bcrypted code'lar
-  twoFactorEnabledAt          DateTime?
-  preferredCurrency           Currency   @default(TRY)
-  preferredLocale             String     @default("tr-TR")
+  metadata                        Json?
+  twoFactorEnabled                Boolean    @default(false)
+  twoFactorSecret                 String? // AES-GCM encrypted; ASLA plain
+  twoFactorRecovery               String[]   @default([]) // bcrypted code'lar
+  twoFactorEnabledAt              DateTime?
+  preferredCurrency               Currency   @default(TRY)
+  preferredLocale                 String     @default("tr-TR")
   // ── Email trafiği tercih sistemi ────────────────────────────────────
   // marketing, productUpdates, weeklyDigest, reviewNotifications,
   // objectionUpdates, liveSessionInvites, refundUpdates
-  emailPreferences            Json       @default("{\"marketing\":false,\"productUpdates\":true,\"weeklyDigest\":true,\"reviewNotifications\":true,\"objectionUpdates\":true,\"liveSessionInvites\":true,\"refundUpdates\":true}")
-  emailUnsubscribeToken       String?    @unique
+  emailPreferences                Json       @default("{\"marketing\":false,\"productUpdates\":true,\"weeklyDigest\":true,\"reviewNotifications\":true,\"objectionUpdates\":true,\"liveSessionInvites\":true,\"refundUpdates\":true}")
+  emailUnsubscribeToken           String?    @unique
   // Tek aktif oturum kuralı — her başarılı login yeni bir sid (sessionId) üretir
   // ve User.activeSessionId'yi günceller. JwtAuthGuard payload.sid ile bu değeri
   // karşılaştırır; uyumsuzsa "başka bir cihazda giriş yapıldı" hatası döner.
-  activeSessionId             String?
-  createdAt                   DateTime   @default(now())
-  updatedAt                   DateTime   @updatedAt
-  deletedAt                   DateTime?
+  activeSessionId                 String?
+  createdAt                       DateTime   @default(now())
+  updatedAt                       DateTime   @updatedAt
+  deletedAt                       DateTime?
 
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id])
@@ -350,6 +350,7 @@ model User {
   liveParticipations      LiveParticipant[]        @relation("UserLiveParticipations")
   emailLogs               EmailLog[]
   devices                 UserDevice[]
+  triggeredBackups        BackupLog[]              @relation("backupActor")
 
   // ── İçerik Moderasyonu ──────────────────────────────────────────────────
   moderationResults    ModerationResult[]
@@ -476,6 +477,8 @@ model ExamQuestion {
   solutionMediaUrl String?
   moderationStatus ModerationStatus @default(PENDING_REVIEW)
   moderatedAt      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   test       ExamTest        @relation(fields: [testId], references: [id], onDelete: Cascade)
   options    ExamOption[]
@@ -493,6 +496,8 @@ model ExamOption {
   isCorrect        Boolean          @default(false)
   moderationStatus ModerationStatus @default(PENDING_REVIEW)
   moderatedAt      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   question   ExamQuestion    @relation(fields: [questionId], references: [id], onDelete: Cascade)
   selectedBy AttemptAnswer[]
@@ -579,6 +584,9 @@ model Purchase {
   amountUsdCents Int? // USD normalize snapshot (reporting)
   status         PurchaseStatus @default(ACTIVE)
   createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  refundedAt     DateTime?
+  expiredAt      DateTime?
   deletedAt      DateTime?
 
   tenantId String
@@ -626,21 +634,21 @@ model Purchase {
 }
 
 model TestPackage {
-  id          String    @id @default(cuid())
-  tenantId    String
-  educatorId  String?
-  title       String
-  description String?
+  id            String    @id @default(cuid())
+  tenantId      String
+  educatorId    String?
+  title         String
+  description   String?
   // Eğitici paket için kapak görseli yükler — TestPackageCard listesinde ve
   // TestDetail hero bölümünde gösterilir. Boşsa default gradient + BookOpen ikonu.
   coverImageUrl String?
-  priceCents  Int
-  currency    Currency  @default(TRY)
-  difficulty  String    @default("medium")
-  isActive    Boolean   @default(true)
-  publishedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  priceCents    Int
+  currency      Currency  @default(TRY)
+  difficulty    String    @default("medium")
+  isActive      Boolean   @default(true)
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   // NOTE: PostgreSQL'de manuel olarak GENERATED ALWAYS AS (...) STORED tsvector
   // kolonu var: `search_vector`. Prisma generated column'a ALTER yapamadığı için
   // (Use ALTER TABLE ... DROP EXPRESSION hatası), bu alan şemadan çıkarıldı.
@@ -985,6 +993,13 @@ model AdminSettings {
   emailSendWindowEndHour           Int       @default(21) // 1-24, dahil değil
   emailSendWindowTimezone          String    @default("Europe/Istanbul")
   emailSendWindowAppliesToCritical Boolean   @default(false)
+  // ── Yedekleme zamanlayıcısı ────────────────────────────────────────────
+  // Cron expression formatı: standart 5 alan (dakika saat gün ay haftaGünü).
+  // Boş veya backupEnabled=false ise scheduler register etmez.
+  backupEnabled                    Boolean   @default(false)
+  backupCronExpression             String? // örn: "0 3 * * *" (her gün 03:00)
+  backupTargetDir                  String? // örn: "/var/backups/sinav-salonu"
+  backupRetentionDays              Int       @default(2)
   updatedAt                        DateTime  @updatedAt
 
   @@map("admin_settings")
@@ -1060,6 +1075,9 @@ model AdPurchase {
   impressionsDelivered Int          @default(0)
   currency             Currency     @default(TRY)
   createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  canceledAt           DateTime?
+  canceledReason       String?
 
   educator    User           @relation("educatorAdPurchases", fields: [educatorId], references: [id], onDelete: Cascade)
   adPackage   AdPackage      @relation(fields: [adPackageId], references: [id], onDelete: Cascade)
@@ -1113,6 +1131,8 @@ model Subscription {
   currentPeriodEnd   DateTime?
   cancelAtPeriodEnd  Boolean            @default(false)
   canceledAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
@@ -1575,7 +1595,6 @@ model DraftSnapshot {
   @@map("draft_snapshots")
 }
 
-
 // Aday'ın test çözme oturumundaki anti-leak / anti-cheat olayları.
 // Frontend proctoring hook'u (useTestProctoring) burada toplanan event'leri
 // POST /attempts/:id/anomaly endpoint'i ile sunucuya iletir.
@@ -1607,4 +1626,44 @@ model AttemptAnomalyEvent {
   @@index([attemptId, type])
   @@index([candidateId, createdAt])
   @@map("attempt_anomaly_events")
+}
+
+// ── Yedekleme ────────────────────────────────────────────────────────────
+enum BackupStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum BackupTrigger {
+  SCHEDULED
+  MANUAL
+}
+
+// pg_dump → gzip yedekleme audit log'u.
+// AdminSettings.backupCronExpression ile zamanlanır; admin panelinden manuel
+// de tetiklenebilir. Retention için tek başına yetmez — dosyalar diskte
+// silinince log kaydı (status SUCCESS) referans için tutulur.
+model BackupLog {
+  id           String        @id @default(uuid())
+  tenantId     String
+  trigger      BackupTrigger
+  status       BackupStatus  @default(RUNNING)
+  scheduledAt  DateTime      @default(now())
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  durationMs   Int?
+  sizeBytes    BigInt?
+  targetPath   String? // tam dosya yolu
+  fileName     String? // sadece dosya adı (UI için)
+  actorId      String? // MANUAL ise tetikleyen admin
+  errorMessage String?
+  errorStack   String?
+  createdAt    DateTime      @default(now())
+
+  actor User? @relation("backupActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, status, createdAt(sort: Desc)])
+  @@map("backup_logs")
 }

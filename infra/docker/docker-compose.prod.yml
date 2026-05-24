@@ -79,14 +79,26 @@ services:
 
   frontend:
     build:
-      context: ../../apps/frontend
-      dockerfile: ../../infra/docker/frontend.Dockerfile
+      # Context repo köküne çekildi — Dockerfile'ın hem apps/frontend kaynak
+      # dosyalarına hem infra/nginx config template'ine erişebilmesi için.
+      # .dockerignore köke konuldu; node_modules/.cache vb. context'e girmez.
+      context: ../..
+      dockerfile: infra/docker/frontend.Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-"http://backend:3000"}
     depends_on:
       - backend
     environment:
       VITE_API_URL: ${VITE_API_URL:-"http://backend:3000"}
+      # CSP Report-Only — nginx envsubst ile başlığa render edilir. Boş bırakılırsa
+      # sadece 'self' geçerli; harici sağlayıcı varsa virgülle değil boşlukla
+      # ayrılmış host listesi: "https://api.iyzipay.com https://maps.googleapis.com"
+      CSP_CONNECT_SRC: ${CSP_CONNECT_SRC:-""}
+      CSP_SCRIPT_SRC: ${CSP_SCRIPT_SRC:-""}
+      CSP_IMG_SRC: ${CSP_IMG_SRC:-""}
+      CSP_MEDIA_SRC: ${CSP_MEDIA_SRC:-""}
+      CSP_STYLE_SRC: ${CSP_STYLE_SRC:-""}
+      CSP_REPORT_ENDPOINT: ${CSP_REPORT_ENDPOINT:-"/csp-report"}
     restart: unless-stopped
 
 volumes:

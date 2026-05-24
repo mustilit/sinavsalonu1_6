@@ -1619,5 +1619,64 @@
       "examsRequired": "En az bir uzmanlık alanı seç",
       "saveFailed": "Profil kaydedilemedi"
     }
+  },
+  "backup": {
+    "title": "Yedekleme Yönetimi",
+    "subtitle": "Veritabanı yedekleme zamanlayıcısı ve kayıt geçmişi",
+    "settings": {
+      "heading": "Zamanlayıcı Ayarları",
+      "enabled": "Otomatik yedekleme aktif",
+      "cron": "Cron ifadesi",
+      "cronHelp": "Standart 5 alan: dakika saat gün ay haftaGünü. Örn: \"0 3 * * *\" her gün 03:00.",
+      "targetDir": "Hedef dizin",
+      "targetDirHelp": "Mutlak yol. Konteynerden yazılabilir olmalı. Örn: /var/backups/sinav-salonu",
+      "retentionDays": "Saklama süresi (gün)",
+      "retentionDaysHelp": "Bu süreden eski yedek dosyaları otomatik silinir. 0 = silme.",
+      "save": "Ayarları kaydet",
+      "saved": "Ayarlar kaydedildi",
+      "saveFailed": "Kaydedilemedi"
+    },
+    "runNow": {
+      "heading": "Manuel Yedekleme",
+      "description": "Zamanlayıcıyı beklemeden hemen bir yedek al.",
+      "button": "Şimdi yedekle",
+      "confirmTitle": "Yedeği şimdi al",
+      "confirmBody": "Bu işlem birkaç dakika sürebilir ve disk yer tüketir. Devam edilsin mi?",
+      "confirmCancel": "İptal",
+      "confirmProceed": "Evet, başlat",
+      "starting": "Yedekleme başlatılıyor…",
+      "success": "Yedek başarıyla alındı",
+      "failed": "Yedekleme başarısız"
+    },
+    "logs": {
+      "heading": "Yedek Geçmişi",
+      "filterAll": "Tümü",
+      "filterSuccess": "Başarılı",
+      "filterFailed": "Başarısız",
+      "filterRunning": "Çalışıyor",
+      "empty": "Henüz yedek kaydı yok",
+      "loadMore": "Daha fazla",
+      "loading": "Yükleniyor…",
+      "columns": {
+        "trigger": "Tetik",
+        "status": "Durum",
+        "createdAt": "Tarih",
+        "duration": "Süre",
+        "size": "Boyut",
+        "fileName": "Dosya",
+        "actor": "Tetikleyen"
+      },
+      "trigger": {
+        "SCHEDULED": "Zamanlanmış",
+        "MANUAL": "Manuel"
+      },
+      "status": {
+        "RUNNING": "Çalışıyor",
+        "SUCCESS": "Başarılı",
+        "FAILED": "Başarısız"
+      },
+      "noActor": "Sistem",
+      "unknownFile": "—"
+    }
   }
 }

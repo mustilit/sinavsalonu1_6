@@ -1619,5 +1619,64 @@
       "examsRequired": "Wähle mindestens ein Fachgebiet aus",
       "saveFailed": "Profil konnte nicht gespeichert werden"
     }
+  },
+  "backup": {
+    "title": "Sicherungsverwaltung",
+    "subtitle": "Datenbank-Sicherungsplaner und Protokollverlauf",
+    "settings": {
+      "heading": "Planer-Einstellungen",
+      "enabled": "Automatische Sicherung aktiviert",
+      "cron": "Cron-Ausdruck",
+      "cronHelp": "Standard-5-Felder-Format: Minute Stunde Tag Monat Wochentag. Z.B. \"0 3 * * *\" läuft täglich um 03:00.",
+      "targetDir": "Zielverzeichnis",
+      "targetDirHelp": "Absoluter Pfad. Muss vom Container aus beschreibbar sein. Z.B. /var/backups/sinav-salonu",
+      "retentionDays": "Aufbewahrungszeitraum (Tage)",
+      "retentionDaysHelp": "Ältere Sicherungsdateien werden automatisch gelöscht. 0 = niemals löschen.",
+      "save": "Einstellungen speichern",
+      "saved": "Einstellungen gespeichert",
+      "saveFailed": "Speichern fehlgeschlagen"
+    },
+    "runNow": {
+      "heading": "Manuelle Sicherung",
+      "description": "Erstelle sofort eine Sicherung, ohne auf den Planer zu warten.",
+      "button": "Jetzt sichern",
+      "confirmTitle": "Jetzt sichern",
+      "confirmBody": "Dies kann einige Minuten dauern und Speicherplatz verbrauchen. Fortfahren?",
+      "confirmCancel": "Abbrechen",
+      "confirmProceed": "Ja, starten",
+      "starting": "Sicherung wird gestartet…",
+      "success": "Sicherung erfolgreich abgeschlossen",
+      "failed": "Sicherung fehlgeschlagen"
+    },
+    "logs": {
+      "heading": "Sicherungsverlauf",
+      "filterAll": "Alle",
+      "filterSuccess": "Erfolgreich",
+      "filterFailed": "Fehlgeschlagen",
+      "filterRunning": "Läuft",
+      "empty": "Noch keine Sicherungsprotokolle vorhanden",
+      "loadMore": "Mehr laden",
+      "loading": "Wird geladen…",
+      "columns": {
+        "trigger": "Auslöser",
+        "status": "Status",
+        "createdAt": "Datum",
+        "duration": "Dauer",
+        "size": "Größe",
+        "fileName": "Datei",
+        "actor": "Ausgelöst von"
+      },
+      "trigger": {
+        "SCHEDULED": "Geplant",
+        "MANUAL": "Manuell"
+      },
+      "status": {
+        "RUNNING": "Läuft",
+        "SUCCESS": "Erfolgreich",
+        "FAILED": "Fehlgeschlagen"
+      },
+      "noActor": "System",
+      "unknownFile": "—"
+    }
   }
 }

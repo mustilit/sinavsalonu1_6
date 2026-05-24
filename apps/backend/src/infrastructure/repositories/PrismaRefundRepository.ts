@@ -89,7 +89,7 @@ export class PrismaRefundRepository implements IRefundRepository {
       });
       await tx.purchase.update({
         where: { id: (refundRow as any).purchaseId },
-        data: { status: 'REFUNDED' } as any,
+        data: { status: 'REFUNDED', refundedAt: decidedAt } as any,
       });
       await tx.auditLog.create({
         data: {

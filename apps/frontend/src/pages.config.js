@@ -126,6 +126,8 @@ const EducatorViolationDetail = lazy(() => import('./pages/EducatorViolationDeta
 const ModerationSettings = lazy(() => import('./pages/ModerationSettings'));
 const MyModerationStatus = lazy(() => import('./pages/MyModerationStatus'));
 const RiskyContent = lazy(() => import('./pages/RiskyContent'));
+// Yedekleme Yönetimi
+const BackupManagement = lazy(() => import('./pages/BackupManagement'));
 
 
 export const PAGES = {
@@ -203,6 +205,7 @@ export const PAGES = {
     "ModerationSettings": ModerationSettings,
     "MyModerationStatus": MyModerationStatus,
     "RiskyContent": RiskyContent,
+    "BackupManagement": BackupManagement,
 }
 
 export const pagesConfig = {

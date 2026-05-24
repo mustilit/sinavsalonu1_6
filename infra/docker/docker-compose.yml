@@ -143,14 +143,20 @@ services:
 
   frontend:
     build:
-      context: ../../apps/frontend
-      dockerfile: ../../infra/docker/frontend.Dockerfile
+      context: ../..
+      dockerfile: infra/docker/frontend.Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-"http://127.0.0.1:3000"}
     depends_on:
       - backend
     environment:
       VITE_API_URL: ${VITE_API_URL:-"http://127.0.0.1:3000"}
+      CSP_CONNECT_SRC: ${CSP_CONNECT_SRC:-""}
+      CSP_SCRIPT_SRC: ${CSP_SCRIPT_SRC:-""}
+      CSP_IMG_SRC: ${CSP_IMG_SRC:-""}
+      CSP_MEDIA_SRC: ${CSP_MEDIA_SRC:-""}
+      CSP_STYLE_SRC: ${CSP_STYLE_SRC:-""}
+      CSP_REPORT_ENDPOINT: ${CSP_REPORT_ENDPOINT:-"/csp-report"}
     ports:
       - "5173:5173"
     restart: on-failure

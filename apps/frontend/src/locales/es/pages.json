@@ -1619,5 +1619,64 @@
       "examsRequired": "Selecciona al menos un área de experiencia",
       "saveFailed": "No se pudo guardar el perfil"
     }
+  },
+  "backup": {
+    "title": "Gestión de copias de seguridad",
+    "subtitle": "Programador de copias de seguridad de base de datos e historial de registros",
+    "settings": {
+      "heading": "Configuración del programador",
+      "enabled": "Copia de seguridad automática activada",
+      "cron": "Expresión cron",
+      "cronHelp": "Formato estándar de 5 campos: minuto hora día mes díaSemana. Ej: \"0 3 * * *\" se ejecuta diariamente a las 03:00.",
+      "targetDir": "Directorio destino",
+      "targetDirHelp": "Ruta absoluta. Debe ser escribible desde el contenedor. Ej: /var/backups/sinav-salonu",
+      "retentionDays": "Período de retención (días)",
+      "retentionDaysHelp": "Los archivos de copia más antiguos se eliminarán automáticamente. 0 = nunca eliminar.",
+      "save": "Guardar ajustes",
+      "saved": "Ajustes guardados",
+      "saveFailed": "Error al guardar"
+    },
+    "runNow": {
+      "heading": "Copia de seguridad manual",
+      "description": "Realiza una copia de seguridad inmediatamente sin esperar al programador.",
+      "button": "Hacer copia ahora",
+      "confirmTitle": "Hacer copia ahora",
+      "confirmBody": "Esto puede tardar unos minutos y consumir espacio en disco. ¿Continuar?",
+      "confirmCancel": "Cancelar",
+      "confirmProceed": "Sí, iniciar",
+      "starting": "Iniciando copia de seguridad…",
+      "success": "Copia de seguridad completada con éxito",
+      "failed": "Error en la copia de seguridad"
+    },
+    "logs": {
+      "heading": "Historial de copias",
+      "filterAll": "Todas",
+      "filterSuccess": "Exitosas",
+      "filterFailed": "Fallidas",
+      "filterRunning": "En ejecución",
+      "empty": "Aún no hay registros de copia de seguridad",
+      "loadMore": "Cargar más",
+      "loading": "Cargando…",
+      "columns": {
+        "trigger": "Disparador",
+        "status": "Estado",
+        "createdAt": "Fecha",
+        "duration": "Duración",
+        "size": "Tamaño",
+        "fileName": "Archivo",
+        "actor": "Iniciado por"
+      },
+      "trigger": {
+        "SCHEDULED": "Programado",
+        "MANUAL": "Manual"
+      },
+      "status": {
+        "RUNNING": "En ejecución",
+        "SUCCESS": "Exitoso",
+        "FAILED": "Fallido"
+      },
+      "noActor": "Sistema",
+      "unknownFile": "—"
+    }
   }
 }

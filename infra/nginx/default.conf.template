@@ -1,0 +1,93 @@
+# Sınav Salonu — frontend prod static serving (nginx:alpine).
+#
+# Bu dosya nginx imajının entrypoint envsubst akışı tarafından işlenir:
+# /etc/nginx/templates/*.template → envsubst → /etc/nginx/conf.d/*.conf
+# Hangi değişkenlerin interpolate edileceği NGINX_ENVSUBST_FILTER_VARIABLES env'i ile
+# sınırlandırılır (compose'da set ediliyor); aksi halde nginx'in kendi $request_uri
+# gibi run-time değişkenleri de envsubst'lanır.
+
+server {
+    listen 5173 default_server;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # ── Sıkıştırma ────────────────────────────────────────────────────────
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 256;
+    gzip_comp_level 5;
+    gzip_proxied any;
+    gzip_types
+        text/plain
+        text/css
+        text/javascript
+        text/xml
+        application/javascript
+        application/x-javascript
+        application/json
+        application/xml
+        application/xml+rss
+        application/manifest+json
+        image/svg+xml
+        font/ttf
+        font/otf;
+
+    # ── Güvenlik başlıkları ───────────────────────────────────────────────
+    # CSP Report-Only — production'da gerçek violation toplanır, akış kırılmaz.
+    # Hash/nonce stratejisine geçince Report-Only kaldırılıp enforce'a alınır.
+    add_header Content-Security-Policy-Report-Only "default-src 'self'; connect-src 'self' ${CSP_CONNECT_SRC}; script-src 'self' ${CSP_SCRIPT_SRC}; img-src 'self' data: https: ${CSP_IMG_SRC}; media-src 'self' https: ${CSP_MEDIA_SRC}; style-src 'self' 'unsafe-inline' ${CSP_STYLE_SRC}; font-src 'self' data: https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; report-uri ${CSP_REPORT_ENDPOINT};" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+
+    # ── Asset cache stratejisi ────────────────────────────────────────────
+    # Vite build hash'li dosyalar üretir (örn. /assets/index-abc123.js).
+    # İçerik değişince hash değiştiği için uzun ömürlü immutable cache güvenli.
+    # `expires` direktifi otomatik Cache-Control üretir — add_header ile birlikte
+    # kullanılırsa duplicate header çıkar; sadece add_header kullanılır.
+    location ^~ /assets/ {
+        access_log off;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    # Statik medya (favicon, manifest vb.) — orta ömür
+    location ~* \.(?:ico|svg|webp|png|jpg|jpeg|gif|woff2?|ttf|otf|eot)$ {
+        access_log off;
+        add_header Cache-Control "public, max-age=604800" always;
+        try_files $uri =404;
+    }
+
+    # ── SPA fallback ──────────────────────────────────────────────────────
+    # index.html her zaman taze servis edilir; aksi halde dağıtım sonrası
+    # kullanıcı eski hash'li bundle'a yönlendirilir ve 404 alır.
+    location = /index.html {
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+        # Güvenlik başlıkları location bloklarında miras alınmadığı için tekrarlanır.
+        add_header Content-Security-Policy-Report-Only "default-src 'self'; connect-src 'self' ${CSP_CONNECT_SRC}; script-src 'self' ${CSP_SCRIPT_SRC}; img-src 'self' data: https: ${CSP_IMG_SRC}; media-src 'self' https: ${CSP_MEDIA_SRC}; style-src 'self' 'unsafe-inline' ${CSP_STYLE_SRC}; font-src 'self' data: https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; report-uri ${CSP_REPORT_ENDPOINT};" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Health check — load balancer için minimum bilgi
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Hidden files
+    location ~ /\. {
+        deny all;
+    }
+}

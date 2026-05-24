@@ -1429,6 +1429,29 @@ export const adminModeration = {
   },
 };
 
+export const adminBackup = {
+  getSettings: async () => {
+    const { data } = await api.get('/admin/backup/settings');
+    return data;
+  },
+  updateSettings: async (body) => {
+    const { data } = await api.patch('/admin/backup/settings', body);
+    return data;
+  },
+  runNow: async () => {
+    const { data } = await api.post('/admin/backup/run-now');
+    return data;
+  },
+  listLogs: async (opts = {}) => {
+    const qs = new URLSearchParams();
+    if (opts.cursor?.id) qs.set('cursorId', opts.cursor.id);
+    if (opts.limit) qs.set('limit', String(opts.limit));
+    if (opts.status) qs.set('status', opts.status);
+    const { data } = await api.get(`/admin/backup/logs?${qs.toString()}`);
+    return data ?? { items: [], nextCursor: null };
+  },
+};
+
 
 export default api;
 export { api };

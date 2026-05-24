@@ -8,9 +8,10 @@ import { resolve as pathResolve } from 'path';
 dotenvConfig({ path: pathResolve(__dirname, '../../../.env') });
 
 import { PrismaClient } from '@prisma/client';
+import { tenantExtension } from './tenantExtension';
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient;
+  prisma: any;
 };
 
 let lastReconnectAttemptAt = 0;
@@ -31,7 +32,7 @@ if (!databaseUrl) {
   );
 }
 
-export const prisma =
+const basePrisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: [
@@ -43,7 +44,9 @@ export const prisma =
     }),
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = basePrisma;
+
+export const prisma = basePrisma.$extends(tenantExtension) as unknown as PrismaClient;
 
 /**
  * Read-only replica client (KALITE-DEGERLENDIRME §4 — read replica).
@@ -55,15 +58,17 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 const replicaUrl = process.env.DATABASE_REPLICA_URL?.trim();
 
 export const prismaReplica: typeof prisma = replicaUrl
-  ? new PrismaClient({
+  ? (new PrismaClient({
       datasources: { db: { url: replicaUrl } },
       log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
-    })
+    }).$extends(tenantExtension) as unknown as PrismaClient)
   : prisma;
 
 export const isReplicaEnabled = (): boolean => !!replicaUrl;
 
-(prisma as any).$on('error', async (e: any) => {
+// $on/$disconnect/$connect ham PrismaClient üzerinde tanımlıdır.
+// $extends ile elde edilen istemcide event handler register edemiyoruz.
+(basePrisma as any).$on('error', async (e: any) => {
   // eslint-disable-next-line no-console
   console.error('Prisma connection error', e);
 
@@ -74,12 +79,12 @@ export const isReplicaEnabled = (): boolean => !!replicaUrl;
   lastReconnectAttemptAt = now;
   reconnectInFlight = (async () => {
     try {
-      await prisma.$disconnect();
+      await basePrisma.$disconnect();
     } catch {
       // ignore disconnect errors
     }
     try {
-      await prisma.$connect();
+      await basePrisma.$connect();
       // eslint-disable-next-line no-console
       console.log('Prisma reconnect succeeded');
     } catch (err) {

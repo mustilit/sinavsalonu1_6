@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AttemptsController } from './attempts.controller';
+// Not: Eski `attempts.controller.ts` (modules/attempts/) silindi.
+// Kanonik controller: `controllers/attempts.controller.ts` (app.module'a doğrudan
+// kayıtlı). Bu modül sadece diğer modüllerin tüketebileceği use-case provider'larını
+// sağlar.
 import { SubmitAnswerUseCase } from '../../../application/use-cases/attempt/SubmitAnswerUseCase';
 import { SubmitAttemptUseCase } from '../../../application/use-cases/attempt/SubmitAttemptUseCase';
 import { GetQuestionSolutionUseCase } from '../../../application/use-cases/question/GetQuestionSolutionUseCase';
@@ -13,7 +16,6 @@ import { GetAttemptResultUseCase } from '../../../application/use-cases/attempt/
 import { PrismaExamRepository as PrismaExamRepo } from '../../../infrastructure/repositories/PrismaExamRepository';
 
 @Module({
-  controllers: [AttemptsController],
   providers: [
     {
       provide: SubmitAnswerUseCase,

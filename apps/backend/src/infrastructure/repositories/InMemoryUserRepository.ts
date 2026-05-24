@@ -2,6 +2,9 @@ import { User } from '../../domain/entities/User';
 import type { UserStatus } from '../../domain/types';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 
+// ⚠️ TEST/FIXTURE KULLANIMI İÇİN — production wiring'inde KULLANMAYIN.
+// Prisma karşılığı PrismaUserRepository. NestJS modülleri Prisma versiyonunu inject eder.
+
 /**
  * In-memory User Repository
  * Unique constraint: email ve username benzersiz olmalı

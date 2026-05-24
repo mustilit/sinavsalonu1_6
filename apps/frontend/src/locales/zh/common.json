@@ -110,7 +110,8 @@
       "systemControls": "系统控制",
       "liveTiers": "实时测试套餐",
       "emailManagement": "邮件管理",
-      "riskyContent": "风险内容"
+      "riskyContent": "风险内容",
+      "backup": "备份"
     },
     "collapseAria": "收起侧边栏",
     "expandAria": "展开侧边栏"

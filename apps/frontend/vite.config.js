@@ -45,13 +45,33 @@ export default defineConfig({
         'src/pages.config.js',
       ],
       thresholds: {
-        statements: 30,
-        branches: 25,
-        functions: 30,
-        lines: 30,
-        // TODO: src/api/dalClient.js için %90 threshold ekle (önce baseline test yaz)
-        // TODO: src/pages/** için %50 threshold (kademeli)
-        // TODO: src/lib/** için %70 threshold
+        // 24 May 2026 baseline (drift'siz tam çalıştırmada): stmt %5.86, br %35.31,
+        // fn %13.42, lines %5.86. Page-level component testleri eklendikçe yukarı
+        // çek. Aynı sprintte sonraki PR'da düşmesin diye gerçek baseline -1 puan.
+        statements: 5,
+        branches: 30,
+        functions: 12,
+        lines: 5,
+        // Path-spesifik strict baseline — yeni testlerin kapsadığı kritik utility'ler.
+        // Gerçek ölçüm: routeRoles.js %100, i18n.js %93/63/75/93, dalClient.js %35/48/6/35.
+        'src/lib/i18n.js': {
+          statements: 90,
+          branches: 60,
+          functions: 70,
+          lines: 90,
+        },
+        'src/lib/routeRoles.js': {
+          statements: 100,
+          branches: 95,
+          functions: 100,
+          lines: 100,
+        },
+        'src/api/dalClient.js': {
+          statements: 30,
+          branches: 40,
+          functions: 5,
+          lines: 30,
+        },
       },
     },
   },

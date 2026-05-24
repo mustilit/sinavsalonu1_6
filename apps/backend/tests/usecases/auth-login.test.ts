@@ -18,6 +18,7 @@ jest.mock('../../src/infrastructure/database/prisma', () => ({
   prisma: {
     user: {
       findUnique: jest.fn(async () => ({ twoFactorEnabled: false })),
+      update: jest.fn(async () => ({})),
     },
     $queryRaw: jest.fn(async () => [{ twoFactorSystemEnabled: true }]),
   },

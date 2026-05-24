@@ -1,3 +1,5 @@
+// ⚠️ TEST/FIXTURE KULLANIMI İÇİN — production wiring'inde KULLANMAYIN.
+// Prisma karşılığı: aynı isimde Prisma prefix'li sınıf. NestJS modülleri Prisma'yı inject eder.
 import { ExamTest, ExamQuestion, ExamOption } from '../../domain/entities/Exam';
 import { ExamWithQuestions, IExamRepository } from '../../domain/interfaces/IExamRepository';
 

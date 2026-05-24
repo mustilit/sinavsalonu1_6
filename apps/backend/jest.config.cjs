@@ -66,18 +66,32 @@ module.exports = {
       lines: 28,
       statements: 27,
     },
-    // './src/nest/guards/': {
-    //   branches: 80,
-    //   functions: 90,
-    //   lines: 90,
-    //   statements: 90,
-    // },
-    // './src/domain/': {
-    //   branches: 85,
-    //   functions: 90,
-    //   lines: 90,
-    //   statements: 90,
-    // },
+    // Path-spesifik baseline — sadece yeni eklenen testlerin kapsadığı klasörler.
+    // Yeni dosya/branch eklerken PR'da düşmeyi engeller.
+    // 24 May 2026 ölçümünden sonraki bir tur sonraki PR'da +%5 hedef.
+    './src/nest/guards/': {
+      // worker-permissions + internal-only test'leri eklendi (Roles/Jwt/Captcha
+      // hâlâ açık). Diğer guard'lar test edilmediği için baseline düşük tutulur.
+      statements: 25,
+      branches: 20,
+      functions: 25,
+      lines: 25,
+    },
+    './src/nest/interceptors/': {
+      // metrics + idempotency interceptor test'leri.
+      statements: 60,
+      branches: 50,
+      functions: 60,
+      lines: 60,
+    },
+    './src/common/': {
+      // tenant context AsyncLocalStorage testi eklendi.
+      statements: 60,
+      branches: 50,
+      functions: 70,
+      lines: 60,
+    },
+    // './src/domain/': { branches: 85, functions: 90, lines: 90, statements: 90 },
   },
 };
 

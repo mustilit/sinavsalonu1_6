@@ -110,7 +110,8 @@
       "systemControls": "System Controls",
       "liveTiers": "Live Test Packages",
       "emailManagement": "Email Management",
-      "riskyContent": "Risky Content"
+      "riskyContent": "Risky Content",
+      "backup": "Backup"
     },
     "collapseAria": "Collapse sidebar",
     "expandAria": "Expand sidebar"

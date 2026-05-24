@@ -110,7 +110,8 @@
       "systemControls": "Controles del sistema",
       "liveTiers": "Paquetes de exámenes en vivo",
       "emailManagement": "Gestión de correo",
-      "riskyContent": "Contenido riesgoso"
+      "riskyContent": "Contenido riesgoso",
+      "backup": "Copia de seguridad"
     },
     "collapseAria": "Cerrar menú lateral",
     "expandAria": "Expandir menú lateral"
