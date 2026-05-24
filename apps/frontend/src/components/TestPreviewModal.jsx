@@ -15,6 +15,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ZoomableImage from "@/components/ZoomableImage";
 
 const LETTERS = ["A", "B", "C", "D", "E"];
 
@@ -39,14 +40,15 @@ function OptionCard({ option, letter, selected, onClick }) {
       >
         {letter}
       </span>
-      <div className="flex-1 min-w-0">
-        {option.mediaUrl ? (
-          <img
+      <div className="flex-1 min-w-0 flex items-center gap-3 flex-wrap">
+        {option.mediaUrl && (
+          <ZoomableImage
             src={option.mediaUrl}
             alt={`${letter} şıkkı`}
-            className="max-h-32 rounded-lg object-contain"
+            className="max-h-32 rounded-lg object-contain border border-slate-200 bg-white"
           />
-        ) : (
+        )}
+        {option.content && (
           <span
             className={cn(
               "text-base leading-relaxed",
@@ -209,10 +211,11 @@ export function TestPreviewModal({
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-6">
             {q.mediaUrl && (
               <div className="flex justify-center mb-5">
-                <img
+                <ZoomableImage
                   src={q.mediaUrl}
                   alt="soru görseli"
                   className="max-h-64 rounded-xl border border-slate-100 object-contain"
+                  size="lg"
                 />
               </div>
             )}

@@ -33,6 +33,7 @@ import ReportQuestionModal from "@/components/test/ReportQuestionModal";
 import StarRating from "@/components/ui/StarRating";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ZoomableImage from "@/components/ZoomableImage";
 import { buildPageUrl, useAppNavigate, useLoginRedirect } from "@/lib/navigation";
 import { useServiceStatus } from "@/lib/useServiceStatus";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
@@ -1146,9 +1147,23 @@ export default function TakeTest() {
           </div>
         </div>
 
-        <p className="text-slate-700 text-lg mb-8 leading-relaxed">
-          {currentQuestion?.question_text}
-        </p>
+        {/* Soru görseli — eğitici görsel-only soru girebilir, bu durumda metin boş kalır */}
+        {currentQuestion?.mediaUrl && (
+          <div className="mb-6 flex justify-center">
+            <ZoomableImage
+              src={currentQuestion.mediaUrl}
+              alt="Soru görseli"
+              className="max-h-96 w-auto max-w-full object-contain rounded-xl border border-slate-200 bg-white"
+              size="lg"
+            />
+          </div>
+        )}
+
+        {currentQuestion?.question_text && (
+          <p className="text-slate-700 text-lg mb-8 leading-relaxed">
+            {currentQuestion.question_text}
+          </p>
+        )}
 
         {showSolution && (currentQuestion?.explanation || currentQuestion?.solutionMediaUrl) && (
           <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl mb-6">
@@ -1157,7 +1172,7 @@ export default function TakeTest() {
               <p className="text-indigo-900 mb-2">{currentQuestion.explanation}</p>
             )}
             {currentQuestion.solutionMediaUrl && (
-              <img
+              <ZoomableImage
                 src={currentQuestion.solutionMediaUrl}
                 alt="Çözüm görseli"
                 className="max-w-full rounded-lg border border-indigo-200"
@@ -1200,7 +1215,16 @@ export default function TakeTest() {
                 >
                   {letter}
                 </span>
-                <span className="text-slate-700 flex-1">{opt.content}</span>
+                <div className="flex-1 flex items-center gap-3 min-w-0 flex-wrap">
+                  {opt.mediaUrl && (
+                    <ZoomableImage
+                      src={opt.mediaUrl}
+                      alt={`${letter} şıkkı görseli`}
+                      className="max-h-32 w-auto max-w-xs object-contain rounded-lg border border-slate-200 bg-white"
+                    />
+                  )}
+                  {opt.content && <span className="text-slate-700">{opt.content}</span>}
+                </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {isReviewMode && isCorrect && <CheckCircle className="w-5 h-5 text-emerald-600" />}
                   {isReviewMode && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-rose-600" />}
