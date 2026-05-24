@@ -597,19 +597,12 @@ export default function TakeTest() {
       toast.warning("Test başlatma geçici olarak durdurulmuştur. Lütfen daha sonra tekrar deneyin.");
       return;
     }
-    // Devam eden attempt varsa direkt başlat
-    if (resolvedAttemptId) {
-      setTestStarted(true);
-      const now = Date.now();
-      setStartTime(now);
-      if (test?.is_timed && attemptState?.attempt?.remainingSeconds != null) {
-        setTimeLeft(attemptState.attempt.remainingSeconds);
-      } else if (test?.is_timed && test?.duration_minutes) {
-        setTimeLeft(test.duration_minutes * 60);
-      }
-      return;
-    }
-    // Yeni attempt oluştur
+    // Her durumda backend'e POST /attempts/start çağrılır:
+    //   - Mevcut attempt yoksa: yeni oluşturur (IN_PROGRESS)
+    //   - PAUSED varsa: resume edip IN_PROGRESS'e geçirir + lastResumedAt set eder
+    //   - Zaten IN_PROGRESS: aynı kalır
+    // Eski erken-return optimizasyonu PAUSED attempt'ı resume etmeyi atlıyordu
+    // → attemptState IN_PROGRESS olmadan kalıyordu → useEffect cevapları yüklemiyordu.
     startAttemptMutation.mutate();
   };
 
