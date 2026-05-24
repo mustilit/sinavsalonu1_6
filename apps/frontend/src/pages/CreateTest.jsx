@@ -17,7 +17,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -543,60 +542,55 @@ function QuestionItem({ questionIndex, question, topicList, onUpdate, onDelete, 
 
   return (
     <>
-      <AccordionItem value={question._k}>
-        <AccordionTrigger className="hover:no-underline">
-          <div className="flex items-center gap-3 text-left flex-1">
-            <span className="text-sm font-semibold text-slate-600">{t("pages:testForm.question.label", { n: questionIndex + 1 })}</span>
-            {isComplete
-              ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              : <div className="w-4 h-4 rounded-full border-2 border-slate-300 flex-shrink-0" />
+      {/* Hep görünür tek satır — Accordion açma/kapama yok. Dar ekranda flex-wrap ile alt satıra düşer. */}
+      <div className="border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50/50">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-semibold text-slate-600 flex-shrink-0">
+            {t("pages:testForm.question.label", { n: questionIndex + 1 })}
+          </span>
+          {isComplete
+            ? <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            : <div className="w-4 h-4 rounded-full border-2 border-slate-300 flex-shrink-0" />
+          }
+          {question.duplicateWarning && (
+            <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+          )}
+          {question.content && (
+            <span className="text-xs text-slate-400 truncate min-w-0 flex-1">{question.content}</span>
+          )}
+          {question.moderationStatus && (
+            <ModerationStatusBadge status={question.moderationStatus} />
+          )}
+          <span className="text-xs text-slate-500 flex-shrink-0 ml-auto">
+            {t("pages:testForm.createPage.questionItem.selectedCount", { filled: question.options.filter(o => o.content.trim()).length })}
+            {question.options.find(o => o.isCorrect)
+              ? " " + t("pages:testForm.createPage.questionItem.correctIs", { letter: LETTERS[question.options.findIndex(o => o.isCorrect)] })
+              : " " + t("pages:testForm.createPage.questionItem.correctMissing")
             }
-            {question.duplicateWarning && (
-              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-            )}
-            {question.content && (
-              <span className="text-xs text-slate-400 truncate max-w-xs">{question.content}</span>
-            )}
-            {question.moderationStatus && (
-              <ModerationStatusBadge status={question.moderationStatus} />
-            )}
+          </span>
+          <div className="flex gap-2 flex-shrink-0">
+            <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+              <WrenchIcon className="w-3 h-3 mr-1" />{t("pages:testForm.question.edit")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+              onClick={() => onDelete(questionIndex)}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />{t("pages:testForm.question.delete")}
+            </Button>
           </div>
-        </AccordionTrigger>
-        <AccordionContent className="pt-2 pb-1">
-          {/* Moderasyon REJECTED banner */}
-          {question.moderationStatus === 'REJECTED' && (
-            <div className="mb-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
-              {t("pages:testForm.question.rejectedNotice")}
-            </div>
-          )}
-          {/* Ozet bilgi */}
-          {question.mediaUrl && (
-            <p className="text-xs text-slate-500 mb-2">{t("pages:testForm.createPage.imageAdded")}</p>
-          )}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <p className="text-xs text-slate-500">
-              {t("pages:testForm.createPage.questionItem.selectedCount", { filled: question.options.filter(o => o.content.trim()).length })}
-              {question.options.find(o => o.isCorrect)
-                ? " " + t("pages:testForm.createPage.questionItem.correctIs", { letter: LETTERS[question.options.findIndex(o => o.isCorrect)] })
-                : " " + t("pages:testForm.createPage.questionItem.correctMissing")
-              }
-            </p>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
-                <WrenchIcon className="w-3 h-3 mr-1" />{t("pages:testForm.question.edit")}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                onClick={() => onDelete(questionIndex)}
-              >
-                <Trash2 className="w-4 h-4 mr-1" />{t("pages:testForm.question.delete")}
-              </Button>
-            </div>
+        </div>
+        {question.moderationStatus === 'REJECTED' && (
+          <div className="mt-2 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+            {t("pages:testForm.question.rejectedNotice")}
           </div>
-        </AccordionContent>
-      </AccordionItem>
+        )}
+        {question.mediaUrl && (
+          <p className="text-xs text-slate-500 mt-1">{t("pages:testForm.createPage.imageAdded")}</p>
+        )}
+      </div>
 
       {editOpen && (
         <QuestionEditDialog
@@ -864,7 +858,7 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
               <Plus className="w-4 h-4 mr-1" />{t("pages:testForm.testCard.addQuestion")}
             </Button>
           </div>
-          <Accordion type="single" collapsible className="space-y-2">
+          <div className="space-y-2">
             {test.questions.map((q, qIdx) => (
               <QuestionItem
                 key={q._k}
@@ -892,7 +886,7 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
                 }}
               />
             ))}
-          </Accordion>
+          </div>
         </div>
 
         {/* DOCX import */}
