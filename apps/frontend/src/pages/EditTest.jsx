@@ -158,9 +158,11 @@ function QuestionEditDialog({ question, questionIndex, topicList, onSave, onSave
   const qImg = local._imgPreview || local.mediaUrl || null;
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-screen overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-screen overflow-y-auto">
         <DialogHeader><DialogTitle>{t("pages:testForm.question.editDialogTitle", { n: dispIdx + 1 })}</DialogTitle></DialogHeader>
-        <div className="space-y-5 py-2">
+        {/* 2-sütun düzeni: sol metadata, sağ seçenekler. lg altı tek sütun. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-5 py-2">
+          <div className="space-y-5">
           <div className="space-y-2">
             <Label>{t("pages:testForm.question.contentLabel")}</Label>
             <textarea className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" rows={3} placeholder={t("pages:testForm.question.contentPlaceholder")}
@@ -250,6 +252,9 @@ function QuestionEditDialog({ question, questionIndex, topicList, onSave, onSave
               )}
             </div>
           </div>
+          </div>{/* /sol sütun */}
+
+          {/* Seçenekler — sağ sütun */}
           <div className="space-y-3">
             <Label>{t("pages:testForm.question.optionsLabel")}</Label>
             {local.options.map((opt, oi) => {
