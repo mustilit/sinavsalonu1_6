@@ -369,7 +369,16 @@ export default function LiveSessionHost() {
                       >
                         {LETTERS[idx]}
                       </span>
-                      <span className="relative text-slate-700 flex-1">{opt.content}</span>
+                      <div className="relative flex-1 flex items-center gap-2 min-w-0">
+                        {opt.mediaUrl && (
+                          <img
+                            src={opt.mediaUrl}
+                            alt=""
+                            className="h-12 w-12 object-contain rounded border border-slate-200 bg-white flex-shrink-0"
+                          />
+                        )}
+                        {opt.content && <span className="text-slate-700">{opt.content}</span>}
+                      </div>
                       {showStats && stat && (
                         <div className="relative flex items-center gap-3 shrink-0 ml-2">
                           {isRound2 && r1 && (

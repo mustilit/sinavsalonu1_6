@@ -18,7 +18,12 @@ interface CreateLiveSessionInput {
     content?: string | null;
     mediaUrl?: string | null;
     order: number;
-    options: Array<{ content: string; isCorrect: boolean; order: number }>;
+    options: Array<{
+      content?: string | null;
+      mediaUrl?: string | null;
+      isCorrect: boolean;
+      order: number;
+    }>;
   }>;
 }
 
@@ -52,6 +57,13 @@ export class CreateLiveSessionUseCase {
         throw new AppError('VALIDATION_ERROR', 'Each question must have at least 2 options', 400);
       if (!q.options.some((o) => o.isCorrect))
         throw new AppError('VALIDATION_ERROR', 'Each question must have at least one correct option', 400);
+      // Her seçenek: metin VEYA görsel olmalı (görsel-only seçeneklere izin verilir)
+      for (const o of q.options) {
+        const optHasContent = !!o.content?.trim();
+        const optHasMedia   = !!o.mediaUrl?.trim();
+        if (!optHasContent && !optHasMedia)
+          throw new AppError('VALIDATION_ERROR', 'Each option must have content or image', 400);
+      }
     }
 
     let maxParticipants: number | null = null;
@@ -88,7 +100,8 @@ export class CreateLiveSessionUseCase {
             order: q.order,
             options: {
               create: q.options.map((o) => ({
-                content: o.content.trim(),
+                content: o.content?.trim() ?? '',
+                mediaUrl: o.mediaUrl?.trim() || null,
                 isCorrect: o.isCorrect,
                 order: o.order,
               })),

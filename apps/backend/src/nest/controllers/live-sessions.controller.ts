@@ -129,6 +129,7 @@ export class LiveSessionsController {
         order: i + 1,
         options: q.options.map((o, j) => ({
           content: o.content,
+          mediaUrl: o.mediaUrl,
           isCorrect: o.isCorrect,
           order: j + 1,
         })),

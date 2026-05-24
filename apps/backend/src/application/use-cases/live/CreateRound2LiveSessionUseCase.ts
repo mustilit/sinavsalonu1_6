@@ -59,6 +59,7 @@ export class CreateRound2LiveSessionUseCase {
             options: {
               create: q.options.map((o) => ({
                 content: o.content,
+                mediaUrl: (o as any).mediaUrl ?? null,
                 isCorrect: o.isCorrect,
                 order: o.order,
               })),

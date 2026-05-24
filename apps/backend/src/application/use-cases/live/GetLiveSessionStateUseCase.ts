@@ -138,7 +138,7 @@ export class GetLiveSessionStateUseCase {
         mediaUrl: currentQ.mediaUrl,
         order: currentQ.order,
         options: currentQ.options.map((o) => ({
-          id: o.id, content: o.content, order: o.order,
+          id: o.id, content: o.content, mediaUrl: (o as any).mediaUrl ?? null, order: o.order,
           isCorrect: isEducator || session.status === 'ENDED' ? o.isCorrect : undefined,
         })),
       } : null,

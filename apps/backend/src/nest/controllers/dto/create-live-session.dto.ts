@@ -2,9 +2,15 @@ import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsBoolean, I
 import { Type } from 'class-transformer';
 
 export class LiveOptionDto {
+  // Seçenek içeriği VEYA mediaUrl olmalı (use case'de cross-field doğrulama).
+  // Frontend görsel-only seçeneğe izin veriyor.
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  content!: string;
+  content?: string;
+
+  @IsOptional()
+  @IsString()
+  mediaUrl?: string;
 
   @IsBoolean()
   isCorrect!: boolean;

@@ -1262,6 +1262,7 @@ model LiveOption {
   id         String  @id @default(uuid())
   questionId String
   content    String
+  mediaUrl   String?
   isCorrect  Boolean
   order      Int
 
