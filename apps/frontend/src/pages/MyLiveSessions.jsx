@@ -149,9 +149,9 @@ function SessionCard({ session, round2, onOpenHost, onEdit, onStartRound1, onSta
               </div>
 
               {/* Katılım kodu — DRAFT/ACTIVE turlarda göster.
-                  Saydam arka fon; sadece text + ince border ile kart içinde yumuşak duruyor. */}
+                  Saydam fon, sadece sol kenarda renk şeridi. Çerçeve yok. */}
               {(isDraft || isActive) && session.joinCode && (
-                <div className="mt-2 inline-flex items-center gap-1.5 border border-amber-200 rounded-lg px-2.5 py-1">
+                <div className="mt-2 inline-flex items-center gap-1.5 border-l-2 border-amber-300 pl-2 pr-2 py-1">
                   <span className="text-xs text-amber-600 font-medium">{t("pages:myLiveSessions.card.joinCode")}</span>
                   <span className="text-sm font-mono font-bold text-amber-800 tracking-widest">
                     {session.joinCode}
@@ -161,7 +161,7 @@ function SessionCard({ session, round2, onOpenHost, onEdit, onStartRound1, onSta
 
               {/* Tur 2 katılım kodu — Tur 1 ENDED + Tur 2 DRAFT/ACTIVE */}
               {isEnded && round2 && !r2Ended && round2.joinCode && (
-                <div className="mt-2 inline-flex items-center gap-1.5 border border-indigo-200 rounded-lg px-2.5 py-1">
+                <div className="mt-2 inline-flex items-center gap-1.5 border-l-2 border-indigo-300 pl-2 pr-2 py-1">
                   <span className="text-xs text-indigo-600 font-medium">{t("pages:myLiveSessions.card.round2JoinCode")}</span>
                   <span className="text-sm font-mono font-bold text-indigo-800 tracking-widest">
                     {round2.joinCode}
