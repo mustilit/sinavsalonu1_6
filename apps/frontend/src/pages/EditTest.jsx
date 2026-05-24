@@ -365,6 +365,7 @@ function QuestionItem({ questionIndex, question, topicList, onUpdate, onDelete, 
 function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestDelete, totalTests, isExpanded, onToggleExpand }) {
   const { t } = useTranslation(["pages"]);
   const completedCount = test.questions.filter(isQComplete).length;
+  const [confirmDelete, setConfirmDelete] = useState(false);
   // İçeriği üreten render yardımcısı — collapsed iken sadece kısa özet satırı.
   if (!isExpanded) {
     return (
@@ -447,6 +448,18 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
             </div>
           </div>
           <div className="space-y-3 flex-shrink-0">
+            {/* Testi Sil butonu süre input'tan ÖNCE — isTimed toggle olduğunda
+                süre alanı görünüp kaybolurken bu buton sabit konumda kalır. */}
+            {totalTests > 1 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-rose-600 hover:bg-rose-50 w-full"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />{t("pages:testForm.testCard.deleteTest")}
+              </Button>
+            )}
             <div className="flex items-center gap-2">
               <Switch checked={test.isTimed} onCheckedChange={v => onTestUpdate({ ...test, isTimed: v })} />
               <Label className="cursor-pointer text-sm">{t("pages:testForm.testCard.timedToggle")}</Label>
@@ -457,14 +470,30 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
                 <Input type="number" min="1" className="w-24" value={test.duration} onChange={e => onTestUpdate({ ...test, duration: Number(e.target.value) })} />
               </div>
             )}
-            {totalTests > 1 && (
-              <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50 w-full" onClick={() => onTestDelete(testIndex)}>
-                <Trash2 className="w-4 h-4 mr-1" />{t("pages:testForm.testCard.deleteTest")}
-              </Button>
-            )}
           </div>
         </div>
       </CardHeader>
+
+      {/* Testi tamamen silmeden önce onay dialog'u — yanlışlıkla tıklamayı engeller. */}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("pages:testForm.testCard.deleteConfirmTitle")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600">{t("pages:testForm.testCard.deleteConfirmBody")}</p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setConfirmDelete(false)}>
+              {t("pages:testForm.testCard.deleteConfirmCancel")}
+            </Button>
+            <Button
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+              onClick={() => { setConfirmDelete(false); onTestDelete(testIndex); }}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />{t("pages:testForm.testCard.deleteConfirmConfirm")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <CardContent>
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold text-slate-700">

@@ -623,6 +623,7 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
   const { t } = useTranslation(["pages"]);
   const [showDOCXDialog, setShowDOCXDialog] = useState(false);
   const [docxLoading, setDocxLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // DOCX'ten soru içeri aktarma — iki format desteklenir:
   //   1) Düz metin: "1. Soru..." / "A) Seçenek..." / "Cevap: A" veya "*A"
@@ -843,13 +844,41 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
             )}
           </div>
           {(test.title || totalTests > 1) && (
-            <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50"
-              onClick={() => onTestDelete(testIndex)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-rose-600 hover:bg-rose-50"
+              onClick={() => setConfirmDelete(true)}
+              aria-label={t("pages:testForm.testCard.deleteTest")}
+              title={t("pages:testForm.testCard.deleteTest")}
+            >
               <Trash2 className="w-4 h-4" />
             </Button>
           )}
         </div>
       </CardHeader>
+
+      {/* Onay dialog'u — testi silmeden önce yanlışlıkla tıklamayı engeller. */}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("pages:testForm.testCard.deleteConfirmTitle")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600">{t("pages:testForm.testCard.deleteConfirmBody")}</p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setConfirmDelete(false)}>
+              {t("pages:testForm.testCard.deleteConfirmCancel")}
+            </Button>
+            <Button
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+              onClick={() => { setConfirmDelete(false); onTestDelete(testIndex); }}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />{t("pages:testForm.testCard.deleteConfirmConfirm")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <CardContent className="space-y-4">
         {/* Sorular accordionu */}
         <div>
