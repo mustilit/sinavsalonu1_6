@@ -437,23 +437,41 @@ function QuestionEditDialog({ question, questionIndex, topicList, onSave, onSave
                       <div className="flex items-center gap-2 flex-wrap">
                         <label className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border border-slate-200 bg-white hover:bg-slate-50 text-slate-600">
                           <ImagePlus className="w-3 h-3" />{t("pages:testForm.question.optionImage")}
+                          {/* multiple: birden fazla dosya seçilirse mevcut seçenekten itibaren
+                              sıralı olarak yerleştirilir (A → seçince A,B,C... doluverir).
+                              Tek dosya seçimi eski davranışla aynı. LiveSessionCreate ile aynı pattern. */}
                           <input
                             type="file"
                             accept="image/*"
+                            multiple
                             className="hidden"
                             onChange={(e) => {
-                              const f = e.target.files?.[0];
+                              const files = Array.from(e.target.files ?? []);
                               e.target.value = "";
-                              if (!f) return;
-                              if (opt._imgPreview) URL.revokeObjectURL(opt._imgPreview);
-                              setLocal(prev => ({
-                                ...prev,
-                                options: prev.options.map((o, i) =>
-                                  i === optIdx
-                                    ? { ...o, _imgFile: f, _imgPreview: URL.createObjectURL(f), mediaUrl: "" }
-                                    : o
-                                ),
-                              }));
+                              if (files.length === 0) return;
+                              setLocal(prev => {
+                                const next = [...prev.options];
+                                let filled = 0;
+                                for (let k = 0; k < files.length && (optIdx + k) < next.length; k++) {
+                                  const idx = optIdx + k;
+                                  const target = next[idx];
+                                  if (target._imgPreview) URL.revokeObjectURL(target._imgPreview);
+                                  next[idx] = {
+                                    ...target,
+                                    _imgFile: files[k],
+                                    _imgPreview: URL.createObjectURL(files[k]),
+                                    mediaUrl: "",
+                                  };
+                                  filled++;
+                                }
+                                if (files.length > 1) {
+                                  toast.success(t("pages:testForm.question.multiImageAssigned", { count: filled }));
+                                }
+                                if (files.length > filled) {
+                                  toast.warning(t("pages:testForm.question.multiImageSkipped", { count: files.length - filled }));
+                                }
+                                return { ...prev, options: next };
+                              });
                             }}
                           />
                         </label>

@@ -419,6 +419,8 @@
       "optionsLabel": "Seçenekler",
       "optionPlaceholder": "Seçenek {{letter}}",
       "optionImage": "Görsel",
+      "multiImageAssigned": "{{count}} seçeneğe görsel atandı",
+      "multiImageSkipped": "{{count}} dosya kalan seçenek olmadığı için atlandı",
       "selectedCount": "{{filled}} Seçenekli",
       "correctMissing": "• Doğru seçilmedi",
       "correctIs": "• Doğru: {{letter}}",

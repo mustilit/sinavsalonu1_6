@@ -419,6 +419,8 @@
       "optionsLabel": "选项",
       "optionPlaceholder": "选项 {{letter}}",
       "optionImage": "图片",
+      "multiImageAssigned": "已为 {{count}} 个选项分配图片",
+      "multiImageSkipped": "{{count}} 个文件已跳过 — 没有更多可用选项",
       "selectedCount": "{{filled}} 项选项",
       "correctMissing": "• 未选择正确答案",
       "correctIs": "• 正确答案: {{letter}}",

@@ -272,7 +272,31 @@ function QuestionEditDialog({ question, questionIndex, topicList, onSave, onSave
                       <div className="flex items-center gap-2">
                         <label className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 rounded text-xs border border-slate-200 hover:bg-slate-50 text-slate-600">
                           <ImagePlus className="w-3 h-3" />{t("pages:testForm.question.optionImage")}
-                          <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; if (opt._imgPreview) URL.revokeObjectURL(opt._imgPreview); setLocal(p => ({ ...p, options: p.options.map((o, i) => i === oi ? { ...o, _imgFile: f, _imgPreview: URL.createObjectURL(f), mediaUrl: "" } : o) })); }} />
+                          {/* multiple: A'ya tıklayıp 5 dosya seçersen A→E doluverir.
+                              LiveSessionCreate + CreateTest ile aynı pattern. */}
+                          <input type="file" accept="image/*" multiple className="hidden" onChange={e => {
+                            const files = Array.from(e.target.files ?? []);
+                            e.target.value = "";
+                            if (files.length === 0) return;
+                            setLocal(p => {
+                              const next = [...p.options];
+                              let filled = 0;
+                              for (let k = 0; k < files.length && (oi + k) < next.length; k++) {
+                                const idx = oi + k;
+                                const target = next[idx];
+                                if (target._imgPreview) URL.revokeObjectURL(target._imgPreview);
+                                next[idx] = { ...target, _imgFile: files[k], _imgPreview: URL.createObjectURL(files[k]), mediaUrl: "" };
+                                filled++;
+                              }
+                              if (files.length > 1) {
+                                toast.success(t("pages:testForm.question.multiImageAssigned", { count: filled }));
+                              }
+                              if (files.length > filled) {
+                                toast.warning(t("pages:testForm.question.multiImageSkipped", { count: files.length - filled }));
+                              }
+                              return { ...p, options: next };
+                            });
+                          }} />
                         </label>
                         {oImg && (<><div className="w-8 h-8 rounded bg-slate-100 overflow-hidden border border-slate-200"><img src={oImg} alt="" className="w-full h-full object-cover" /></div><button type="button" onClick={() => { if (opt._imgPreview) URL.revokeObjectURL(opt._imgPreview); setLocal(p => ({ ...p, options: p.options.map((o, i) => i === oi ? { ...o, _imgFile: null, _imgPreview: null, mediaUrl: "" } : o) })); }} className="p-1 rounded text-xs border hover:bg-rose-50 text-rose-500"><X className="w-3 h-3" /></button></>)}
                       </div>

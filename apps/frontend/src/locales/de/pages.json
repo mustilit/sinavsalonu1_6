@@ -419,6 +419,8 @@
       "optionsLabel": "Optionen",
       "optionPlaceholder": "Option {{letter}}",
       "optionImage": "Bild",
+      "multiImageAssigned": "{{count}} Optionen Bild zugewiesen",
+      "multiImageSkipped": "{{count}} Datei(en) übersprungen — keine weiteren Optionen verfügbar",
       "selectedCount": "{{filled}} Option(en)",
       "correctMissing": "• Richtige Option nicht ausgewählt",
       "correctIs": "• Richtig: {{letter}}",
