@@ -274,6 +274,10 @@
       "peopleTooltip_one": "{{count}} kişi",
       "peopleTooltip_other": "{{count}} kişi"
     },
+    "option": {
+      "zoom": "Görseli büyüt",
+      "zoomClose": "Kapat"
+    },
     "round": {
       "round1": "Tur 1: %{{pct}}",
       "round2Prefix": "Tur 2:"

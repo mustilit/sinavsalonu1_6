@@ -274,6 +274,10 @@
       "peopleTooltip_one": "{{count}} 人",
       "peopleTooltip_other": "{{count}} 人"
     },
+    "option": {
+      "zoom": "放大图片",
+      "zoomClose": "关闭"
+    },
     "round": {
       "round1": "第1轮:{{pct}}%",
       "round2Prefix": "第2轮:"

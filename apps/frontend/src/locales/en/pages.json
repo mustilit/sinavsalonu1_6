@@ -274,6 +274,10 @@
       "peopleTooltip_one": "{{count}} person",
       "peopleTooltip_other": "{{count}} people"
     },
+    "option": {
+      "zoom": "Enlarge image",
+      "zoomClose": "Close"
+    },
     "round": {
       "round1": "Round 1: {{pct}}%",
       "round2Prefix": "Round 2:"

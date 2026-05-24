@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Zap, Users, Loader2, LogIn, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { CheckCircle2, Zap, Users, Loader2, LogIn, TrendingUp, TrendingDown, Minus, ZoomIn, X as XIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Link, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -39,6 +40,8 @@ export default function LiveSessionJoin() {
   const [sessionId, setSessionId] = useState(null);
   const [lastQuestionId, setLastQuestionId] = useState(null);
   const [submittedOptionId, setSubmittedOptionId] = useState(null);
+  // Görsel büyüteç (lightbox)
+  const [lightboxUrl, setLightboxUrl] = useState(null);
 
   // Poll session state while joined
   const { data: state, isLoading: stateLoading } = useQuery({
@@ -386,12 +389,31 @@ export default function LiveSessionJoin() {
               <div className="flex-1 flex items-center gap-3 min-w-0">
                 {opt.mediaUrl && (
                   // Aday tarafı — TakeTest'teki TestPreviewModal ile aynı max-h-32.
-                  // Genişlik auto, object-contain ile aspect ratio korunur.
-                  <img
-                    src={opt.mediaUrl}
-                    alt=""
-                    className="max-h-32 w-auto max-w-xs object-contain rounded-lg border border-white/40 bg-white flex-shrink-0"
-                  />
+                  // Hover'da sağ alta büyüteç çıkar; tıklayınca lightbox açılır.
+                  // Span olarak render edilmeli (button içinde nested button kuralı).
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); setLightboxUrl(opt.mediaUrl); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setLightboxUrl(opt.mediaUrl);
+                      }
+                    }}
+                    className="relative group flex-shrink-0 cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-lg"
+                    aria-label="Görseli büyüt"
+                  >
+                    <img
+                      src={opt.mediaUrl}
+                      alt=""
+                      className="max-h-32 w-auto max-w-xs object-contain rounded-lg border border-white/40 bg-white"
+                    />
+                    <span className="absolute bottom-1 right-1 p-1 rounded-full bg-slate-900/70 text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      <ZoomIn className="w-4 h-4" />
+                    </span>
+                  </span>
                 )}
                 {opt.content && (
                   <span className={cn("font-medium", isSelected ? "text-white" : "text-slate-800")}>
@@ -444,6 +466,30 @@ export default function LiveSessionJoin() {
           </div>
         </div>
       )}
+
+      {/* ── Görsel büyüteç (lightbox) ── */}
+      <Dialog open={!!lightboxUrl} onOpenChange={(open) => { if (!open) setLightboxUrl(null); }}>
+        <DialogContent className="max-w-5xl p-2 bg-transparent border-0 shadow-none">
+          <DialogTitle className="sr-only">Görsel</DialogTitle>
+          {lightboxUrl && (
+            <div className="relative">
+              <img
+                src={lightboxUrl}
+                alt=""
+                className="w-full h-auto max-h-[85vh] object-contain rounded-xl bg-white"
+              />
+              <button
+                type="button"
+                onClick={() => setLightboxUrl(null)}
+                className="absolute top-2 right-2 p-2 rounded-full bg-slate-900/70 text-white hover:bg-slate-900/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                aria-label="Kapat"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

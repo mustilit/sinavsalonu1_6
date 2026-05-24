@@ -16,7 +16,7 @@ import {
   ChevronLeft, ChevronRight, BarChart2, EyeOff, Users,
   Play, Square, Zap, Copy, CheckCircle2,
   RefreshCw, TrendingUp, TrendingDown, Minus, AlertTriangle,
-  Home, List,
+  Home, List, ZoomIn, X as XIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -146,6 +146,8 @@ export default function LiveSessionHost() {
   // Onay dialog'ları — native confirm() yerine site-içi modal kullanılır.
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const [round2ConfirmOpen, setRound2ConfirmOpen] = useState(false);
+  // Görsel büyüteç (lightbox) — null değilse o URL büyük gösterilir
+  const [lightboxUrl, setLightboxUrl] = useState(null);
 
   const { data: state, isLoading } = useQuery({
     queryKey: ["liveState", sessionId],
@@ -297,12 +299,22 @@ export default function LiveSessionHost() {
               // Soru görseli: container max-h + img h-full kombinasyonu crop'a yol
               // açıyordu. max-h'yi img'in kendisine taşıdık; w-full + max-h + object-contain
               // ile tam görsel görünür, sığmazsa orantılı küçülür (kırpılmaz).
-              <div className="mt-2 w-full rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
+              // Sağ alta hover'da büyüteç — lightbox açar.
+              <div className="mt-2 w-full rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center relative group">
                 <img
                   src={q.mediaUrl}
                   alt={t("pages:liveHost.question.mediaAlt")}
                   className="max-h-96 max-w-full w-auto h-auto object-contain"
                 />
+                <button
+                  type="button"
+                  onClick={() => setLightboxUrl(q.mediaUrl)}
+                  className="absolute bottom-2 right-2 p-1.5 rounded-full bg-slate-900/70 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-900/90 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                  aria-label={t("pages:liveHost.option.zoom")}
+                  title={t("pages:liveHost.option.zoom")}
+                >
+                  <ZoomIn className="w-5 h-5" />
+                </button>
               </div>
             )}
             <p className="text-slate-700 text-lg mt-3 leading-relaxed">
@@ -371,13 +383,23 @@ export default function LiveSessionHost() {
                       </span>
                       <div className="relative flex-1 flex items-center gap-3 min-w-0">
                         {opt.mediaUrl && (
-                          // Normal test (TestPreviewModal/QuestionForm) ile aynı max-h:
-                          // max-h-32 (128px), genişlik auto. object-contain ile aspect korunur.
-                          <img
-                            src={opt.mediaUrl}
-                            alt=""
-                            className="max-h-32 w-auto max-w-xs object-contain rounded-lg border border-slate-200 bg-white flex-shrink-0"
-                          />
+                          // Hover'da sağ alta büyüteç çıkar; tıklayınca lightbox açılır.
+                          <div className="relative group flex-shrink-0">
+                            <img
+                              src={opt.mediaUrl}
+                              alt=""
+                              className="max-h-32 w-auto max-w-xs object-contain rounded-lg border border-slate-200 bg-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setLightboxUrl(opt.mediaUrl); }}
+                              className="absolute bottom-1 right-1 p-1 rounded-full bg-slate-900/70 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-900/90 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                              aria-label={t("pages:liveHost.option.zoom")}
+                              title={t("pages:liveHost.option.zoom")}
+                            >
+                              <ZoomIn className="w-4 h-4" />
+                            </button>
+                          </div>
                         )}
                         {opt.content && <span className="text-slate-700">{opt.content}</span>}
                       </div>
@@ -635,6 +657,31 @@ export default function LiveSessionHost() {
               {round2Mut.isPending ? t("pages:liveHost.ended.creatingRound2") : t("pages:liveHost.round2Dialog.confirm")}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Görsel büyüteç (lightbox) — soru ve seçenek görselleri büyük gösterilir ── */}
+      <Dialog open={!!lightboxUrl} onOpenChange={(open) => { if (!open) setLightboxUrl(null); }}>
+        <DialogContent className="max-w-5xl p-2 bg-transparent border-0 shadow-none">
+          {/* Radix dialog erişilebilirlik için DialogTitle ister — sr-only ile saklıyoruz */}
+          <DialogTitle className="sr-only">{t("pages:liveHost.option.zoom")}</DialogTitle>
+          {lightboxUrl && (
+            <div className="relative">
+              <img
+                src={lightboxUrl}
+                alt=""
+                className="w-full h-auto max-h-[85vh] object-contain rounded-xl bg-white"
+              />
+              <button
+                type="button"
+                onClick={() => setLightboxUrl(null)}
+                className="absolute top-2 right-2 p-2 rounded-full bg-slate-900/70 text-white hover:bg-slate-900/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                aria-label={t("pages:liveHost.option.zoomClose")}
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
