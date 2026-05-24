@@ -8,6 +8,7 @@ import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Zap, Plus, Users, Clock, CheckCircle2,
   FileEdit, ChevronRight, Radio, Eye, Pencil, Play,
@@ -228,6 +229,9 @@ export default function MyLiveSessions() {
   const queryClient    = useQueryClient();
 
   const [statusFilter, setStatusFilter] = useState("ALL");
+  // Başlat onay dialog'u — native window.confirm yerine projedeki shadcn Dialog
+  // ile tutarlı görünüm. State: null veya { kind: 'round1'|'round2', sessionId, existingRound2? }
+  const [confirmStart, setConfirmStart] = useState(null);
 
   // Cursor pagination — backend her sayfa için {items, round2, nextCursor} döner.
   const {
@@ -388,14 +392,10 @@ export default function MyLiveSessions() {
               round2={round2ByParent.get(s.id) ?? null}
               onOpenHost={goToHost}
               onEdit={goToHost}
-              onStartRound1={(id) => {
-                if (confirm(t("pages:myLiveSessions.confirms.startRound1")))
-                  startRound1Mut.mutate(id);
-              }}
-              onStartRound2={(parentId, existingRound2) => {
-                if (confirm(t("pages:myLiveSessions.confirms.startRound2")))
-                  startRound2Mut.mutate({ parentId, existingRound2 });
-              }}
+              onStartRound1={(id) => setConfirmStart({ kind: 'round1', sessionId: id })}
+              onStartRound2={(parentId, existingRound2) =>
+                setConfirmStart({ kind: 'round2', sessionId: parentId, existingRound2 })
+              }
               starting={starting}
             />
           ))}
@@ -416,6 +416,51 @@ export default function MyLiveSessions() {
           </Button>
         </div>
       )}
+
+      {/* Oturum başlatma onay dialog'u — native window.confirm yerine projedeki
+          shadcn Dialog. round1 ve round2 için aynı bileşen, sadece metin değişir. */}
+      <Dialog open={!!confirmStart} onOpenChange={(o) => { if (!o) setConfirmStart(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {confirmStart?.kind === 'round2'
+                ? t("pages:myLiveSessions.card.startRound2")
+                : t("pages:myLiveSessions.card.startRound1")}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600 whitespace-pre-line">
+            {confirmStart?.kind === 'round2'
+              ? t("pages:myLiveSessions.confirms.startRound2")
+              : t("pages:myLiveSessions.confirms.startRound1")}
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setConfirmStart(null)} disabled={starting}>
+              {t("pages:testForm.testCard.deleteConfirmCancel")}
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-1"
+              disabled={starting}
+              onClick={() => {
+                if (!confirmStart) return;
+                if (confirmStart.kind === 'round1') {
+                  startRound1Mut.mutate(confirmStart.sessionId);
+                } else {
+                  startRound2Mut.mutate({
+                    parentId: confirmStart.sessionId,
+                    existingRound2: confirmStart.existingRound2,
+                  });
+                }
+                setConfirmStart(null);
+              }}
+            >
+              <Play className="w-4 h-4" aria-hidden="true" />
+              {confirmStart?.kind === 'round2'
+                ? t("pages:myLiveSessions.card.startRound2")
+                : t("pages:myLiveSessions.card.startRound1")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
