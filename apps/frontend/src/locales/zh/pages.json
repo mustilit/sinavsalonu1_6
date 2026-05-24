@@ -422,6 +422,9 @@
       "errorMinOptions": "至少需要填写 2 个选项",
       "errorMissingCorrect": "未标记正确答案",
       "errorIncomplete": "存在缺失项",
+      "typeText": "文字",
+      "typeImage": "图片",
+      "hasSolution": "含解答",
       "edit": "编辑",
       "delete": "删除",
       "rejectedNotice": "此题违反内容政策。"

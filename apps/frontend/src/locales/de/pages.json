@@ -422,6 +422,9 @@
       "errorMinOptions": "Mindestens 2 Optionen müssen ausgefüllt sein",
       "errorMissingCorrect": "Richtige Antwort nicht markiert",
       "errorIncomplete": "Felder fehlen",
+      "typeText": "Text",
+      "typeImage": "Bild",
+      "hasSolution": "Mit Lösung",
       "edit": "Bearbeiten",
       "delete": "Löschen",
       "rejectedNotice": "Diese Frage verstößt gegen die Inhaltsrichtlinie."

@@ -563,8 +563,18 @@ function QuestionItem({ questionIndex, question, topicList, onUpdate, onDelete, 
           {question.duplicateWarning && (
             <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
           )}
-          {question.content && (
-            <span className="text-xs text-slate-400 truncate min-w-0 flex-1">{question.content}</span>
+          {/* İçerik metni yerine sabit etiketler: tür + çözümlü işareti. */}
+          {(question.content?.trim() || question.mediaUrl) && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 flex-shrink-0">
+              {question.mediaUrl
+                ? t("pages:testForm.question.typeImage")
+                : t("pages:testForm.question.typeText")}
+            </span>
+          )}
+          {(question.solutionText?.trim() || question.solutionMediaUrl) && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 flex-shrink-0">
+              {t("pages:testForm.question.hasSolution")}
+            </span>
           )}
           {question.moderationStatus && (
             <ModerationStatusBadge status={question.moderationStatus} />

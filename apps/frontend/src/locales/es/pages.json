@@ -422,6 +422,9 @@
       "errorMinOptions": "Al menos 2 opciones deben estar llenas",
       "errorMissingCorrect": "Respuesta correcta no marcada",
       "errorIncomplete": "Faltan campos",
+      "typeText": "Texto",
+      "typeImage": "Imagen",
+      "hasSolution": "Con solución",
       "edit": "Editar",
       "delete": "Eliminar",
       "rejectedNotice": "Esta pregunta infringe la política de contenido."

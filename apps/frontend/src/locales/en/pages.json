@@ -422,6 +422,9 @@
       "errorMinOptions": "At least 2 options must be filled",
       "errorMissingCorrect": "Correct answer not marked",
       "errorIncomplete": "Missing fields",
+      "typeText": "Text",
+      "typeImage": "Image",
+      "hasSolution": "With solution",
       "edit": "Edit",
       "delete": "Delete",
       "rejectedNotice": "This question was found to violate content policy."
