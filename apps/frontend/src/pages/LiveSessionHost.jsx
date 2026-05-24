@@ -462,18 +462,9 @@ export default function LiveSessionHost() {
                 </Button>
               )}
 
-              {/* Round 2 already exists */}
-              {state.roundNumber === 1 && state.round2 && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-center text-sm text-indigo-700">
-                  {t("pages:liveHost.ended.round2Exists")} <strong className="font-mono">{state.round2.joinCode}</strong>
-                  <Button
-                    size="sm" variant="ghost" className="ml-3 text-indigo-600"
-                    onClick={() => navigate(createPageUrl("LiveSessionHost") + "?id=" + state.round2.id)}
-                  >
-                    {t("pages:liveHost.ended.goToRound2")}
-                  </Button>
-                </div>
-              )}
+              {/* '2. tur mevcut — Kod ... Oturuma Git' hint'i kaldırıldı:
+                  Round 2 oluşturulduktan sonra eğitici onu MyLiveSessions'tan
+                  açar; host sayfasında ayrı bir banner gereksiz. */}
 
               {/* Oturum sonu navigasyon butonları — eğitici nereye gideceğini seçer.
                   Round 2 son-test ise Round 2 oluşturma butonu zaten yok; tek seçenek
