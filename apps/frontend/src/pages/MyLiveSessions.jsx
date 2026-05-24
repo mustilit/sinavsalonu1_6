@@ -167,7 +167,7 @@ function SessionCard({ session, round2, onOpenHost, onEdit, onStartRound1, onSta
             {isActive && (
               <Button
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 gap-1"
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-1"
                 onClick={() => onOpenHost(session.id)}
               >
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -203,7 +203,7 @@ function SessionCard({ session, round2, onOpenHost, onEdit, onStartRound1, onSta
                 {round2 && round2.status === "ACTIVE" && (
                   <Button
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 gap-1"
+                    className="bg-blue-600 hover:bg-blue-700 text-white gap-1"
                     onClick={() => onOpenHost(round2.id)}
                   >
                     <ChevronRight className="w-3.5 h-3.5" />
