@@ -821,15 +821,24 @@
       "review": "复习",
       "reviewRound1": "复习第 1 轮",
       "reviewRound2": "复习第 2 轮",
-      "startRound2": "开始第 2 轮",
-      "goRound2": "前往第 2 轮"
+      "startRound2": "启动第 2 场",
+      "goRound2": "前往第 2 轮",
+      "edit": "编辑",
+      "startRound1": "启动第 1 场",
+      "manageRound1": "管理第 1 场",
+      "manageRound2": "管理第 2 场"
     },
     "confirms": {
-      "round2": "使用相同题目创建第 2 轮(后测)吗?\n仅本轮的考生可加入。"
+      "round2": "使用相同题目创建第 2 轮(后测)吗?\n仅本轮的考生可加入。",
+      "startRound1": "启动第 1 场?\n参与者可凭代码加入。",
+      "startRound2": "启动第 2 场?\n仅参加过第 1 场的参与者可加入。"
     },
     "toasts": {
       "round2Created": "第 2 轮已创建!代码:{{code}}",
-      "round2Failed": "无法创建第 2 轮"
+      "round2Failed": "无法创建第 2 轮",
+      "round1Started": "第 1 场已启动",
+      "round2Started": "第 2 场已启动",
+      "startFailed": "启动场次失败"
     }
   },
   "educatorRefunds": {

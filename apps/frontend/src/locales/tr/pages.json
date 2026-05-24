@@ -821,15 +821,24 @@
       "review": "İncele",
       "reviewRound1": "Tur 1 İncele",
       "reviewRound2": "Tur 2 İncele",
-      "startRound2": "İkinci Turu Başlat",
-      "goRound2": "Tur 2'ye Git"
+      "startRound2": "2. Oturumu Başlat",
+      "goRound2": "Tur 2'ye Git",
+      "edit": "Düzenle",
+      "startRound1": "1. Oturumu Başlat",
+      "manageRound1": "1. Oturumu Yönet",
+      "manageRound2": "2. Oturumu Yönet"
     },
     "confirms": {
-      "round2": "Aynı soruları kullanarak 2. tur (son-test) oluşturmak istiyor musunuz?\nYalnızca bu tura katılan adaylar girebilir."
+      "round2": "Aynı soruları kullanarak 2. tur (son-test) oluşturmak istiyor musunuz?\nYalnızca bu tura katılan adaylar girebilir.",
+      "startRound1": "1. Oturumu başlatmak istediğine emin misin?\nKatılımcılar koddan girmeye başlayabilir.",
+      "startRound2": "2. Oturumu başlatmak istediğine emin misin?\nYalnızca 1. oturuma katılan adaylar girebilir."
     },
     "toasts": {
       "round2Created": "2. tur oluşturuldu! Kod: {{code}}",
-      "round2Failed": "2. tur oluşturulamadı"
+      "round2Failed": "2. tur oluşturulamadı",
+      "round1Started": "1. oturum başlatıldı",
+      "round2Started": "2. oturum başlatıldı",
+      "startFailed": "Oturum başlatılamadı"
     }
   },
   "educatorRefunds": {

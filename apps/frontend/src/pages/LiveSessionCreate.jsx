@@ -705,7 +705,11 @@ export default function LiveSessionCreate() {
           : "Canlı test oluşturuldu!"
         );
         setPaymentOpen(false);
-        navigate(createPageUrl("LiveSessionHost") + "?id=" + session.id);
+        // Ödeme sonrası "Canlı Testlerim" sayfasına git — kullanıcı oturumu
+        // listede görür ve "1. Oturumu Başlat" butonuyla kontrollü şekilde
+        // başlatır. Önceden doğrudan host'a yönleniyordu; bu, ödeme yapan
+        // kullanıcının oturumun otomatik başladığı yanılsamasına yol açıyordu.
+        navigate(createPageUrl("MyLiveSessions"));
       } catch (e) {
         toast.error(
           e?.response?.data?.error?.message ||

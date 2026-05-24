@@ -821,15 +821,24 @@
       "review": "Überprüfen",
       "reviewRound1": "Runde 1 überprüfen",
       "reviewRound2": "Runde 2 überprüfen",
-      "startRound2": "Runde 2 starten",
-      "goRound2": "Zu Runde 2"
+      "startRound2": "Sitzung 2 starten",
+      "goRound2": "Zu Runde 2",
+      "edit": "Bearbeiten",
+      "startRound1": "Sitzung 1 starten",
+      "manageRound1": "Sitzung 1 verwalten",
+      "manageRound2": "Sitzung 2 verwalten"
     },
     "confirms": {
-      "round2": "Runde 2 (Nachtest) mit denselben Fragen erstellen?\nNur Kandidaten dieser Runde können teilnehmen."
+      "round2": "Runde 2 (Nachtest) mit denselben Fragen erstellen?\nNur Kandidaten dieser Runde können teilnehmen.",
+      "startRound1": "Sitzung 1 starten?\nTeilnehmer können sich mit dem Code anmelden.",
+      "startRound2": "Sitzung 2 starten?\nNur Teilnehmer aus Sitzung 1 können beitreten."
     },
     "toasts": {
       "round2Created": "Runde 2 erstellt! Code: {{code}}",
-      "round2Failed": "Runde 2 konnte nicht erstellt werden"
+      "round2Failed": "Runde 2 konnte nicht erstellt werden",
+      "round1Started": "Sitzung 1 gestartet",
+      "round2Started": "Sitzung 2 gestartet",
+      "startFailed": "Sitzung konnte nicht gestartet werden"
     }
   },
   "educatorRefunds": {

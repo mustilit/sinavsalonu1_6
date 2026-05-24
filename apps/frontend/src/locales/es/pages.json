@@ -320,6 +320,9 @@
       "round2Created": "¡Ronda 2 creada! Código: {{code}}",
       "round2NoNav": "Ronda 2 creada pero la navegación falló",
       "round2Failed": "No se pudo crear la Ronda 2",
+      "round1Started": "Sesión 1 iniciada",
+      "round2Started": "Sesión 2 iniciada",
+      "startFailed": "No se pudo iniciar la sesión",
       "genericError": "Error"
     },
     "notFound": "Sesión no encontrada"
@@ -821,15 +824,24 @@
       "review": "Revisar",
       "reviewRound1": "Revisar Ronda 1",
       "reviewRound2": "Revisar Ronda 2",
-      "startRound2": "Iniciar Ronda 2",
-      "goRound2": "Ir a Ronda 2"
+      "startRound2": "Iniciar sesión 2",
+      "goRound2": "Ir a Ronda 2",
+      "edit": "Editar",
+      "startRound1": "Iniciar sesión 1",
+      "manageRound1": "Gestionar sesión 1",
+      "manageRound2": "Gestionar sesión 2"
     },
     "confirms": {
-      "round2": "¿Crear ronda 2 (post-test) con las mismas preguntas?\nSolo los candidatos de esta ronda pueden unirse."
+      "round2": "¿Crear ronda 2 (post-test) con las mismas preguntas?\nSolo los candidatos de esta ronda pueden unirse.",
+      "startRound1": "¿Iniciar la sesión 1?\nLos participantes podrán unirse con el código.",
+      "startRound2": "¿Iniciar la sesión 2?\nSolo los participantes de la sesión 1 podrán unirse."
     },
     "toasts": {
       "round2Created": "¡Ronda 2 creada! Código: {{code}}",
-      "round2Failed": "No se pudo crear la ronda 2"
+      "round2Failed": "No se pudo crear la ronda 2",
+      "round1Started": "Sesión 1 iniciada",
+      "round2Started": "Sesión 2 iniciada",
+      "startFailed": "No se pudo iniciar la sesión"
     }
   },
   "educatorRefunds": {

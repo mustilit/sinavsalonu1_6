@@ -821,15 +821,24 @@
       "review": "Review",
       "reviewRound1": "Review Round 1",
       "reviewRound2": "Review Round 2",
-      "startRound2": "Start Round 2",
-      "goRound2": "Go to Round 2"
+      "startRound2": "Start Session 2",
+      "goRound2": "Go to Round 2",
+      "edit": "Edit",
+      "startRound1": "Start Session 1",
+      "manageRound1": "Manage Session 1",
+      "manageRound2": "Manage Session 2"
     },
     "confirms": {
-      "round2": "Create round 2 (post-test) with the same questions?\nOnly candidates from this round can join."
+      "round2": "Create round 2 (post-test) with the same questions?\nOnly candidates from this round can join.",
+      "startRound1": "Start session 1?\nParticipants will be able to join with the code.",
+      "startRound2": "Start session 2?\nOnly participants who joined session 1 will be allowed in."
     },
     "toasts": {
       "round2Created": "Round 2 created! Code: {{code}}",
-      "round2Failed": "Could not create round 2"
+      "round2Failed": "Could not create round 2",
+      "round1Started": "Session 1 started",
+      "round2Started": "Session 2 started",
+      "startFailed": "Could not start session"
     }
   },
   "educatorRefunds": {

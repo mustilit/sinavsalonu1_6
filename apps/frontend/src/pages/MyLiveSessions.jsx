@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Zap, Plus, Users, Clock, CheckCircle2,
-  FileEdit, ChevronRight, Radio, RefreshCw, Eye,
+  FileEdit, ChevronRight, Radio, Eye, Pencil, Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -30,13 +30,22 @@ function safeDate(iso) {
 }
 
 /**
- * Oturum kartı — Tur 1 (parent) için tüm yaşam döngüsünü tek satırda yönetir:
- *  - DRAFT/ACTIVE: tıkla → host (eski davranış)
- *  - ENDED + Tur 2 yok: "İncele" + "İkinci Turu Başlat"
- *  - ENDED + Tur 2 DRAFT/ACTIVE: "İncele" + "Tur 2'ye Git"
- *  - ENDED + Tur 2 ENDED: "Tur 1 İncele" + "Tur 2 İncele"
+ * Oturum kartı — Tur 1 (parent) için tüm yaşam döngüsünü tek satırda yönetir.
+ *
+ * Sıralı oturum kuralı:
+ *  - Tur 1 DRAFT          → [Düzenle] [1. Oturumu Başlat]
+ *  - Tur 1 ACTIVE         → [1. Oturumu Yönet]
+ *  - Tur 1 ENDED, Tur 2 yok        → [Tur 1'i İncele] [2. Oturumu Başlat]  (createRound2 + start)
+ *  - Tur 1 ENDED, Tur 2 DRAFT      → [Tur 1'i İncele] [2. Oturumu Başlat]  (start)
+ *  - Tur 1 ENDED, Tur 2 ACTIVE     → [Tur 1'i İncele] [2. Oturumu Yönet]
+ *  - Tur 1 ENDED, Tur 2 ENDED      → [Tur 1'i İncele] [Tur 2'yi İncele]
+ *
+ * "Başlat" = backend liveApi.start (DRAFT → ACTIVE) ve ardından host sayfasına.
+ * "Düzenle" = DRAFT'ta host sayfasına gider (host orada içerik düzenlenebilir
+ * gösterimi sağlar; backend update endpoint'i ileride eklenince inline edit'e
+ * geçilebilir).
  */
-function SessionCard({ session, round2, onOpenHost, onCreateRound2, creating }) {
+function SessionCard({ session, round2, onOpenHost, onEdit, onStartRound1, onStartRound2, starting }) {
   const { t } = useTranslation(["pages"]);
   const cfg        = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.DRAFT;
   const StatusIcon = cfg.icon;
@@ -128,44 +137,77 @@ function SessionCard({ session, round2, onOpenHost, onCreateRound2, creating }) 
           </div>
 
           {/* Sağ aksiyon alanı — duruma göre */}
-          <div className="flex items-start gap-2 shrink-0">
-            {(isDraft || isActive) && (
-              <Button size="sm" variant="outline" onClick={() => onOpenHost(session.id)}>
-                <ChevronRight className="w-4 h-4 ml-1" />
-                {t("pages:myLiveSessions.card.manage")}
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            {/* ── Tur 1 DRAFT: Düzenle + 1. Oturumu Başlat ─────────────── */}
+            {isDraft && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEdit(session.id)}
+                  className="gap-1"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  {t("pages:myLiveSessions.card.edit")}
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-amber-500 hover:bg-amber-600 gap-1"
+                  onClick={() => onStartRound1(session.id)}
+                  disabled={starting}
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  {t("pages:myLiveSessions.card.startRound1")}
+                </Button>
+              </>
+            )}
+
+            {/* ── Tur 1 ACTIVE: yönet ───────────────────────────────────── */}
+            {isActive && (
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 gap-1"
+                onClick={() => onOpenHost(session.id)}
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+                {t("pages:myLiveSessions.card.manageRound1")}
               </Button>
             )}
+
+            {/* ── Tur 1 ENDED: incele + 2. tur akışı ────────────────────── */}
             {isEnded && (
-              <div className="flex flex-col items-end gap-2">
-                {/* Tur 1 incele */}
+              <>
                 <Button size="sm" variant="outline" onClick={() => onOpenHost(session.id)} className="gap-1">
                   <Eye className="w-3.5 h-3.5" />
                   {round2 ? t("pages:myLiveSessions.card.reviewRound1") : t("pages:myLiveSessions.card.review")}
                 </Button>
-                {/* Tur 2 yoksa: İkinci Turu Başlat */}
-                {!round2 && (
+
+                {/* Tur 2 yok veya DRAFT → "2. Oturumu Başlat" (createRound2 gerekirse + start) */}
+                {(!round2 || round2.status === "DRAFT") && (
                   <Button
                     size="sm"
-                    className="bg-indigo-600 hover:bg-indigo-700 gap-1"
-                    onClick={() => onCreateRound2(session.id)}
-                    disabled={creating}
+                    className="bg-amber-500 hover:bg-amber-600 gap-1"
+                    onClick={() => onStartRound2(session.id, round2)}
+                    disabled={starting}
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
+                    <Play className="w-3.5 h-3.5" />
                     {t("pages:myLiveSessions.card.startRound2")}
                   </Button>
                 )}
-                {/* Tur 2 var ama bitmemiş: Tur 2'ye Git */}
-                {round2 && !r2Ended && (
+
+                {/* Tur 2 ACTIVE → "Tur 2 Yönet" */}
+                {round2 && round2.status === "ACTIVE" && (
                   <Button
                     size="sm"
-                    className="bg-indigo-600 hover:bg-indigo-700 gap-1"
+                    className="bg-emerald-600 hover:bg-emerald-700 gap-1"
                     onClick={() => onOpenHost(round2.id)}
                   >
                     <ChevronRight className="w-3.5 h-3.5" />
-                    {t("pages:myLiveSessions.card.goRound2")}
+                    {t("pages:myLiveSessions.card.manageRound2")}
                   </Button>
                 )}
-                {/* Tur 2 de bitmiş: İncele */}
+
+                {/* Tur 2 ENDED → "Tur 2 İncele" */}
                 {round2 && r2Ended && (
                   <Button
                     size="sm"
@@ -177,7 +219,7 @@ function SessionCard({ session, round2, onOpenHost, onCreateRound2, creating }) 
                     {t("pages:myLiveSessions.card.reviewRound2")}
                   </Button>
                 )}
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -210,21 +252,46 @@ export default function MyLiveSessions() {
     return { parentSessions: parents, round2ByParent: r2Map };
   }, [sessions]);
 
-  const round2Mut = useMutation({
-    mutationFn: (id) => liveApi.createRound2(id),
-    onSuccess: (data) => {
-      toast.success(t("pages:myLiveSessions.toasts.round2Created", { code: data?.joinCode ?? "—" }));
+  // Tur 1 başlatma: DRAFT → ACTIVE; sonra host sayfasına git.
+  const startRound1Mut = useMutation({
+    mutationFn: (id) => liveApi.start(id),
+    onSuccess: (data, id) => {
+      toast.success(t("pages:myLiveSessions.toasts.round1Started"));
       queryClient.invalidateQueries({ queryKey: ["myLiveSessions"] });
-      const newId = data?.id ?? data?.sessionId;
-      if (newId) {
-        navigate(createPageUrl("LiveSessionHost") + "?id=" + newId);
-      }
+      navigate(createPageUrl("LiveSessionHost") + "?id=" + (data?.id ?? id));
     },
     onError: (e) => {
       const d = e?.response?.data;
-      toast.error(d?.error?.message || d?.message || t("pages:myLiveSessions.toasts.round2Failed"));
+      toast.error(d?.error?.message || d?.message || t("pages:myLiveSessions.toasts.startFailed"));
     },
   });
+
+  // Tur 2 başlatma: round 2 yoksa önce createRound2 + start; varsa DRAFT'ı start.
+  const startRound2Mut = useMutation({
+    mutationFn: async ({ parentId, existingRound2 }) => {
+      let r2 = existingRound2;
+      if (!r2) {
+        r2 = await liveApi.createRound2(parentId);
+      }
+      const targetId = r2?.id ?? r2?.sessionId;
+      if (!targetId) throw new Error("ROUND2_ID_MISSING");
+      // Yeni oluşturulan veya DRAFT round 2'yi ACTIVE'ye geçir
+      const started = await liveApi.start(targetId);
+      return { ...r2, ...started };
+    },
+    onSuccess: (data) => {
+      toast.success(t("pages:myLiveSessions.toasts.round2Started"));
+      queryClient.invalidateQueries({ queryKey: ["myLiveSessions"] });
+      const newId = data?.id ?? data?.sessionId;
+      if (newId) navigate(createPageUrl("LiveSessionHost") + "?id=" + newId);
+    },
+    onError: (e) => {
+      const d = e?.response?.data;
+      toast.error(d?.error?.message || d?.message || t("pages:myLiveSessions.toasts.startFailed"));
+    },
+  });
+
+  const starting = startRound1Mut.isPending || startRound2Mut.isPending;
 
   const draft  = parentSessions.filter((s) => s.status === "DRAFT");
   const active = parentSessions.filter((s) => s.status === "ACTIVE");
@@ -251,11 +318,16 @@ export default function MyLiveSessions() {
           session={s}
           round2={round2ByParent.get(s.id) ?? null}
           onOpenHost={goToHost}
-          onCreateRound2={(id) => {
-            if (confirm(t("pages:myLiveSessions.confirms.round2")))
-              round2Mut.mutate(id);
+          onEdit={goToHost}
+          onStartRound1={(id) => {
+            if (confirm(t("pages:myLiveSessions.confirms.startRound1")))
+              startRound1Mut.mutate(id);
           }}
-          creating={round2Mut.isPending}
+          onStartRound2={(parentId, existingRound2) => {
+            if (confirm(t("pages:myLiveSessions.confirms.startRound2")))
+              startRound2Mut.mutate({ parentId, existingRound2 });
+          }}
+          starting={starting}
         />
       ))}
     </div>
