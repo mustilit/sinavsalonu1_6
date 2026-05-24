@@ -22,7 +22,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   ArrowLeft, WrenchIcon, History, Plus, Package,
   BookOpen, Eye, CheckCircle2, Trash2, AlertTriangle, Upload, X, Loader2, ImagePlus,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Pencil,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { buildPageUrl, useAppNavigate } from "@/lib/navigation";
@@ -568,17 +568,26 @@ function QuestionItem({ questionIndex, question, topicList, onUpdate, onDelete, 
               : " " + t("pages:testForm.createPage.questionItem.correctMissing")
             }
           </span>
-          <div className="flex gap-2 flex-shrink-0">
-            <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
-              <WrenchIcon className="w-3 h-3 mr-1" />{t("pages:testForm.question.edit")}
+          <div className="flex gap-1 flex-shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEditOpen(true)}
+              aria-label={t("pages:testForm.question.edit")}
+              title={t("pages:testForm.question.edit")}
+              className="h-8 w-8 p-0"
+            >
+              <Pencil className="w-4 h-4" aria-hidden="true" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+              className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
               onClick={() => onDelete(questionIndex)}
+              aria-label={t("pages:testForm.question.delete")}
+              title={t("pages:testForm.question.delete")}
             >
-              <Trash2 className="w-4 h-4 mr-1" />{t("pages:testForm.question.delete")}
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
         </div>

@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Plus, Package, BookOpen, Eye, CheckCircle2,
   Trash2, AlertTriangle, X, Loader2, ImagePlus, Save,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Pencil,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { buildPageUrl, useAppNavigate } from "@/lib/navigation";
@@ -328,10 +328,26 @@ function QuestionItem({ questionIndex, question, topicList, onUpdate, onDelete, 
           <span className="text-xs text-slate-500 flex-shrink-0 ml-auto">
             {t("pages:testForm.question.selectedCount", { filled: filledOpts })} {correctText}
           </span>
-          <div className="flex gap-2 flex-shrink-0">
-            <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>{t("pages:testForm.question.edit")}</Button>
-            <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50" onClick={() => onDelete(questionIndex)}>
-              <Trash2 className="w-4 h-4 mr-1" />{t("pages:testForm.question.delete")}
+          <div className="flex gap-1 flex-shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEditOpen(true)}
+              aria-label={t("pages:testForm.question.edit")}
+              title={t("pages:testForm.question.edit")}
+              className="h-8 w-8 p-0"
+            >
+              <Pencil className="w-4 h-4" aria-hidden="true" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 text-rose-600 hover:bg-rose-50"
+              onClick={() => onDelete(questionIndex)}
+              aria-label={t("pages:testForm.question.delete")}
+              title={t("pages:testForm.question.delete")}
+            >
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
