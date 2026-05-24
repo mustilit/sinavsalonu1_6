@@ -299,9 +299,14 @@ function QuestionEditDialog({ question, questionIndex, topicList, onSave, onSave
   );
 }
 
-function QuestionItem({ questionIndex, question, topicList, onUpdate, onDelete, onAddNew, validationAttempted }) {
+function QuestionItem({ questionIndex, question, topicList, onUpdate, onDelete, onAddNew, validationAttempted, autoOpen, onAutoOpenConsumed }) {
   const { t } = useTranslation(["pages"]);
-  const [editOpen, setEditOpen] = useState(false);
+  // Soru Ekle akışında mount olur olmaz dialog'u aç; parent'a bilgi geç (key sıfırlansın).
+  const [editOpen, setEditOpen] = useState(!!autoOpen);
+  useEffect(() => {
+    if (autoOpen) onAutoOpenConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const complete = isQComplete(question);
   const filledOpts = question.options.filter(o => o.content.trim()).length;
   const correctIdx = question.options.findIndex(o => o.isCorrect);
@@ -397,6 +402,10 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
   const { t } = useTranslation(["pages"]);
   const completedCount = test.questions.filter(isQComplete).length;
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // "+ Soru Ekle" tıklandığında yeni eklenen sorunun _k'sini tutar; QuestionItem
+  // mount olurken bu key eşleşirse Düzenle dialog'unu otomatik açar. Dialog
+  // kapanınca null'a düşer (bir sonraki tıklamada tekrar tetiklenebilsin).
+  const [autoOpenKey, setAutoOpenKey] = useState(null);
   // İçeriği üreten render yardımcısı — collapsed iken sadece kısa özet satırı.
   if (!isExpanded) {
     return (
@@ -531,7 +540,11 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
             {t("pages:testForm.testCard.questionCountStat", { count: test.questions.length })}{' '}
             <span className="text-slate-400 font-normal">{t("pages:testForm.testCard.completedSuffix", { count: completedCount })}</span>
           </p>
-          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => onTestUpdate({ ...test, questions: [...test.questions, emptyQuestion()] })}>
+          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={() => {
+            const nq = emptyQuestion();
+            setAutoOpenKey(nq._k);
+            onTestUpdate({ ...test, questions: [...test.questions, nq] });
+          }}>
             <Plus className="w-4 h-4 mr-1" />{t("pages:testForm.testCard.addQuestion")}
           </Button>
         </div>
@@ -539,9 +552,15 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
           {test.questions.map((q, qi) => (
             <QuestionItem key={q._k} questionIndex={qi} question={q} topicList={topicList}
               validationAttempted={validationAttempted}
+              autoOpen={q._k === autoOpenKey}
+              onAutoOpenConsumed={() => setAutoOpenKey(null)}
               onUpdate={u => onTestUpdate({ ...test, questions: test.questions.map((x, i) => i === qi ? u : x) })}
               onDelete={idx => onTestUpdate({ ...test, questions: test.questions.filter((_, i) => i !== idx) })}
-              onAddNew={() => onTestUpdate({ ...test, questions: [...test.questions, emptyQuestion()] })}
+              onAddNew={() => {
+                const nq = emptyQuestion();
+                setAutoOpenKey(nq._k);
+                onTestUpdate({ ...test, questions: [...test.questions, nq] });
+              }}
             />
           ))}
         </div>

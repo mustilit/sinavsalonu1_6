@@ -532,9 +532,14 @@ function QuestionEditDialog({ question, questionIndex, topicList, onSave, onSave
 }
 
 // ─── Soru maddesi accordion ──────────────────────────────────────────────────
-function QuestionItem({ questionIndex, question, topicList, onUpdate, onDelete, onAddNew, validationAttempted }) {
+function QuestionItem({ questionIndex, question, topicList, onUpdate, onDelete, onAddNew, validationAttempted, autoOpen, onAutoOpenConsumed }) {
   const { t } = useTranslation(["pages"]);
-  const [editOpen, setEditOpen] = useState(false);
+  // "+ Soru Ekle" akışında mount olur olmaz dialog'u aç; parent'a haber ver.
+  const [editOpen, setEditOpen] = useState(!!autoOpen);
+  useEffect(() => {
+    if (autoOpen) onAutoOpenConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filledOpts = question.options.filter(o => o.content.trim() || o.mediaUrl).length;
   const correctIdx = question.options.findIndex(o => o.isCorrect);
@@ -654,6 +659,9 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
   const [showDOCXDialog, setShowDOCXDialog] = useState(false);
   const [docxLoading, setDocxLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // "+ Soru Ekle" tıklanınca yeni eklenen sorunun _k'sini tutar; QuestionItem
+  // mount olunca dialog'u otomatik açar.
+  const [autoOpenKey, setAutoOpenKey] = useState(null);
 
   // DOCX'ten soru içeri aktarma — iki format desteklenir:
   //   1) Düz metin: "1. Soru..." / "A) Seçenek..." / "Cevap: A" veya "*A"
@@ -919,10 +927,14 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
               {t("pages:testForm.testCard.completedSuffix", { count: filledQuestions.length })}
             </p>
             <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700"
-              onClick={() => onTestUpdate({
-                ...test,
-                questions: [...test.questions, emptyQuestion()],
-              })}>
+              onClick={() => {
+                const nq = emptyQuestion();
+                setAutoOpenKey(nq._k);
+                onTestUpdate({
+                  ...test,
+                  questions: [...test.questions, nq],
+                });
+              }}>
               <Plus className="w-4 h-4 mr-1" />{t("pages:testForm.testCard.addQuestion")}
             </Button>
           </div>
@@ -935,6 +947,8 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
                 question={q}
                 topicList={topicList}
                 validationAttempted={validationAttempted}
+                autoOpen={q._k === autoOpenKey}
+                onAutoOpenConsumed={() => setAutoOpenKey(null)}
                 onUpdate={(updated) => {
                   onTestUpdate({
                     ...test,
@@ -948,9 +962,11 @@ function TestCard({ test, testIndex, examTypes, topicList, onTestUpdate, onTestD
                   });
                 }}
                 onAddNew={() => {
+                  const nq = emptyQuestion();
+                  setAutoOpenKey(nq._k);
                   onTestUpdate({
                     ...test,
-                    questions: [...test.questions, emptyQuestion()],
+                    questions: [...test.questions, nq],
                   });
                 }}
               />
@@ -1486,11 +1502,6 @@ export default function CreateTest() {
                 const removed = tests[idx];
                 setTests(tests.filter((_, i) => i !== idx));
                 if (expandedTestKey === removed?._k) setExpandedTestKey(null);
-              }}
-              onAddQuestion={() => {
-                setTests(tests.map((t, i) =>
-                  i === tIdx ? { ...t, questions: [...t.questions, emptyQuestion()] } : t
-                ));
               }}
             />
           ))}
