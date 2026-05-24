@@ -23,35 +23,35 @@ import { tr } from "date-fns/locale";
 const EFFECTIVE_STATUS = {
   draft: {
     labelKey: "pages:myLiveSessions.status.draft",
-    badge:    "bg-slate-100 text-slate-600",
+    badge:    "bg-transparent text-slate-600",
     avatarBg: "bg-slate-100",
     avatarFg: "text-slate-500",
     icon:     FileEdit,
   },
   active: {
     labelKey: "pages:myLiveSessions.status.active",
-    badge:    "bg-emerald-100 text-emerald-700",
+    badge:    "bg-transparent text-emerald-700",
     avatarBg: "bg-emerald-100",
     avatarFg: "text-emerald-600",
     icon:     Radio,
   },
   round1Completed: {
     labelKey: "pages:myLiveSessions.status.round1Completed",
-    badge:    "bg-blue-100 text-blue-700",
+    badge:    "bg-transparent text-blue-700",
     avatarBg: "bg-blue-100",
     avatarFg: "text-blue-600",
     icon:     CheckCircle2,
   },
   round2Active: {
     labelKey: "pages:myLiveSessions.status.round2Active",
-    badge:    "bg-emerald-100 text-emerald-700",
+    badge:    "bg-transparent text-emerald-700",
     avatarBg: "bg-emerald-100",
     avatarFg: "text-emerald-600",
     icon:     Radio,
   },
   round2Completed: {
     labelKey: "pages:myLiveSessions.status.round2Completed",
-    badge:    "bg-indigo-100 text-indigo-700",
+    badge:    "bg-transparent text-indigo-700",
     avatarBg: "bg-indigo-100",
     avatarFg: "text-indigo-600",
     icon:     CheckCircle2,
@@ -148,9 +148,10 @@ function SessionCard({ session, round2, onOpenHost, onEdit, onStartRound1, onSta
                 )}
               </div>
 
-              {/* Katılım kodu — DRAFT/ACTIVE turlarda göster */}
+              {/* Katılım kodu — DRAFT/ACTIVE turlarda göster.
+                  Saydam arka fon; sadece text + ince border ile kart içinde yumuşak duruyor. */}
               {(isDraft || isActive) && session.joinCode && (
-                <div className="mt-2 inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1">
+                <div className="mt-2 inline-flex items-center gap-1.5 border border-amber-200 rounded-lg px-2.5 py-1">
                   <span className="text-xs text-amber-600 font-medium">{t("pages:myLiveSessions.card.joinCode")}</span>
                   <span className="text-sm font-mono font-bold text-amber-800 tracking-widest">
                     {session.joinCode}
@@ -160,7 +161,7 @@ function SessionCard({ session, round2, onOpenHost, onEdit, onStartRound1, onSta
 
               {/* Tur 2 katılım kodu — Tur 1 ENDED + Tur 2 DRAFT/ACTIVE */}
               {isEnded && round2 && !r2Ended && round2.joinCode && (
-                <div className="mt-2 inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-lg px-2.5 py-1">
+                <div className="mt-2 inline-flex items-center gap-1.5 border border-indigo-200 rounded-lg px-2.5 py-1">
                   <span className="text-xs text-indigo-600 font-medium">{t("pages:myLiveSessions.card.round2JoinCode")}</span>
                   <span className="text-sm font-mono font-bold text-indigo-800 tracking-widest">
                     {round2.joinCode}
