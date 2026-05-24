@@ -2,6 +2,14 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { AppError } from '../../errors/AppError';
 
+/**
+ * Canlı oturumu DRAFT → ACTIVE'ye geçirir.
+ *
+ * Tek aktif oturum kuralı: Bir eğitici aynı anda yalnızca bir ACTIVE oturum
+ * çalıştırabilir. Round 1 veya Round 2 farketmez — başka ACTIVE oturum varsa
+ * yeni oturum başlatılamaz. Aksi takdirde aynı eğitici iki ayrı joinCode'la
+ * iki paralel canlı sınav yürütürse katılımcılar ve istatistikler karışır.
+ */
 export class StartLiveSessionUseCase {
   async execute(sessionId: string, educatorId: string) {
     const session = await prisma.liveSession.findUnique({ where: { id: sessionId } });
@@ -14,6 +22,27 @@ export class StartLiveSessionUseCase {
       throw new BadRequestException({ code: 'SESSION_ENDED', message: 'Session has ended' });
     if (!session.paidAt)
       throw new BadRequestException({ code: 'NOT_PAID', message: 'Payment required before starting' });
+
+    // Tek aktif oturum kontrolü — başka ACTIVE oturum varsa engelle
+    const otherActive = await prisma.liveSession.findFirst({
+      where: {
+        educatorId,
+        status: 'ACTIVE',
+        id: { not: sessionId },
+      },
+      select: { id: true, title: true, joinCode: true, roundNumber: true },
+    });
+    if (otherActive) {
+      throw new BadRequestException({
+        code: 'EDUCATOR_HAS_ACTIVE_SESSION',
+        message: `Zaten aktif bir canlı oturumunuz var: "${otherActive.title}" (Kod: ${otherActive.joinCode}). Yeni oturum başlatmadan önce mevcut oturumu sonlandırın.`,
+        activeSessionId: otherActive.id,
+        activeSessionTitle: otherActive.title,
+        activeSessionJoinCode: otherActive.joinCode,
+        activeSessionRoundNumber: otherActive.roundNumber,
+      });
+    }
+
     return prisma.liveSession.update({
       where: { id: sessionId },
       data: { status: 'ACTIVE', startedAt: new Date(), currentQuestionIdx: 0 },
