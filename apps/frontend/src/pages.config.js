@@ -52,6 +52,7 @@ import __Layout from './Layout.jsx';
 
 const About = lazy(() => import('./pages/About'));
 const AdminAdReport = lazy(() => import('./pages/AdminAdReport'));
+const AdminAdPackages = lazy(() => import('./pages/AdminAdPackages'));
 const AdminClaims = lazy(() => import('./pages/AdminClaims'));
 const AdminRevenue = lazy(() => import('./pages/AdminRevenue'));
 const AdminCandidateReport = lazy(() => import('./pages/AdminCandidateReport'));
@@ -133,6 +134,7 @@ const BackupManagement = lazy(() => import('./pages/BackupManagement'));
 export const PAGES = {
     "About": About,
     "AdminAdReport": AdminAdReport,
+    "AdminAdPackages": AdminAdPackages,
     "AdminClaims": AdminClaims,
     "AdminRevenue": AdminRevenue,
     "AdminCandidateReport": AdminCandidateReport,

@@ -125,6 +125,7 @@ export default function Sidebar({ user, currentPage, collapsed = false }) {
     { name: t("sidebar.admin.revenue"), page: "AdminRevenue", icon: Banknote },
     { name: t("sidebar.admin.systemControls"), page: "AdminSystemControls", icon: ShieldAlert },
     { name: t("sidebar.admin.liveTiers"), page: "ManageLiveTiers", icon: Zap },
+    { name: t("sidebar.admin.adPackages"), page: "AdminAdPackages", icon: Megaphone },
     { name: t("sidebar.admin.emailManagement"), page: "EmailManagement", icon: Mail },
     { name: t("sidebar.admin.riskyContent"), page: "RiskyContent", icon: ShieldAlert },
     { name: t("sidebar.admin.backup"), page: "BackupManagement", icon: Database },

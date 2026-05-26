@@ -1113,6 +1113,32 @@ export const liveSessionTiers = {
   },
 };
 
+/**
+ * Admin reklam paketi CRUD — /admin/ad-packages endpoint'leri.
+ * Eğitici "Reklamı Satın Al" akışında bu paketler liste olarak görünür
+ * (public endpoint /ad-packages aktif olanları döner).
+ */
+export const adminAdPackages = {
+  list: async ({ activeOnly = false } = {}) => {
+    const { data } = await api.get('/admin/ad-packages', {
+      params: { activeOnly: activeOnly ? 'true' : 'false' },
+    });
+    return Array.isArray(data) ? data : (data?.items ?? []);
+  },
+  create: async (body) => {
+    const { data } = await api.post('/admin/ad-packages', body);
+    return data;
+  },
+  update: async (id, body) => {
+    const { data } = await api.patch(`/admin/ad-packages/${id}`, body);
+    return data;
+  },
+  remove: async (id) => {
+    const { data } = await api.delete(`/admin/ad-packages/${id}`);
+    return data;
+  },
+};
+
 /** LiveSession işlemleri */
 export const liveSessions = {
   create: async (body) => {

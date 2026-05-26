@@ -70,6 +70,9 @@ export const PAGE_ROLES = {
 
   // AdminAdReport: Reklam satın alım raporu — yalnızca admin
   AdminAdReport: [ROLES.ADMIN],
+  // AdminAdPackages: Reklam paketi CRUD'u — eğiticilere gösterilen "Reklamı Satın Al"
+  // dropdown'ı buradan beslenir. Yalnızca admin.
+  AdminAdPackages: [ROLES.ADMIN],
   AdminCandidateReport: [ROLES.ADMIN],
   AdminCommissionReport: [ROLES.ADMIN],
   AdminSystemControls: [ROLES.ADMIN],
