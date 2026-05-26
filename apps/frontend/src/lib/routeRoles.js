@@ -75,6 +75,8 @@ export const PAGE_ROLES = {
   AdminAdPackages: [ROLES.ADMIN],
   // ManagePackages: Canlı Test + Reklam paketleri tek sayfada iki sekme. Yalnızca admin.
   ManagePackages: [ROLES.ADMIN],
+  // AdminUserActivity: Kullanıcı işlem geçmişi görüntüleme (audit log lookup). Yalnızca admin.
+  AdminUserActivity: [ROLES.ADMIN],
   AdminCandidateReport: [ROLES.ADMIN],
   AdminCommissionReport: [ROLES.ADMIN],
   AdminSystemControls: [ROLES.ADMIN],

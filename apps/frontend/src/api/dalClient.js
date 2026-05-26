@@ -1114,6 +1114,38 @@ export const liveSessionTiers = {
 };
 
 /**
+ * Admin kullanıcı arama — GET /admin/users?q=...
+ * Email veya isim üzerinde substring araması. limit default 20.
+ */
+export const adminUsers = {
+  search: async ({ q, limit = 20 } = {}) => {
+    const { data } = await api.get('/admin/users', { params: { q, limit } });
+    return Array.isArray(data) ? data : (data?.items ?? []);
+  },
+};
+
+/**
+ * Admin audit log listesi — GET /admin/audit
+ * actorId + tarih aralığı + action/entity filtreleri.
+ * Backend page/limit'le offset pagination yapar.
+ */
+export const adminAudit = {
+  list: async ({ actorId, from, to, action, entityType, entityId, page = 1, limit = 50 } = {}) => {
+    const params = {};
+    if (actorId) params.actorId = actorId;
+    if (from) params.from = from;
+    if (to) params.to = to;
+    if (action) params.action = action;
+    if (entityType) params.entityType = entityType;
+    if (entityId) params.entityId = entityId;
+    if (page) params.page = page;
+    if (limit) params.limit = limit;
+    const { data } = await api.get('/admin/audit', { params });
+    return data;
+  },
+};
+
+/**
  * Admin reklam paketi CRUD — /admin/ad-packages endpoint'leri.
  * Eğitici "Reklamı Satın Al" akışında bu paketler liste olarak görünür
  * (public endpoint /ad-packages aktif olanları döner).

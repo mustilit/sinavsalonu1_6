@@ -54,6 +54,7 @@ const About = lazy(() => import('./pages/About'));
 const AdminAdReport = lazy(() => import('./pages/AdminAdReport'));
 const AdminAdPackages = lazy(() => import('./pages/AdminAdPackages'));
 const ManagePackages = lazy(() => import('./pages/ManagePackages'));
+const AdminUserActivity = lazy(() => import('./pages/AdminUserActivity'));
 const AdminClaims = lazy(() => import('./pages/AdminClaims'));
 const AdminRevenue = lazy(() => import('./pages/AdminRevenue'));
 const AdminCandidateReport = lazy(() => import('./pages/AdminCandidateReport'));
@@ -137,6 +138,7 @@ export const PAGES = {
     "AdminAdReport": AdminAdReport,
     "AdminAdPackages": AdminAdPackages,
     "ManagePackages": ManagePackages,
+    "AdminUserActivity": AdminUserActivity,
     "AdminClaims": AdminClaims,
     "AdminRevenue": AdminRevenue,
     "AdminCandidateReport": AdminCandidateReport,

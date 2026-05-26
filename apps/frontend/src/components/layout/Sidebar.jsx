@@ -34,6 +34,7 @@ import {
   Shield,
   Target,
   Database,
+  History,
 } from "lucide-react";
 
 /**
@@ -119,6 +120,7 @@ export default function Sidebar({ user, currentPage, collapsed = false }) {
     { name: t("sidebar.admin.examTypes"), page: "ManageExamTypes", icon: Award },
     { name: t("sidebar.admin.topics"), page: "ManageTopics", icon: BookOpen },
     { name: t("sidebar.admin.users"), page: "ManageUsers", icon: Users },
+    { name: t("sidebar.admin.userActivity"), page: "AdminUserActivity", icon: History },
     { name: t("sidebar.admin.tests"), page: "ManageTests", icon: BookOpen },
     { name: t("sidebar.admin.discountCodes"), page: "MyDiscountCodes", icon: Award },
     { name: t("sidebar.admin.claims"), page: "AdminClaims", icon: ShoppingBag },
