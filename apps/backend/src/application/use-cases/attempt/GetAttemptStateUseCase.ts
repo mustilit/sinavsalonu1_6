@@ -31,9 +31,12 @@ export class GetAttemptStateUseCase {
     const questionSource: Array<any> =
       (attempt as any).questionsSnapshot ?? test.questions ?? [];
 
-    // IN_PROGRESS sırasında doğru cevap bilgisi sızdırılmaz. Submit/Timeout
-    // sonrası kullanıcı review modunda olduğundan isCorrect açılır.
+    // IN_PROGRESS sırasında doğru cevap (isCorrect) sızdırılmaz; submit sonrası açılır.
     const revealCorrect = attempt.status !== 'IN_PROGRESS';
+    // Çözüm metni / görseli için ayrı kural: test.hasSolutions = true ise eğitici
+    // bu testi "çözümlü/çalışma" modu olarak işaretlemiştir — aday aktif test sırasında
+    // da çözümü görebilir. Aksi takdirde sadece submit sonrası gösterilir.
+    const revealSolutions = !!test.hasSolutions || attempt.status !== 'IN_PROGRESS';
 
     const questions = questionSource.map((q: any, idx: number) => {
       const selected = answerMap[q.id] ?? null;
@@ -55,7 +58,7 @@ export class GetAttemptStateUseCase {
         mediaUrl: q.mediaUrl ?? null,
         order: typeof q.order === 'number' ? q.order : idx,
         options,
-        ...(revealCorrect
+        ...(revealSolutions
           ? {
               solutionText: q.solutionText ?? null,
               solutionMediaUrl: q.solutionMediaUrl ?? null,
