@@ -1035,11 +1035,12 @@ export default function TakeTest() {
                 </div>
                 <p>
                   <strong>Testi Bitir</strong> seçeneği sınavı sonlandırır ve sonuç kaydedilir.
+                  <br />
                   Bu işlem <span className="font-semibold text-rose-700">geri alınamaz</span>.
                 </p>
                 <p className="text-slate-600">
                   Eğer cevaplamaya devam etmek istiyorsan <strong>Kaydet ve Çık</strong> demen
-                  yeterli — ilerlemen kaydedilir, kaldığın yerden devam edebilirsin.
+                  yeterli. İlerlemen kaydedilir, kaldığın yerden devam edebilirsin.
                 </p>
                 <div className="flex justify-end gap-2 pt-1 flex-wrap">
                   <Button variant="outline" onClick={() => setShowFinishConfirm(false)}>
