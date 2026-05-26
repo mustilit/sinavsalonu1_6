@@ -13,6 +13,10 @@
  *   Bu sayede yenilemeden önceki kaydedilmemiş cevaplar kurtarılır.
  *
  * @param {string | null} attemptId - Aktif attempt ID'si
+ * @param {{ onSubmitError?: (err: any, ctx: { questionId: string, optionId?: string }) => void }} [options]
+ *   onSubmitError: API hatasında çağrılır. Çağıran taraf code'a göre toast/UX
+ *   kararı verir (ör. ATTEMPT_EXPIRED → "süre doldu" uyarısı). Bu hook artık
+ *   hatayı sessizce yutmuyor; aday cevabının düşmediğinden haberdar olur.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import api from '@/lib/api/apiClient';
@@ -20,7 +24,12 @@ import api from '@/lib/api/apiClient';
 // localStorage anahtar fabrikası
 const queueKey = (attemptId) => `ans_q_${attemptId}`;
 
-export function useAnswerQueue(attemptId) {
+export function useAnswerQueue(attemptId, options = {}) {
+  const { onSubmitError } = options;
+  // En güncel callback'i closure'da tutmak için ref pattern — submitAnswer'ın
+  // her render'da yeniden oluşmasını ve queue lock'larının resetlenmesini önler.
+  const onSubmitErrorRef = useRef(onSubmitError);
+  useEffect(() => { onSubmitErrorRef.current = onSubmitError; }, [onSubmitError]);
   // Gönderilmeyi bekleyen cevap sayısı
   const [pendingCount, setPendingCount] = useState(0);
   // Flush işlemi sürüyor mu
@@ -119,8 +128,11 @@ export function useAnswerQueue(attemptId) {
       await api.post(`/attempts/${attemptId}/answers`, body);
       // 3. Başarı: kuyruktan temizle
       dequeue(questionId);
-    } catch {
-      // 4. Hata: kuyrukta kalsın — flush ile yeniden denenecek
+    } catch (err) {
+      // 4. Hata: kuyrukta kalsın — flush ile yeniden denenecek. Ama caller'a
+      // bildir; ATTEMPT_EXPIRED / ATTEMPT_NOT_IN_PROGRESS gibi kalıcı hatalarda
+      // toast gösterilmeli (önceden tamamen sessizdi → aday cevap kaybediyor).
+      try { onSubmitErrorRef.current?.(err, { questionId, optionId }); } catch { /* sessiz */ }
     }
   }, [attemptId, enqueue, dequeue]);
 
