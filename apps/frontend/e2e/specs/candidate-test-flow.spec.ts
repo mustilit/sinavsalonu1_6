@@ -193,6 +193,56 @@ test.describe('Aday — Test çözme akışı', () => {
     await expect(clearAnswer).toBeVisible({ timeout: 5000 });
   });
 
+  test('Grid mismatch: DB Q1-Q7 cevap → ilk girişte grid Q1-Q7 mavi olmalı', async ({ candidatePage }) => {
+    // Önce manuel olarak Q1-Q3 işaretle, çık. Sonra tekrar gir, Q4-Q7 işaretle, çık.
+    // Üçüncü dönüşte grid'de tüm Q1-Q7'nin mavi (cevaplı) görünmesi gerekir.
+    await openFirstTest(candidatePage);
+    // Q1, Q2, Q3'ü işaretle (her birinde A)
+    for (let i = 0; i < 3; i++) {
+      await candidatePage.locator('button:has(span:text-is("A"))').first().click();
+      await candidatePage.waitForTimeout(150);
+      if (i < 2) {
+        await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
+        await candidatePage.waitForTimeout(150);
+      }
+    }
+    await candidatePage.getByRole('button', { name: /kaydet ve çık/i }).click();
+    await candidatePage.waitForURL(/\/MyTests/i, { timeout: 10000 });
+
+    // İkinci giriş: Q4-Q7 işaretle
+    await openFirstTest(candidatePage);
+    // Q4'e Sonraki x3
+    for (let i = 0; i < 3; i++) {
+      await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
+      await candidatePage.waitForTimeout(150);
+    }
+    // Q4, Q5, Q6, Q7'yi B işaretle
+    for (let i = 0; i < 4; i++) {
+      await candidatePage.locator('button:has(span:text-is("B"))').first().click();
+      await candidatePage.waitForTimeout(150);
+      if (i < 3) {
+        await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
+        await candidatePage.waitForTimeout(150);
+      }
+    }
+    await candidatePage.getByRole('button', { name: /kaydet ve çık/i }).click();
+    await candidatePage.waitForURL(/\/MyTests/i, { timeout: 10000 });
+
+    // Üçüncü giriş: TÜMÜNÜN cevaplı görünmesi gerekir
+    await openFirstTest(candidatePage);
+    // Soru grid butonu Q1: cevaplı renkte (bg-indigo-600 → white text)
+    // Tüm Q1-Q7 için grid button'larında ans varsa text-white classı olur.
+    // Soru gridindeki butonların inner text rakamları 1-7 — answered olanlar text-white,
+    // cevapsızlar text-slate-500.
+    for (let n = 1; n <= 7; n++) {
+      const btn = candidatePage.locator(`button[data-nav-idx="${n - 1}"]`).first();
+      await expect(btn).toBeVisible({ timeout: 10000 });
+      // Class'ında bg-indigo-600 olmalı (cevaplı işareti)
+      const cls = await btn.getAttribute('class');
+      expect(cls).toContain('bg-indigo-600');
+    }
+  });
+
   test('Q5 spesifik: 5. soruda cevap işaretle → anında çık → dön → Q5 cevabı geri geliyor', async ({ candidatePage }) => {
     await openFirstTest(candidatePage);
 
