@@ -497,11 +497,21 @@ export default function TakeTest() {
     },
   });
 
-  const handleFinish = useCallback(() => {
+  const handleFinish = useCallback(async () => {
     if (testFinished || finishMutation.isPending) return;
     setTestFinished(true);
+    // CRITICAL: pending cevap kuyruğunu flush etmeden finish çağrılamaz.
+    // Aksi takdirde aday hızlı cevap işaretleyip Testi Bitir'e basarsa kuyrukta
+    // bekleyen cevaplar backend'e gitmeden test SUBMITTED durumuna geçiyor
+    // ve bu cevaplar kalıcı olarak kayboluyor. saveAndExit ve start akışında
+    // zaten yapılan flush disiplinin aynısı burada da uygulanmalı.
+    try {
+      await flushQueue();
+    } catch (e) {
+      console.warn('finish: flushQueue failed', e?.message ?? e);
+    }
     finishMutation.mutate();
-  }, [testFinished, finishMutation]);
+  }, [testFinished, finishMutation, flushQueue]);
 
   // Proctoring: aday IN_PROGRESS attempt'i çözerken sağ tık / copy / klavye
   // kısayolları engellenir, tab switch + fullscreen exit sayılır. exitLimit'e
