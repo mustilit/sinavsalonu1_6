@@ -192,4 +192,40 @@ test.describe('Aday — Test çözme akışı', () => {
     await optionB.click();
     await expect(clearAnswer).toBeVisible({ timeout: 5000 });
   });
+
+  test('Resume + cevap state: Soru 1 A, Soru 2 B işaretle → çık → dön → A ve B hâlâ işaretli', async ({ candidatePage }) => {
+    await openFirstTest(candidatePage);
+
+    // Soru 1'de A seç
+    await candidatePage.locator('button:has(span:text-is("A"))').first().click();
+    // 'Boş Bırak' butonu — A seçildi göstergesi
+    await expect(candidatePage.getByRole('button', { name: /boş bırak/i })).toBeVisible({ timeout: 5000 });
+
+    // Sonraki'ye git
+    await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
+    await expect(candidatePage.locator('h2', { hasText: 'Soru 2' })).toBeVisible({ timeout: 10000 });
+
+    // Soru 2'de B seç
+    await candidatePage.locator('button:has(span:text-is("B"))').first().click();
+    await expect(candidatePage.getByRole('button', { name: /boş bırak/i })).toBeVisible({ timeout: 5000 });
+
+    // Cevap submission'larının backend'e gitmesini bekle (queue var)
+    await candidatePage.waitForTimeout(2000);
+
+    // Kaydet ve Çık
+    await candidatePage.getByRole('button', { name: /kaydet ve çık/i }).click();
+    await candidatePage.waitForURL(/\/MyTests/i, { timeout: 10000 });
+
+    // Aynı teste tekrar gir
+    await openFirstTest(candidatePage);
+
+    // Soru 1'de A hâlâ işaretli olmalı — 'Boş Bırak' butonu cevap seçili olduğunu gösterir
+    await expect(candidatePage.locator('h2', { hasText: 'Soru 1' })).toBeVisible({ timeout: 10000 });
+    await expect(candidatePage.getByRole('button', { name: /boş bırak/i })).toBeVisible({ timeout: 10000 });
+
+    // Soru 2'ye git, B'nin işaretli olduğunu doğrula
+    await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
+    await expect(candidatePage.locator('h2', { hasText: 'Soru 2' })).toBeVisible({ timeout: 10000 });
+    await expect(candidatePage.getByRole('button', { name: /boş bırak/i })).toBeVisible({ timeout: 10000 });
+  });
 });
