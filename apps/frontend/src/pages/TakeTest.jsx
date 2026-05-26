@@ -117,6 +117,14 @@ export default function TakeTest() {
   const [testRating, setTestRating] = useState(0);
   // Eğitici puanı şu an UI'da gösterilmiyor (yeni model: paket başına tek review)
   const [testComment, setTestComment] = useState("");
+  // Test çözme modu: 'normal' (aday navigasyonu kendi yapar) veya 'serial'
+  // (cevap verdikçe otomatik bir sonraki soruya geçer). Pre-start ekranında
+  // seçilir; aktif session boyunca sabit kalır. localStorage'a yedeklenir ki
+  // resume'da kullanıcı seçtiği modda devam edebilsin.
+  const [testMode, setTestMode] = useState(() => {
+    if (typeof window === 'undefined') return 'normal';
+    return localStorage.getItem('testMode_default') === 'serial' ? 'serial' : 'normal';
+  });
   // Süre aşımı modu: timer sıfıra geldiğinde true, test hâlâ çözülebilir
   const [isOvertime, setIsOvertime] = useState(false);
   // Süre aşımı sayacı (saniye cinsinden, timer'ın üstüne eklenir)
@@ -620,11 +628,13 @@ export default function TakeTest() {
 
   const { testAttemptsEnabled } = useServiceStatus();
 
-  const startTest = () => {
+  const startTest = (mode = 'normal') => {
     if (!testAttemptsEnabled) {
       toast.warning("Test başlatma geçici olarak durdurulmuştur. Lütfen daha sonra tekrar deneyin.");
       return;
     }
+    setTestMode(mode);
+    try { localStorage.setItem('testMode_default', mode); } catch { /* sessiz */ }
     // Her durumda backend'e POST /attempts/start çağrılır:
     //   - Mevcut attempt yoksa: yeni oluşturur (IN_PROGRESS)
     //   - PAUSED varsa: resume edip IN_PROGRESS'e geçirir + lastResumedAt set eder
@@ -687,6 +697,14 @@ export default function TakeTest() {
       if (resolvedAttemptId) {
         api.patch(`/attempts/${resolvedAttemptId}/checkpoint`, { elapsedSeconds: elapsedSec }).catch(() => {});
       }
+    }
+    // Seri Mod: cevap verildikten sonra otomatik bir sonraki soruya geç.
+    // Son soruysa ilerletme; aday Testi Bitir / Cevaplarım butonlarını kullanır.
+    // Küçük gecikme: aday seçtiği şıkkın vurgulanmasını görsün (UX).
+    if (testMode === 'serial' && currentIndex < questions.length - 1) {
+      setTimeout(() => {
+        setCurrentIndex((idx) => (idx < questions.length - 1 ? idx + 1 : idx));
+      }, 250);
     }
   };
 
@@ -940,7 +958,7 @@ export default function TakeTest() {
           </div>
 
           {!testAttemptsEnabled ? (
-            <div className="w-full max-w-xs rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-center">
+            <div className="w-full max-w-xs rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-center mx-auto">
               <p className="text-sm font-semibold text-amber-800">🔧 Test başlatma bakımdadır</p>
               <p className="text-xs text-amber-600 mt-1">Lütfen daha sonra tekrar deneyin.</p>
             </div>
@@ -948,21 +966,52 @@ export default function TakeTest() {
             const preStartQCount = testDetail?.questions?.length ?? testDetail?.questionCount ?? 0;
             if (preStartQCount === 0) {
               return (
-                <div className="w-full max-w-xs rounded-xl border-2 border-rose-200 bg-rose-50 px-4 py-3 text-center">
+                <div className="w-full max-w-xs rounded-xl border-2 border-rose-200 bg-rose-50 px-4 py-3 text-center mx-auto">
                   <p className="text-sm font-semibold text-rose-800">⚠️ Bu test henüz soru içermiyor</p>
                   <p className="text-xs text-rose-600 mt-1">Eğitici soruları ekleyene kadar başlatamazsınız.</p>
                 </div>
               );
             }
+            // İki modlu başlatma: aday kendi navigasyonu / otomatik ilerleme tercih eder.
+            // testMode useState localStorage'a son seçimi yedekler — bir sonraki testte
+            // aynı mod default seçili gelir (UX kolaylığı).
+            const isStarting = startAttemptMutation.isPending;
             return (
-              <Button
-                size="lg"
-                className="bg-indigo-600 hover:bg-indigo-700"
-                onClick={startTest}
-                disabled={startAttemptMutation.isPending}
-              >
-                {startAttemptMutation.isPending ? "Başlatılıyor..." : "Teste Başla"}
-              </Button>
+              <div className="grid sm:grid-cols-2 gap-3 max-w-md mx-auto">
+                <button
+                  type="button"
+                  onClick={() => startTest('normal')}
+                  disabled={isStarting}
+                  className="group rounded-2xl border-2 border-indigo-200 bg-white hover:border-indigo-500 hover:bg-indigo-50 transition-colors p-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Normal Mod ile teste başla"
+                >
+                  <p className="text-base font-semibold text-indigo-700 group-hover:text-indigo-800">
+                    Normal Mod
+                  </p>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Soruları kendin ilerletirsin
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => startTest('serial')}
+                  disabled={isStarting}
+                  className="group rounded-2xl border-2 border-amber-200 bg-white hover:border-amber-500 hover:bg-amber-50 transition-colors p-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Seri Mod ile teste başla"
+                >
+                  <p className="text-base font-semibold text-amber-700 group-hover:text-amber-800">
+                    Seri Mod
+                  </p>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Cevap verdikçe otomatik ilerleme
+                  </p>
+                </button>
+                {isStarting && (
+                  <p className="col-span-full text-xs text-slate-500 text-center mt-2">
+                    Başlatılıyor…
+                  </p>
+                )}
+              </div>
             );
           })()}
         </div>
