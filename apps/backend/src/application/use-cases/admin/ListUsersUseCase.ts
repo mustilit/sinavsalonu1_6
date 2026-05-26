@@ -1,10 +1,14 @@
 import { AppError } from '../../errors/AppError';
 import type { IUserRepository } from '../../../domain/interfaces/IUserRepository';
 import type { UserStatus } from '../../../domain/types';
+import { runWithoutTenantFilter } from '../../../common/tenantContext';
 
 /**
  * Admin paneli için kullanıcıları listeler.
  * Metin arama, rol, statü ve sıralama filtreleri destekler.
+ *
+ * Tenant bypass: Admin'in arama sonuçları kendi tenant'ıyla sınırlanmaz —
+ * cross-tenant kullanıcı yönetimi için bypass uygulanır.
  */
 export class ListUsersUseCase {
   constructor(private readonly userRepo: IUserRepository) {}
@@ -27,7 +31,7 @@ export class ListUsersUseCase {
     sort?: 'createdAt' | '-createdAt';
   }) {
     try {
-      return await this.userRepo.list(params);
+      return await runWithoutTenantFilter(() => this.userRepo.list(params));
     } catch (e: any) {
       throw new AppError('LIST_USERS_FAILED', e?.message || 'List users failed', 500);
     }
