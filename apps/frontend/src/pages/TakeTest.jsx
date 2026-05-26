@@ -279,17 +279,43 @@ export default function TakeTest() {
     }
   }, [isReviewMode, previousResult, questions.length]);
 
+  // Cevap restoration — PAUSED + IN_PROGRESS her ikisinde de tetiklenir.
+  // Önceki versiyonda yalnızca IN_PROGRESS koşulu vardı; bu durumda kullanıcı
+  // PAUSED bir test'i açtığında (Teste Başla'dan önce ve sonra) bir RACE
+  // yaşanıyordu: refetch IN_PROGRESS'e dönmeden render olursa setAnswers
+  // çalışmıyor, bazı cevaplar grid'de görünmüyordu (örnek: ilk dönüşte Q4
+  // boş, ikinci dönüşte cevaplı). PAUSED state'te de setAnswers fire ederek
+  // state hızla yüklenir, sonra IN_PROGRESS geçişi sadece timer'ı başlatır.
   useEffect(() => {
-    if (attemptState && questions.length > 0 && !isReviewMode && attemptState.attempt?.status === "IN_PROGRESS") {
-      const answersMap = {};
-      questions.forEach((q) => {
-        if (q.selected_answer) answersMap[q.id] = q.selected_answer;
-      });
-      setAnswers(answersMap);
+    if (!attemptState || questions.length === 0 || isReviewMode) return;
+    const status = attemptState.attempt?.status;
+    if (status !== "IN_PROGRESS" && status !== "PAUSED") return;
+
+    const answersMap = {};
+    questions.forEach((q) => {
+      if (q.selected_answer) answersMap[q.id] = q.selected_answer;
+    });
+    setAnswers(answersMap);
+
+    // UI state recovery (flagged + currentIndex) her iki durumda da
+    try {
+      const uiRaw = localStorage.getItem(`takeTestUi_${resolvedAttemptId}`);
+      if (uiRaw) {
+        const ui = JSON.parse(uiRaw);
+        if (Array.isArray(ui.flagged)) {
+          setFlagged(new Set(ui.flagged.filter((id) => questions.some((q) => q.id === id))));
+        }
+        if (typeof ui.currentIndex === "number" && ui.currentIndex >= 0 && ui.currentIndex < questions.length) {
+          setCurrentIndex(ui.currentIndex);
+        }
+      }
+    } catch { /* sessiz */ }
+
+    // Yalnızca IN_PROGRESS'te: timer + testStarted ve elapsed setup
+    if (status === "IN_PROGRESS") {
       if (typeof attemptState.attempt?.remainingSeconds === "number") {
         setTimeLeft(attemptState.attempt.remainingSeconds);
       }
-      // Süresiz test: elapsed time — localStorage öncelikli, DB fallback
       if (!testDetail?.isTimed && resolvedAttemptId) {
         const fromStorage = parseInt(localStorage.getItem(`elapsed_${resolvedAttemptId}`) || '0', 10);
         const fromDb = attemptState.attempt?.savedElapsedSeconds ?? 0;
@@ -299,21 +325,6 @@ export default function TakeTest() {
       setTestStarted(true);
       const started = attemptState.attempt?.startedAt ? new Date(attemptState.attempt.startedAt).getTime() : Date.now();
       setStartTime(started);
-
-      // UI state recovery: flagged sorular ve son görülen soru index'i yenilemeden
-      // önceki haliyle restore edilir. Cevaplar zaten server snapshot ile geliyor.
-      try {
-        const uiRaw = localStorage.getItem(`takeTestUi_${resolvedAttemptId}`);
-        if (uiRaw) {
-          const ui = JSON.parse(uiRaw);
-          if (Array.isArray(ui.flagged)) {
-            setFlagged(new Set(ui.flagged.filter((id) => questions.some((q) => q.id === id))));
-          }
-          if (typeof ui.currentIndex === "number" && ui.currentIndex >= 0 && ui.currentIndex < questions.length) {
-            setCurrentIndex(ui.currentIndex);
-          }
-        }
-      } catch { /* sessiz */ }
     }
   }, [attemptState, questions, isReviewMode, resolvedAttemptId, testDetail?.isTimed]);
 

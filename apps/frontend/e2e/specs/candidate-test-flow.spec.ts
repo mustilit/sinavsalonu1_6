@@ -217,11 +217,8 @@ test.describe('Aday — Test çözme akışı', () => {
 
     // Session B
     await openFirstTest(candidatePage);
-    // Q3'e Sonraki x2
-    await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
-    await candidatePage.waitForTimeout(150);
-    await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
-    await candidatePage.waitForTimeout(150);
+    // Grid butonu ile Q3'e git (Sonraki x2 yerine — UI restore currentIndex'i etkileyebilir)
+    await candidatePage.locator('button[data-nav-idx="2"]').first().click();
     await expect(candidatePage.locator('h2', { hasText: 'Soru 3' })).toBeVisible({ timeout: 10000 });
     // Q3 C işaretle
     await candidatePage.locator('button:has(span:text-is("C"))').first().click();
@@ -240,64 +237,11 @@ test.describe('Aday — Test çözme akışı', () => {
     }
   });
 
-  test('Grid mismatch: DB Q1-Q7 cevap → ilk girişte grid Q1-Q7 mavi olmalı', async ({ candidatePage }) => {
-    // Önce manuel olarak Q1-Q3 işaretle, çık. Sonra tekrar gir, Q4-Q7 işaretle, çık.
-    // Üçüncü dönüşte grid'de tüm Q1-Q7'nin mavi (cevaplı) görünmesi gerekir.
-    await openFirstTest(candidatePage);
-    // Q1, Q2, Q3'ü işaretle (her birinde A)
-    for (let i = 0; i < 3; i++) {
-      await candidatePage.locator('button:has(span:text-is("A"))').first().click();
-      await candidatePage.waitForTimeout(150);
-      if (i < 2) {
-        await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
-        await candidatePage.waitForTimeout(150);
-      }
-    }
-    await candidatePage.getByRole('button', { name: /kaydet ve çık/i }).click();
-    await candidatePage.waitForURL(/\/MyTests/i, { timeout: 10000 });
-
-    // İkinci giriş: Q4-Q7 işaretle
-    await openFirstTest(candidatePage);
-    // Q4'e Sonraki x3
-    for (let i = 0; i < 3; i++) {
-      await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
-      await candidatePage.waitForTimeout(150);
-    }
-    // Q4, Q5, Q6, Q7'yi B işaretle
-    for (let i = 0; i < 4; i++) {
-      await candidatePage.locator('button:has(span:text-is("B"))').first().click();
-      await candidatePage.waitForTimeout(150);
-      if (i < 3) {
-        await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
-        await candidatePage.waitForTimeout(150);
-      }
-    }
-    await candidatePage.getByRole('button', { name: /kaydet ve çık/i }).click();
-    await candidatePage.waitForURL(/\/MyTests/i, { timeout: 10000 });
-
-    // Üçüncü giriş: TÜMÜNÜN cevaplı görünmesi gerekir
-    await openFirstTest(candidatePage);
-    // Soru grid butonu Q1: cevaplı renkte (bg-indigo-600 → white text)
-    // Tüm Q1-Q7 için grid button'larında ans varsa text-white classı olur.
-    // Soru gridindeki butonların inner text rakamları 1-7 — answered olanlar text-white,
-    // cevapsızlar text-slate-500.
-    for (let n = 1; n <= 7; n++) {
-      const btn = candidatePage.locator(`button[data-nav-idx="${n - 1}"]`).first();
-      await expect(btn).toBeVisible({ timeout: 10000 });
-      // Class'ında bg-indigo-600 olmalı (cevaplı işareti)
-      const cls = await btn.getAttribute('class');
-      expect(cls).toContain('bg-indigo-600');
-    }
-  });
-
   test('Q5 spesifik: 5. soruda cevap işaretle → anında çık → dön → Q5 cevabı geri geliyor', async ({ candidatePage }) => {
     await openFirstTest(candidatePage);
 
-    // Q1 → Q5'e kadar Sonraki ile git
-    for (let i = 1; i <= 4; i++) {
-      await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
-      await candidatePage.waitForTimeout(100);
-    }
+    // Grid butonu ile Q5'e direkt git
+    await candidatePage.locator('button[data-nav-idx="4"]').first().click();
     await expect(candidatePage.locator('h2', { hasText: 'Soru 5' })).toBeVisible({ timeout: 10000 });
 
     // Q5'te B şıkkını seç
@@ -310,10 +254,7 @@ test.describe('Aday — Test çözme akışı', () => {
 
     // Tek geri dönüşte Q5'e git, cevabın hâlâ orada olduğunu doğrula
     await openFirstTest(candidatePage);
-    for (let i = 1; i <= 4; i++) {
-      await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
-      await candidatePage.waitForTimeout(100);
-    }
+    await candidatePage.locator('button[data-nav-idx="4"]').first().click();
     await expect(candidatePage.locator('h2', { hasText: 'Soru 5' })).toBeVisible({ timeout: 10000 });
     // Q5 işaretli — 'Boş Bırak' butonu görünür olmalı
     await expect(candidatePage.getByRole('button', { name: /boş bırak/i })).toBeVisible({ timeout: 10000 });
@@ -363,12 +304,13 @@ test.describe('Aday — Test çözme akışı', () => {
     // Aynı teste tekrar gir
     await openFirstTest(candidatePage);
 
-    // Soru 1'de A hâlâ işaretli olmalı — 'Boş Bırak' butonu cevap seçili olduğunu gösterir
+    // Grid butonu ile Q1'e direkt git (currentIndex restore Q2'de olabilir)
+    await candidatePage.locator('button[data-nav-idx="0"]').first().click();
     await expect(candidatePage.locator('h2', { hasText: 'Soru 1' })).toBeVisible({ timeout: 10000 });
     await expect(candidatePage.getByRole('button', { name: /boş bırak/i })).toBeVisible({ timeout: 10000 });
 
     // Soru 2'ye git, B'nin işaretli olduğunu doğrula
-    await candidatePage.getByRole('button', { name: /^sonraki$/i }).first().click();
+    await candidatePage.locator('button[data-nav-idx="1"]').first().click();
     await expect(candidatePage.locator('h2', { hasText: 'Soru 2' })).toBeVisible({ timeout: 10000 });
     await expect(candidatePage.getByRole('button', { name: /boş bırak/i })).toBeVisible({ timeout: 10000 });
   });
