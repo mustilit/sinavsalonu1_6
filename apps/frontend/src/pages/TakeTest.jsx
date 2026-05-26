@@ -26,6 +26,7 @@ import {
   Eraser,
   Save,
   LogOut,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -982,9 +983,10 @@ export default function TakeTest() {
                   type="button"
                   onClick={() => startTest('normal')}
                   disabled={isStarting}
-                  className="group rounded-2xl border-2 border-indigo-200 bg-white hover:border-indigo-500 hover:bg-indigo-50 transition-colors p-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="group rounded-2xl border-2 border-indigo-200 bg-white hover:border-indigo-500 hover:bg-indigo-50 transition-colors p-4 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center"
                   aria-label="Normal Mod ile teste başla"
                 >
+                  <Lightbulb className="w-5 h-5 text-indigo-600 group-hover:text-indigo-700 mb-1" aria-hidden="true" />
                   <p className="text-base font-semibold text-indigo-700 group-hover:text-indigo-800">
                     Normal Mod
                   </p>
@@ -996,9 +998,10 @@ export default function TakeTest() {
                   type="button"
                   onClick={() => startTest('serial')}
                   disabled={isStarting}
-                  className="group rounded-2xl border-2 border-amber-200 bg-white hover:border-amber-500 hover:bg-amber-50 transition-colors p-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="group rounded-2xl border-2 border-amber-200 bg-white hover:border-amber-500 hover:bg-amber-50 transition-colors p-4 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center"
                   aria-label="Seri Mod ile teste başla"
                 >
+                  <Rocket className="w-5 h-5 text-amber-600 group-hover:text-amber-700 mb-1" aria-hidden="true" />
                   <p className="text-base font-semibold text-amber-700 group-hover:text-amber-800">
                     Seri Mod
                   </p>
