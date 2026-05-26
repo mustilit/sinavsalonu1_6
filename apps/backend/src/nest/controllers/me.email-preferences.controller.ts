@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Patch, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Inject, Patch, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
 import { UpdateUserEmailPreferencesUseCase } from '../../application/use-cases/email/UpdateUserEmailPreferencesUseCase';
@@ -13,7 +13,9 @@ import { UpdateEmailPreferencesDto } from './dto/email-preferences.dto';
 @ApiTags('me')
 @ApiBearerAuth('bearer')
 export class MeEmailPreferencesController {
-  constructor(private readonly uc: UpdateUserEmailPreferencesUseCase) {}
+  // useFactory ile sağlanan provider için type-based DI (constructor param tipinden)
+  // bazı runtime'larda fail oluyor — @Inject() ile token'ı açıkça belirt.
+  constructor(@Inject(UpdateUserEmailPreferencesUseCase) private readonly uc: UpdateUserEmailPreferencesUseCase) {}
 
   @Get()
   @Roles('CANDIDATE', 'EDUCATOR', 'ADMIN', 'WORKER')
