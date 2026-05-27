@@ -48,22 +48,22 @@ module.exports = {
   //   Path-spesifik threshold'lar (use-cases, guards) aktarılmadan önce
   //   o klasördeki test coverage'ı baseline'a ulaşmalı; yoksa CI sürekli kırmızı kalır.
   coverageThreshold: {
-    // Global baseline — 27 May 2026 (sprint 3 sonu, 53 yeni test dosyası, 487 test case).
-    //   Önceki: stmts %9.51 (24 May) → Şimdi: stmts %35.2.
+    // Global baseline — 27 May 2026 (sprint 4 sonu, 144 yeni test dosyası, ~990 test case).
+    //   Sprint 0: %9.51 (24 May) → Sprint 3: %35.2 → Sprint 4: %55.8.
     // Threshold = ölçüm - 2 pt (CI dalgalanma toleransı). Ratchet workflow ile artırılır.
     global: {
-      branches: 24,
-      functions: 27,
-      lines: 33,
-      statements: 33,
+      branches: 41,
+      functions: 46,
+      lines: 54,
+      statements: 53,
     },
-    // Use-cases katmanı (toplam): sprint 1: %22 → sprint 3: %51.
-    // Hot path domain'ler %85+'a ulaştı (billing, refund); diğerleri sprint 4'te.
+    // Use-cases katmanı (toplam): sprint 1: %22 → sprint 3: %51 → sprint 4: %64.
+    // admin/moderation/live derinleştirildi; controllers + common dahil edildi.
     './src/application/use-cases/': {
-      branches: 37,
-      functions: 39,
-      lines: 50,
-      statements: 48,
+      branches: 46,
+      functions: 48,
+      lines: 63,
+      statements: 61,
     },
 
     // ── Path-spesifik %85+ HEDEF olan modüller (KALITE-DEGERLENDIRME §11) ────
@@ -78,14 +78,14 @@ module.exports = {
       functions: 90,
       lines: 90,
     },
-    // Refund (5 aşamalı state machine): %85.6 stmts. Audit + escalation kritik.
+    // Refund: sprint 4 ölçüm %87.8 stmts (sprint 3'te %85.6'dı).
     './src/application/use-cases/refund/': {
-      statements: 80,
+      statements: 82,
       branches: 70,
-      functions: 60,
-      lines: 82,
+      functions: 62,
+      lines: 85,
     },
-    // Auth (2FA, login, device verification): %65.4 stmts. Hedef %85 sprint 4'te.
+    // Auth (2FA, login, device verification): %65.4 stmts.
     './src/application/use-cases/auth/': {
       statements: 62,
       branches: 46,
@@ -99,12 +99,33 @@ module.exports = {
       functions: 65,
       lines: 67,
     },
-    // Services (AuditLogger, ReviewAggregation, Email): %41.1 stmts.
+    // Admin (sprint 4 ölçüm %67.1 stmts — admin paneli use-case'leri).
+    './src/application/use-cases/admin/': {
+      statements: 63,
+      branches: 38,
+      functions: 47,
+      lines: 62,
+    },
+    // Moderation (sprint 4 ölçüm %83.7 stmts — AI içerik koruması).
+    './src/application/use-cases/moderation/': {
+      statements: 80,
+      branches: 55,
+      functions: 70,
+      lines: 80,
+    },
+    // Live session (sprint 4 ölçüm %61.1 stmts — gerçek zamanlı oturum).
+    './src/application/use-cases/live/': {
+      statements: 58,
+      branches: 43,
+      functions: 30,
+      lines: 60,
+    },
+    // Services (AuditLogger, ReviewAggregation, Email): %43.8 stmts.
     './src/application/services/': {
-      statements: 38,
-      branches: 25,
-      functions: 38,
-      lines: 39,
+      statements: 40,
+      branches: 27,
+      functions: 40,
+      lines: 41,
     },
     // Security (webhook signature + CSP builder): %95.2 stmts — para + tarayıcı güvenliği.
     // Bu klasör düşmeye ASLA izin verilmez; hata = production security regression.
@@ -114,12 +135,20 @@ module.exports = {
       functions: 95,
       lines: 92,
     },
-    // Guards (Roles + WorkerPermissions + Captcha): %33.9 stmts.
+    // Controllers (sprint 4 ölçüm %87.6 stmts — 58 yeni test dosyası).
+    // Hedef %95'e çıkarmak için sprint 5'te az kalan dosyalar tamamlanacak.
+    './src/nest/controllers/': {
+      statements: 85,
+      branches: 64,
+      functions: 87,
+      lines: 85,
+    },
+    // Guards (Roles + WorkerPermissions + Captcha + Tier + Origin): %61.6 stmts.
     './src/nest/guards/': {
-      statements: 31,
-      branches: 23,
-      functions: 50,
-      lines: 30,
+      statements: 58,
+      branches: 44,
+      functions: 60,
+      lines: 56,
     },
     // Interceptors (idempotency + metrics): %85.4 stmts — para akışı + telemetri.
     './src/nest/interceptors/': {
@@ -135,23 +164,31 @@ module.exports = {
       functions: 0,
       lines: 86,
     },
-    // Repositories (Prisma katmanı): %23.7 stmts. Mock-heavy, sprint 4'te yükselt.
+    // Repositories (Prisma katmanı): sprint 4 ölçüm %30.7 stmts (sprint 3'te %23.7'di).
     './src/infrastructure/repositories/': {
-      statements: 21,
-      branches: 20,
-      functions: 22,
-      lines: 22,
+      statements: 28,
+      branches: 28,
+      functions: 28,
+      lines: 30,
     },
-    // Common (tenant context + rate-limit util): %25.4 stmts.
-    // TODO: common/rate-limit.ts testi eksik (test edilirse %85+'a döner). Sprint 4.
+    // Common (tenant + rate-limit + utils): sprint 4 ölçüm %76.3 stmts
+    // (sprint 3'te %25.4'tü; rate-limit testi eklendi). %85'e ulaşmak için
+    // 1-2 dosya daha test edilebilir.
     './src/common/': {
-      statements: 23,
-      branches: 13,
-      functions: 47,
-      lines: 18,
+      statements: 73,
+      branches: 48,
+      functions: 95,
+      lines: 70,
     },
-    // Domain (saf entity validation): hâlâ test yok; sprint 4'te eklenecek.
-    // './src/domain/': { branches: 85, functions: 90, lines: 90, statements: 90 },
+    // Domain (saf utility'ler): sprint 4 ölçüm %21.1 stmts — kısmi (5 utility).
+    // Bazı domain klasörü dosyaları üretim kodu değil placeholder olduğu için
+    // %85'e ulaşmak yapılandırılmamış. Sprint 5'te genişletilecek.
+    './src/domain/': {
+      statements: 18,
+      branches: 0,
+      functions: 0,
+      lines: 20,
+    },
   },
 };
 
