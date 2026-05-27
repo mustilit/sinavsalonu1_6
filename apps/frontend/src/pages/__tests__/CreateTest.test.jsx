@@ -51,7 +51,11 @@ vi.mock('@/lib/navigation', () => ({
 }));
 
 vi.mock('@/lib/useServiceStatus', () => ({
-  useServiceStatus: () => ({ publishEnabled: true }),
+  useServiceStatus: () => ({
+    publishEnabled: true,
+    packageCreationEnabled: true,
+    minPackagePriceCents: 0,
+  }),
 }));
 
 vi.mock('@/lib/useOnboarding', () => ({
@@ -64,7 +68,9 @@ vi.mock('@/lib/useAutoSave', () => ({
   useAutoSave: () => ({
     saveStatus: 'idle',
     lastSaved: null,
-    triggerSave: vi.fn(),
+    scheduleSave: vi.fn(),
+    loadDraft: vi.fn().mockReturnValue(null),
+    clearDraft: vi.fn(),
   }),
 }));
 

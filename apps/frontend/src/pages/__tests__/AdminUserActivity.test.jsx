@@ -9,12 +9,15 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminUserActivity from '../AdminUserActivity';
 
-const mockAdminUsers = { search: vi.fn() };
-const mockAdminAudit = { listByActor: vi.fn() };
+// vi.hoisted: mock factory içinde referans güvenli
+const { mockAdminSearch, mockAdminAuditList } = vi.hoisted(() => ({
+  mockAdminSearch: vi.fn(),
+  mockAdminAuditList: vi.fn(),
+}));
 
 vi.mock('@/api/dalClient', () => ({
-  adminUsers: mockAdminUsers,
-  adminAudit: mockAdminAudit,
+  adminUsers: { search: mockAdminSearch },
+  adminAudit: { listByActor: mockAdminAuditList },
 }));
 
 vi.mock('@/utils', () => ({
@@ -34,8 +37,8 @@ function renderAdminUserActivity() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockAdminUsers.search.mockResolvedValue({ items: [], total: 0 });
-  mockAdminAudit.listByActor.mockResolvedValue({ items: [], nextCursor: null });
+  mockAdminSearch.mockResolvedValue({ items: [], total: 0 });
+  mockAdminAuditList.mockResolvedValue({ items: [], nextCursor: null });
 });
 
 describe('AdminUserActivity sayfası', () => {
@@ -78,7 +81,7 @@ describe('AdminUserActivity sayfası', () => {
 
   it('kullanıcı bulunamadığında empty state mesajı gösterilir', async () => {
     // Arrange
-    mockAdminUsers.search.mockResolvedValue({ items: [], total: 0 });
+    mockAdminSearch.mockResolvedValue({ items: [], total: 0 });
     renderAdminUserActivity();
 
     // Act — arama yap
@@ -95,7 +98,7 @@ describe('AdminUserActivity sayfası', () => {
 
   it('kullanıcı bulunduğunda sonuçlar listelenir', async () => {
     // Arrange
-    mockAdminUsers.search.mockResolvedValue({
+    mockAdminSearch.mockResolvedValue({
       items: [{ id: 'u-1', email: 'test@example.com', username: 'testuser', role: 'CANDIDATE' }],
       total: 1,
     });
@@ -111,7 +114,7 @@ describe('AdminUserActivity sayfası', () => {
 
   it('audit log listesi tabloda gösterilir', async () => {
     // Arrange
-    mockAdminAudit.listByActor.mockResolvedValue({
+    mockAdminAuditList.mockResolvedValue({
       items: [
         {
           id: 'log-1',

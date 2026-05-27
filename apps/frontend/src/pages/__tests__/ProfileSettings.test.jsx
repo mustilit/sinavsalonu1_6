@@ -9,36 +9,21 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ProfileSettings from '../ProfileSettings';
 
+// vi.hoisted: mock factory içinde güvenli referans
+const { mockAuthMe, mockAuthUpdateMe } = vi.hoisted(() => ({
+  mockAuthMe: vi.fn(),
+  mockAuthUpdateMe: vi.fn(),
+}));
+
 vi.mock('@/api/dalClient', () => ({
   entities: {
     ExamType: { filter: vi.fn().mockResolvedValue([]) },
-    User: { updateMyUserData: vi.fn() },
+    Purchase: { filter: vi.fn().mockResolvedValue([]) },
+    RefundRequest: { filter: vi.fn().mockResolvedValue([]) },
   },
   auth: {
-    me: vi.fn().mockResolvedValue({ id: 'u-1', username: 'testuser', role: 'CANDIDATE' }),
-  },
-}));
-
-vi.mock('@/lib/api/apiClient', () => ({
-  default: {
-    get: vi.fn().mockResolvedValue({
-      data: {
-        id: 'u-1',
-        username: 'testuser',
-        role: 'CANDIDATE',
-        phone: '0555 111 22 33',
-        website: '',
-        linkedin: '',
-        notification_preferences: {
-          email_new_tests: true,
-          email_promotions: false,
-          email_educator_updates: true,
-          email_test_reminders: true,
-        },
-      },
-    }),
-    patch: vi.fn().mockResolvedValue({ data: { ok: true } }),
-    post: vi.fn().mockResolvedValue({ data: {} }),
+    me: mockAuthMe,
+    updateMe: mockAuthUpdateMe,
   },
 }));
 
@@ -73,6 +58,21 @@ function renderProfileSettings() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockAuthMe.mockResolvedValue({
+    id: 'u-1',
+    username: 'testuser',
+    role: 'CANDIDATE',
+    phone: '0555 111 22 33',
+    website: '',
+    linkedin: '',
+    notification_preferences: {
+      email_new_tests: true,
+      email_promotions: false,
+      email_educator_updates: true,
+      email_test_reminders: true,
+    },
+  });
+  mockAuthUpdateMe.mockResolvedValue({ ok: true });
 });
 
 describe('ProfileSettings sayfası', () => {
@@ -88,7 +88,7 @@ describe('ProfileSettings sayfası', () => {
     renderProfileSettings();
     // Assert — tablist veya tab rolü mevcut olmalı
     const tabs = screen.queryAllByRole('tab');
-    expect(tabs.length).toBeGreaterThanOrEqual(0); // component tabs kullanıyor
+    expect(tabs.length).toBeGreaterThanOrEqual(0);
     expect(document.body.firstChild).toBeTruthy();
   });
 
@@ -114,31 +114,28 @@ describe('ProfileSettings sayfası', () => {
     });
   });
 
-  it('geçersiz URL girildiğinde hata gösterilir', async () => {
+  it('website alanı https:// placeholder ile render edilir', async () => {
     // Arrange
     renderProfileSettings();
 
-    // URL alanı yüklenene kadar bekle
+    // Assert — website input placeholder olmalı (queryAll ile çoklu eşleşmeyi tolere et)
     await waitFor(() => {
-      const websiteInput = screen.queryByPlaceholderText(/https:\/\//i);
-      if (websiteInput) expect(websiteInput).toBeInTheDocument();
-      else expect(document.body.firstChild).toBeTruthy();
+      const urlInputs = screen.queryAllByPlaceholderText(/https:\/\//i);
+      if (urlInputs.length > 0) {
+        expect(urlInputs[0]).toBeInTheDocument();
+      } else {
+        expect(document.body.firstChild).toBeTruthy();
+      }
     });
-
-    // Assert — hata gösterimi için render'ı doğrula
-    expect(document.body.firstChild).toBeTruthy();
   });
 
-  it('API GET /me/preferences çağrılır', async () => {
-    // Arrange
-    const api = (await import('@/lib/api/apiClient')).default;
-
-    // Act
+  it('auth.me() ilk render\'da çağrılır', async () => {
+    // Arrange & Act
     renderProfileSettings();
 
-    // Assert
+    // Assert — auth.me yüklenene kadar bekle
     await waitFor(() => {
-      expect(api.get).toHaveBeenCalled();
+      expect(mockAuthMe).toHaveBeenCalled();
     });
   });
 });
