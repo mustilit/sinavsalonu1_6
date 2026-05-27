@@ -1,0 +1,43 @@
+# Code Owners — otomatik PR review atama
+# https://docs.github.com/en/repositories/managing-your-repositories-settings-and-customizations/customizing-your-repository/about-code-owners
+#
+# Format: <pattern>  <owner1> <owner2> ...
+# - Sıra ÖNEMLİ: aşağıdaki kurallar yukarıdakileri override eder (son eşleşen kazanır).
+# - Branch protection "Require review from Code Owners" aktif olduğunda bu kullanıcılardan
+#   en az biri onay vermeden PR merge edilemez.
+
+# ── Varsayılan: tüm dosyalar repo sahibine düşer ───────────────────────────────
+*                                       @mustilit
+
+# ── Backend (NestJS + Prisma) ──────────────────────────────────────────────────
+apps/backend/**                         @mustilit
+apps/backend/prisma/**                  @mustilit
+apps/backend/src/application/**         @mustilit
+apps/backend/src/nest/security/**       @mustilit
+apps/backend/src/nest/interceptors/**   @mustilit
+
+# ── Frontend (React + Vite) ────────────────────────────────────────────────────
+apps/frontend/**                        @mustilit
+apps/frontend/src/api/dalClient.js      @mustilit
+apps/frontend/src/lib/routeRoles.js     @mustilit
+
+# ── Altyapı (Docker, Helm, Nginx, CI/CD) ───────────────────────────────────────
+infra/**                                @mustilit
+.github/workflows/**                    @mustilit
+.husky/**                               @mustilit
+
+# ── Güvenlik-kritik dosyalar — ekstra dikkat ───────────────────────────────────
+apps/backend/src/instrument.ts          @mustilit
+apps/backend/src/nest/guards/**         @mustilit
+apps/backend/src/nest/security/**       @mustilit
+infra/nginx/**                          @mustilit
+apps/frontend/src/lib/api/apiClient.js  @mustilit
+codecov.yml                             @mustilit
+.github/CODEOWNERS                      @mustilit
+.github/workflows/release.yml           @mustilit
+
+# ── Dokümantasyon ──────────────────────────────────────────────────────────────
+docs/**                                 @mustilit
+CHANGELOG.md                            @mustilit
+README.md                               @mustilit
+CLAUDE.md                               @mustilit

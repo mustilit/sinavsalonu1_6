@@ -41,3 +41,10 @@ coverage/
 # Runtime upload'ları — backend kullanıcı yüklemelerini diske yazar; repo'ya girmesin.
 # Üretimde S3 / object storage'a taşınacak.
 apps/backend/uploads/
+
+# Mutation testing sandbox — Stryker her koşumda binlerce sandbox dosyası üretir.
+# Eskiden 529 dosya track edilmişti; commit ile temizlendi + ignore'a alındı.
+apps/backend/.stryker-tmp/
+
+# Geçmiş v1 projesinden çıkarılmış arşiv — referans amaçlı, repo dışı.
+sinavsalonu-extracted/
