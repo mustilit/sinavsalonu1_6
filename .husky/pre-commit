@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# Sınav Salonu pre-commit hook
+# - Backend staged .ts varsa tsc --noEmit (tip uyumluluğu)
+# - Frontend staged .jsx/.js varsa ESLint (--fix dahil)
+# - lint-staged config kökteki package.json içinde.
+# Hook'u atlamak için: git commit --no-verify (kullanılması önerilmez).
+
+npx lint-staged --concurrent false || exit 1

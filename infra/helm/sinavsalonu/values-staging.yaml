@@ -1,0 +1,111 @@
+# Staging override for sinavsalonu chart.
+# Usage:
+#   helm upgrade --install sinavsalonu ./infra/helm/sinavsalonu \
+#     -f infra/helm/sinavsalonu/values-staging.yaml \
+#     -n sinavsalonu-staging \
+#     --create-namespace
+#
+# Staging hedefi:
+#   - 1 backend replica (cost saving)
+#   - Stripe TEST mode key'leri (ödeme prod'a düşmesin)
+#   - Daha düşük resource limit
+#   - Liveness/readiness daha agresif (hızlı feedback)
+#   - PostgreSQL: dış RDS değil cluster-internal PVC (geçici veri)
+
+global:
+  environment: staging
+  imageRegistry: ghcr.io
+
+backend:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/mustilit/sinavsalonu1_6-backend
+    tag: "staging"
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  podDisruptionBudget:
+    enabled: false
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 15
+    periodSeconds: 5
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 5
+    periodSeconds: 3
+  env:
+    NODE_ENV: production
+    LOG_LEVEL: debug
+    # Stripe TEST mode — gerçek para alınmaz, test card'lar çalışır
+    STRIPE_MODE: "test"
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/mustilit/sinavsalonu1_6-frontend
+    tag: "staging"
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  env:
+    VITE_API_BASE_URL: "https://api.staging.sinavsalonu.com"
+    VITE_STRIPE_PUBLISHABLE_KEY: "pk_test_REPLACE_ME"
+
+worker:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+  hosts:
+    - host: staging.sinavsalonu.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+    - host: api.staging.sinavsalonu.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: backend
+  tls:
+    - secretName: sinavsalonu-staging-tls
+      hosts:
+        - staging.sinavsalonu.com
+        - api.staging.sinavsalonu.com
+
+# Migration job: helm upgrade öncesi Prisma migrate deploy
+migrationJob:
+  enabled: true
+  backoffLimit: 2
+
+# Secret'lar staging için dış (SealedSecret veya Vault) — placeholders.
+# helm install --set-string sırasında set edilmeli VEYA önceden manuel
+# `kubectl create secret generic sinavsalonu-secrets ...` ile yaratılmalı.
+secrets:
+  externalRef: sinavsalonu-staging-secrets

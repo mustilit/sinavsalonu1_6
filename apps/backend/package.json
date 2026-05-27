@@ -12,6 +12,7 @@
     "start:email-traffic-worker": "node dist/infrastructure/queue/email-traffic.worker.js",
     "start:dlq": "node dist/infrastructure/queue/dlq.worker.js",
     "dev": "npx tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:unit": "jest --runInBand --testPathPattern=tests/usecases|tests/cron",
     "test:unit:ci": "jest --runInBand --ci --coverage --coverageDirectory=./coverage --testPathPattern=tests/usecases|tests/cron",
