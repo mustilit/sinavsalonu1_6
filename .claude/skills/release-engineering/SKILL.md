@@ -350,24 +350,75 @@ jobs:
           fi
 ```
 
-## 9. Performance Budget
+## 9. Performance Budget — MEVCUT İMPLEMENTASYON (Sprint 11)
 
-CI'da:
+> **Aktif workflow:** `.github/workflows/lighthouse.yml`. **Config:** `apps/frontend/lighthouserc.json`.
 
-- **Bundle size:** `dist/assets/*.js` toplam < 500KB gz (mevcut bundle analyzer artifact kullan).
-- **Lighthouse:** Home, Explore, Login için Performance ≥ 80, Accessibility ≥ 95.
+Bundle + Lighthouse + sıkıştırma + PWA — hepsi build pipeline'ında.
 
-```yaml
-# .github/workflows/perf-budget.yml (frontend deploy sonrası)
-- name: Lighthouse CI
-  uses: treosh/lighthouse-ci-action@v11
-  with:
-    urls: |
-      https://staging.sinavsalonu.com/
-      https://staging.sinavsalonu.com/Explore
-      https://staging.sinavsalonu.com/Login
-    budgetPath: .lighthouserc.json
-    uploadArtifacts: true
+### Lighthouse CI
+
+**Config (`apps/frontend/lighthouserc.json`):**
+
+```jsonc
+{
+  "ci": {
+    "collect": {
+      "url": ["/", "/Explore", "/TestDetail?id=demo", "/Login"],
+      "numberOfRuns": 3
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance":   ["error", { "minScore": 0.85 }],
+        "categories:accessibility": ["error", { "minScore": 0.95 }],
+        "categories:best-practices":["warn",  { "minScore": 0.90 }],
+        "categories:seo":           ["warn",  { "minScore": 0.85 }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "cumulative-layout-shift":  ["error", { "maxNumericValue": 0.1 }],
+        "total-blocking-time":      ["error", { "maxNumericValue": 300 }]
+      }
+    }
+  }
+}
+```
+
+**Workflow (`.github/workflows/lighthouse.yml`):** PR + main push tetiği, `apps/frontend/**` path filtresi, `actions/upload-artifact` 30 gün retention. PR thresholds altındaysa kırılır.
+
+### Build sıkıştırma (Brotli + Gzip — Sprint 11 #1)
+
+```js
+// apps/frontend/vite.config.js
+import { compression } from 'vite-plugin-compression2';
+plugins: [
+  compression({ algorithm: 'brotliCompress', include: /\.(js|mjs|json|css|html|svg|wasm)$/i, threshold: 1024 }),
+  compression({ algorithm: 'gzip',           include: /\.(js|mjs|json|css|html|svg|wasm)$/i, threshold: 1024 }),
+]
+```
+
+Build çıktısı her bundle'ın yanına `.br` ve `.gz` dosyaları üretir. nginx `brotli_static + gzip_static` runtime sıkıştırma yapmadan bunları servisler (`infra/nginx/default.conf.template`).
+
+nginx Brotli module: `infra/docker/frontend.Dockerfile` Alpine edge community'den `nginx-mod-http-brotli` paketini kurar, `/etc/nginx/modules-enabled/00-brotli-*.conf` ile load eder.
+
+### PWA build çıktısı (Sprint 11 #3)
+
+`npm run build` → `dist/sw.js` + `dist/workbox-*.js` + `dist/manifest.webmanifest`. Workbox precache 185 entry (~3877 KiB) — yeni route eklendiğinde otomatik artar. Yeni PNG ikonu: `npm run pwa:icons`.
+
+### Bundle size budget
+
+- **Initial bundle:** `dist/assets/index-*.js` (gzip'siz) < 500KB hedef. Mevcut **~1.1MB → Sprint 12 hedef: manualChunks + dynamic import ile < 500KB**.
+- **Vendor chunk:** ayrı (`recharts`, `xlsx`, `three` gibi büyük lib'ler kendi chunk'ında).
+- **Sayfa chunk'ları:** her sayfa kendi chunk'ında 20-80KB.
+
+```bash
+ANALYZE=1 npm run build   # dist/stats.html treemap — CI'da artifact yüklenir
+```
+
+### Lighthouse manuel çalıştırma
+
+```bash
+cd apps/frontend
+npx lhci autorun --config=./lighthouserc.json
+# Sonuçlar .lighthouseci/ altında
 ```
 
 ## 10. DORA Metrikleri

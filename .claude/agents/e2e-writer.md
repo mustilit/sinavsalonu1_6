@@ -40,13 +40,55 @@ apps/frontend/
       AdminDashboard.ts
     specs/
       auth.spec.ts
-      purchase.spec.ts
-      attempt.spec.ts
-      educator-publish.spec.ts
-      admin.spec.ts
-      a11y.spec.ts        ← axe-core ile kritik sayfalar
-  playwright.config.js
+      purchase-flow.spec.ts
+      candidate-test-flow.spec.ts
+      live-session-flow.spec.ts
+      refund-flow.spec.ts
+      moderation.spec.ts
+      package-second-test.spec.ts
+      visual-regression.spec.ts
+      a11y.spec.ts         ← axe-core, desktop project
+      mobile-a11y.spec.ts  ← 360px + iPhone (mobile-360 + mobile-iphone projects)
+  playwright.config.js   → 3 project: desktop / mobile-360 / mobile-iphone
 ```
+
+## Playwright Projects — Desktop + Mobile (Sprint 11 #5)
+
+`playwright.config.js` üç project tanımlar; spec dosyası adı pattern'i project seçer:
+
+```js
+import { devices } from '@playwright/test';
+
+export default {
+  projects: [
+    {
+      name: 'desktop',
+      testIgnore: /mobile-.*\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile-360',                       // Galaxy S5 — 360x640
+      testMatch: /mobile-.*\.spec\.ts/,
+      use: { ...devices['Galaxy S5'] },
+    },
+    {
+      name: 'mobile-iphone',                    // iPhone 12 — retina + iOS Safari
+      testMatch: /mobile-.*\.spec\.ts/,
+      use: { ...devices['iPhone 12'] },
+    },
+  ],
+};
+```
+
+Mobil spec yazıyorsan dosya adı **`mobile-*.spec.ts`** olmalı — desktop project bunu atlar, iki mobil project otomatik koşar.
+
+```bash
+npx playwright test --project=mobile-360 e2e/specs/mobile-a11y.spec.ts
+npx playwright test --project=mobile-iphone
+npx playwright test                            # tümü (3 project × matched specs)
+```
+
+Detaylı mobil a11y pattern (yatay scroll, touch target ≥ 40×40, skip link) için: **`accessibility` skill** "Mobil Viewport" bölümü.
 
 ## Staging Ortamına Karşı Çalıştırma
 

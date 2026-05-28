@@ -7,6 +7,22 @@ description: SLO/SLA tanımı, circuit breaker (opossum), retry + DLQ, graceful 
 
 Production'daki uptime, dış servis bağımlılıkları, ve hata kurtarma için disiplin. KALITE-DEGERLENDIRME §2 "Güvenilirlik 6/10" buradan 8/10'a çıkar.
 
+## Read Replica Routing — MEVCUT İMPLEMENTASYON (Sprint 9-10)
+
+**Router:** `apps/backend/src/infrastructure/database/dbRouter.ts` → `prismaRead()` ve `prisma` (primary).
+
+**Kural:**
+- Admin raporları, marketplace listeleri, "stale-tolerated" read'ler → `prismaRead()`.
+- Purchase / Attempt submit / Audit log / Tüm `$transaction` → primary `prisma`.
+
+Replica lag (PostgreSQL streaming replication) genelde < 100ms ama backup pencerelerinde 30s'e çıkabilir. `ReplicaLagHigh` alert'i 30s eşiğinde uyarır.
+
+**Mevcut tüketici örnekleri:**
+- `GetCommissionReportUseCase`, `GetCandidateReportUseCase` — `prismaRead()` kullanır.
+- Yeni rapor use-case yazılırken aynı pattern: `import { prismaRead } from '../../../infrastructure/database/dbRouter'`.
+
+**SQL injection güvenli `$queryRawUnsafe`:** Parametrize edilmiş `$1, $2, ...` zorunlu. Kullanıcı girdisini string concat ile sokmak yasak.
+
 ## SLO/SLA hedef tablosu
 
 Aşağıdaki SLO'lar üretim için minimum hedef. Dashboard'a (Grafana/Sentry) bağlanmalı.
@@ -26,55 +42,51 @@ Aşağıdaki SLO'lar üretim için minimum hedef. Dashboard'a (Grafana/Sentry) b
 
 Tanım: `error_budget = (1 - SLO) * window`. %99.9 uptime → ay başına 43 dk hata bütçesi.
 
-## Circuit Breaker (opossum)
+## Circuit Breaker (opossum) — MEVCUT İMPLEMENTASYON
 
-Dış servis çağrılarında failure cascade'i durdurmak için. Üç durum: **closed** (normal), **open** (fail edip kapı kapanır), **half-open** (deneme).
+> **Sprint 10'da aktive edildi.** `opossum ^9.0.0` ve `@types/opossum ^8.1.9` yüklü.
+> Tüm yeni 3. taraf entegrasyonu bu registry'den geçmeli — yeni breaker yazma.
 
-```bash
-cd apps/backend && npm install opossum
-```
+**Registry:** `apps/backend/src/infrastructure/resilience/circuitBreaker.ts`
 
-```ts
-// apps/backend/src/infrastructure/resilience/StripeBreaker.ts
-import CircuitBreaker from 'opossum';
-import { logger } from '@infrastructure/logger';
-
-const options = {
-  timeout: 5000,              // 5s'den uzun → fail
-  errorThresholdPercentage: 50, // %50 fail → open
-  resetTimeout: 30000,        // 30s sonra half-open dene
-  rollingCountTimeout: 10000, // metric window
-  rollingCountBuckets: 10,
-};
-
-export function createBreaker<T extends (...args: any[]) => Promise<any>>(
-  name: string,
-  fn: T,
-  fallback?: (...args: Parameters<T>) => ReturnType<T>,
-): CircuitBreaker {
-  const breaker = new CircuitBreaker(fn, options);
-  if (fallback) breaker.fallback(fallback);
-  breaker.on('open', () => logger.warn(`breaker open: ${name}`));
-  breaker.on('halfOpen', () => logger.info(`breaker half-open: ${name}`));
-  breaker.on('close', () => logger.info(`breaker close: ${name}`));
-  breaker.on('reject', () => logger.warn(`breaker reject: ${name}`));
-  return breaker;
-}
-```
-
-Kullanım:
+Named breaker — aynı `name` için tek instance (global state). State: CLOSED (normal) → OPEN (fail-fast, fallback çalışır) → HALF_OPEN (test request) → CLOSED.
 
 ```ts
-const chargeBreaker = createBreaker(
-  'stripe.charge',
-  (params) => stripeClient.charges.create(params),
-  () => { throw new ServiceUnavailableException('Ödeme servisi geçici olarak kullanılamıyor'); },
-);
+import { breakerFor } from '../../infrastructure/resilience/circuitBreaker';
 
-await chargeBreaker.fire({ amount, currency });
+const stripeBreaker = breakerFor('stripe', {
+  timeout: 10000,                  // ms — varsayılan 10s
+  errorThresholdPercentage: 50,    // %50 fail → OPEN
+  resetTimeout: 30000,             // ms — OPEN sonrası HALF_OPEN denemesi
+  fallback: () => ({ status: 'queued', message: 'Stripe geçici offline' }),
+});
+
+const result = await stripeBreaker.fire(() => stripe.charges.create(...));
 ```
 
-Mail, S3, push, AI servisleri için aynı yaklaşım.
+**Mevcut breaker isimleri** (telemetriye yansır):
+- `stripe` — Charges/Subscriptions/Webhooks
+- `iyzico` — TR ödeme
+- `brevo` — email (SES yedeği)
+- `turnstile` — CAPTCHA
+- `google-oauth` — OAuth tokeninfo
+
+**DB ve Redis için breaker YOK** — Prisma/ioredis kendi retry + connection pool'unu kullanır.
+
+**Metrik (`infrastructure/metrics/` → prom-client → `/metrics`):**
+```
+circuit_breaker_state{name="stripe"} = 0 (closed) / 1 (open) / 2 (half_open)
+circuit_breaker_total{name="stripe", outcome="success|failure|timeout|fallback"}
+```
+
+`collectBreakerMetrics()` MetricsController tarafından çağrılır; Grafana dashboard'unda görünür (`grafana-dashboards/sinavsalonu-overview.json`).
+
+**Test:** `tests/infrastructure/circuitBreaker.test.ts` (6 test). `_resetAllBreakersForTest()` her test başında çağrılmalı.
+
+**Anti-pattern (PR review'da reject):**
+- `new CircuitBreaker(...)` doğrudan kullanma — `breakerFor()` registry'sinden geç.
+- Fallback'siz breaker (OPEN durumda exception fırlatır → caller cascade fail).
+- DB query'lerini breaker'a sarmak.
 
 ## Retry + DLQ (BullMQ)
 
@@ -139,31 +151,50 @@ CRITICAL kuyruğu `User.emailPreferences`'tan **etkilenmez** (`EmailDispatcher.s
 
 Detaylı pattern, EmailLog/EmailEvent/SuppressedEmail/EmailProviderConfig şemaları, kill switch matrisi ve bounce webhook akışı için `email-traffic` skill'i.
 
-## Graceful shutdown
+## Graceful shutdown — MEVCUT İMPLEMENTASYON
 
-NestJS `enableShutdownHooks` + container SIGTERM. In-flight request'leri öldürme.
+> **Sprint 10'da aktive edildi.** Cross-cutting concern'ler tek service'te toplandı.
 
+**Koordinatör:** `apps/backend/src/nest/services/graceful-shutdown.service.ts`
+
+`OnApplicationShutdown` implement eder; AppModule'de **EN ALT'a** kayıtlı (Sentry flush'tan önce diğer hook'ların log'larını yakalasın). Adımlar:
+
+| # | Kaynak | Timeout | Strateji |
+|---|---|---|---|
+| 1 | Prisma `basePrisma.$disconnect()` | 5s | Active query'lerin bitmesini bekle |
+| 2 | Redis `RedisCache.quit()` (@Optional Inject) | 3s | Pool kapanır |
+| 3 | `Sentry.flush(2000)` | 2s | Pending event'ler gönderilir |
+
+Her adım `Promise.race([fn, setTimeout(reject, N)])` ile sınırlandırılır; `try/catch` ile fail-soft (log + devam).
+
+**main.ts kurulumu:**
 ```ts
-// apps/backend/src/main.ts
 const app = await NestFactory.create(AppModule);
 app.enableShutdownHooks();
-
-// HTTP server'a shutdown timeout
-const PORT = process.env.PORT ?? 3000;
-const server = await app.listen(PORT);
-server.keepAliveTimeout = 65_000;
-server.headersTimeout = 66_000;
-
 process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, closing HTTP server...');
-  // 30 saniye in-flight request'lere izin ver
-  setTimeout(() => process.exit(1), 30_000).unref();
-  await app.close();
-  process.exit(0);
+  console.log('[shutdown] SIGTERM alındı — graceful shutdown başlıyor');
 });
 ```
 
-NestJS module'larda `OnApplicationShutdown` implement et — Prisma disconnect, BullMQ worker close, Redis quit.
+**K8s manifest (Helm values):**
+```yaml
+spec:
+  containers:
+  - name: backend
+    lifecycle:
+      preStop:
+        exec:
+          command: ["/bin/sh", "-c", "sleep 5"]
+    terminationGracePeriodSeconds: 30
+```
+
+`preStop sleep 5` LoadBalancer endpoint listesinden pod düşene kadar yeni request gelmesini engeller.
+
+**BullMQ worker'ları ayrı pod** (`worker-deployment.yaml`); onların graceful shutdown'ı worker process'inin kendi SIGTERM handler'ında — `GracefulShutdownService` worker'da çalışmaz.
+
+**Yeni provider eklerken:** Eğer kendi pool/connection/cron'unuz varsa `OnModuleDestroy` implement edin. Cross-cutting concern (DB/Redis/Sentry) ise zaten kapsanıyor.
+
+**Doküman:** `docs/ops/graceful-shutdown.md`.
 
 ## Health endpoint genişletme
 
@@ -377,21 +408,43 @@ export class TestPublishProvider {
 }
 ```
 
-## Metrik (Prometheus opsiyonel)
+## Metrik — MEVCUT İMPLEMENTASYON (Prometheus + Grafana)
 
-`@willsoto/nestjs-prometheus` ile `/metrics` endpoint:
+> **Sprint 10'da aktive edildi.** `prom-client ^15.1.3` yüklü, `/metrics` endpoint canlı, K8s'te Prometheus Operator + Grafana dashboard çalışır.
 
-```ts
-@Injectable()
-export class PurchaseMetrics {
-  constructor(
-    @InjectMetric('purchase_total') private readonly counter: Counter,
-    @InjectMetric('purchase_duration_seconds') private readonly histogram: Histogram,
-  ) {}
-}
-```
+**Registry:** `apps/backend/src/infrastructure/metrics/` (Counter / Histogram / Gauge tanımları).
+**Endpoint:** `/metrics` (`InternalOnly` guard ile dış ağa kapalı — sadece K8s cluster içi).
+**Interceptor:** `nest/interceptors/metrics.interceptor.ts` — request count + latency histogram her endpoint'te.
 
-Bunu Grafana dashboard'una bağla → SLO dashboard'u.
+**Helm template'leri:**
+
+| Dosya | İçerik |
+|---|---|
+| `infra/helm/sinavsalonu/templates/servicemonitor.yaml` | Prometheus Operator CRD; backend pod'larını scrape eder |
+| `infra/helm/sinavsalonu/templates/prometheusrule.yaml` | 8 SLO alert kuralı (aşağıda) |
+| `infra/helm/sinavsalonu/grafana-dashboards/sinavsalonu-overview.json` | 7 panel: latency p95/p99, error rate, queue depth, replica lag, circuit breaker state, pod restart |
+| `values.yaml` → `metrics.enabled: true` | ServiceMonitor + PrometheusRule deploy edilir |
+
+**PrometheusRule alert'leri (`prometheusrule.yaml`):**
+
+| Alert | Eşik | Aksiyon |
+|---|---|---|
+| `HighLatencyP95` | p95 > 500ms 5dk | Slack #ops |
+| `VeryHighLatencyP99` | p99 > 2s 5dk | Slack #ops + on-call |
+| `ElevatedErrorRate` | 5xx > %1 10dk | Slack #ops |
+| `CriticalErrorRate` | 5xx > %5 5dk | On-call page |
+| `PaymentWebhookFailures` | webhook fail > 3/5dk | Slack #payments + #ops |
+| `ReplicaLagHigh` | replica lag > 30s | Slack #ops |
+| `CircuitBreakerOpen` | herhangi breaker OPEN 2dk | Slack #ops |
+| `EmailQueueBacklog` | queue depth > 1000 10dk | Slack #ops |
+| `PodRestartingFrequently` | 5 restart 30dk | On-call page |
+
+**Yeni breaker / kuyruk / hot-path eklerken:**
+1. `infrastructure/metrics/` registry'sine Counter veya Histogram ekle.
+2. Eğer alert üretilecekse `prometheusrule.yaml` template'ine PromQL kuralı ekle.
+3. Grafana dashboard JSON'una panel ekle — UI'dan değil, JSON'da düzenle ki Helm chart ile deploy edilebilsin.
+
+**Circuit breaker metric'leri otomatik** — `collectBreakerMetrics()` her breaker için state + stats verir, registry bunu okur.
 
 ## Chaos testing (haftalık)
 

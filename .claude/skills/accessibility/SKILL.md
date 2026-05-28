@@ -317,6 +317,130 @@ Tüm sayfaları test ek e2e maliyetini katlar. Öncelik:
 **Atlanabilir (statik):**
 - About, Privacy, Contact, Partnership, Support
 
+## Mobil Viewport — 360px + iPhone (Sprint 11)
+
+> **Mevcut spec:** `apps/frontend/e2e/specs/mobile-a11y.spec.ts`. **Playwright config:** `playwright.config.js` 3 project (`desktop` / `mobile-360` Galaxy S5 / `mobile-iphone` iPhone 12).
+
+Mobil cihaz a11y'si masaüstüne ek katmandır — küçük ekranda görünmeyen overflow, dokunulamayan buton, kaybolan focus ring. Bunları yalnızca mobil viewport'ta yakalayabilirsin.
+
+### Playwright config — projects
+
+```js
+import { devices } from '@playwright/test';
+
+export default {
+  projects: [
+    {
+      name: 'desktop',
+      testIgnore: /mobile-.*\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // Galaxy S5 / küçük Android — TR'de en yaygın eşik. 360x640.
+      name: 'mobile-360',
+      testMatch: /mobile-.*\.spec\.ts/,
+      use: { ...devices['Galaxy S5'] },
+    },
+    {
+      // iPhone 12 — iOS Safari + retina + viewport-fit=cover testleri
+      name: 'mobile-iphone',
+      testMatch: /mobile-.*\.spec\.ts/,
+      use: { ...devices['iPhone 12'] },
+    },
+  ],
+};
+```
+
+`testMatch` + `testIgnore` pattern'i ile mobil spec'ler ayrı, desktop spec'leri otomatik gelmez.
+
+### Mobile-only kurallar
+
+| Kural | Eşik | Sebep |
+|---|---|---|
+| Yatay scroll | `html.scrollWidth - clientWidth <= 1` | Mobil ekranda yan kaydırma = ölü UX |
+| Touch target | tıklanabilir element ≥ 40×40px | WCAG 2.5.5 Level AAA hedefi 44; AA için 40 kabul |
+| Skip link | İlk Tab'da odakta görünür | Klavye + screen reader kullanıcısı |
+| Modal viewport | İçerik 360px'de kayma yapmıyor | Form ve dialog'da overflow guard |
+
+### Test pattern — mobile-a11y.spec.ts
+
+```ts
+import { test, expect } from '../fixtures/axe';
+
+const PAGES = [
+  { name: 'Home', path: '/' },
+  { name: 'Login', path: '/Login' },
+  { name: 'Register', path: '/Register' },
+  { name: 'Explore', path: '/Explore' },
+];
+
+for (const p of PAGES) {
+  test.describe(`mobile a11y — ${p.name}`, () => {
+    test(`${p.name}: axe-core WCAG AA temiz`, async ({ page, makeAxeBuilder }) => {
+      await page.goto(p.path);
+      await page.waitForLoadState('networkidle');
+      const results = await makeAxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
+    });
+
+    test(`${p.name}: yatay scroll yok`, async ({ page }) => {
+      await page.goto(p.path);
+      await page.waitForLoadState('networkidle');
+      const overflow = await page.evaluate(() => {
+        const html = document.documentElement;
+        return html.scrollWidth - html.clientWidth;
+      });
+      expect(overflow).toBeLessThanOrEqual(1); // sub-pixel toleransı
+    });
+
+    test(`${p.name}: tıklanabilir öğeler ≥ 40×40`, async ({ page }) => {
+      await page.goto(p.path);
+      await page.waitForLoadState('networkidle');
+      const violations = await page.evaluate(() => {
+        const MIN = 40;
+        const out = [];
+        const nodes = Array.from(document.querySelectorAll(
+          'button, a[href], input[type="button"], input[type="submit"], [role="button"]',
+        ));
+        for (const el of nodes) {
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) continue;
+          const style = window.getComputedStyle(el);
+          if (style.visibility === 'hidden' || style.display === 'none') continue;
+          if (style.pointerEvents === 'none') continue;
+          if (r.width < 4 && r.height < 4) continue; // sr-only skip link vs.
+          if (r.width < MIN || r.height < MIN) {
+            out.push({ tag: el.tagName.toLowerCase(), w: Math.round(r.width), h: Math.round(r.height) });
+          }
+        }
+        return out;
+      });
+      // Sprint 11 baseline: soft (≤ 5 violation). Sprint 12'de strict (0) yapılacak.
+      expect(violations.length).toBeLessThanOrEqual(5);
+    });
+  });
+}
+```
+
+### Çalıştırma
+
+```bash
+# Sadece mobil
+npx playwright test --project=mobile-360 e2e/specs/mobile-a11y.spec.ts
+npx playwright test --project=mobile-iphone
+
+# Tüm projeler (CI)
+npx playwright test e2e/specs/mobile-a11y.spec.ts
+```
+
+### Yeni mobil-bilinçli component checklist
+
+- [ ] Tıklanabilir element ≥ 40×40 — Tailwind `min-h-10 min-w-10` veya `p-2.5` ile garanti.
+- [ ] Yatay scroll testi geçiyor (`overflow-x-hidden` yerine padding/grid düzeltme).
+- [ ] Modal `max-w-md w-full` + `mx-4` ile 360px'de kenarlara değmiyor.
+- [ ] Bottom-sheet için `viewport-fit=cover` notch alanı dikkate alındı mı.
+- [ ] Touch event hit-area artık — küçük ikona iç padding (`p-2`) ile büyüt.
+
 ## Violation Reporting
 
 axe-core fail olunca raporu okuyabilmek için:
@@ -375,6 +499,10 @@ Veya `playwright-html-reporter` ile tüm violation'lar HTML raporda görünür.
 - [ ] Modal/Dialog için Radix mı yoksa focus trap var mı?
 - [ ] Hata mesajları `role="alert"` mü, input'a `aria-describedby` ile bağlı mı?
 - [ ] Renk kontrastı AA mı (4.5:1)?
-- [ ] axe-core spec'ine bu sayfa eklendi mi?
+- [ ] axe-core spec'ine (`a11y.spec.ts`) bu sayfa eklendi mi?
+- [ ] **Mobil:** Sayfa public ise `mobile-a11y.spec.ts`'in `PAGES` array'ine eklendi mi?
+- [ ] **Touch target:** Tüm buton/link/ikon-buton ≥ 40×40px? Küçük ikon için `p-2.5` veya `min-h-10`.
+- [ ] **Yatay scroll:** 360px viewport'ta test edildi mi? Geniş tablo varsa `overflow-x-auto` container'da.
+- [ ] **Görsel:** `<ResponsiveImage>` kullanıldı mı (`react-component` skill'i)? `width`/`height` set edildi mi (CLS=0)?
 
-Skill'ler: `react-component` (component pattern + Tailwind), `e2e-writer` (Playwright fixture'ları).
+Skill'ler: `react-component` (component pattern + Tailwind + ResponsiveImage), `e2e-writer` (Playwright fixture'ları).

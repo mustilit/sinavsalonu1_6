@@ -4,13 +4,14 @@ Test marketplace uygulaması. Eğiticiler (educators) sınav (test) oluşturur v
 
 ## Stack
 
-- **Frontend:** React 18 + Vite, JavaScript (JSX), Tailwind CSS, React Router DOM v6, TanStack Query, next-themes (dark mode), react-i18next (i18n: tr/en/es/zh/de), PostHog (consent-gated ürün analitiği)
-- **Backend:** NestJS (REST + DTO + Validation), Clean Architecture (Use Cases katmanı)
-- **Veritabanı:** PostgreSQL + Prisma ORM (cursor pagination + tsvector full-text search)
+- **Frontend:** React 18 + Vite, JavaScript (JSX), Tailwind CSS, React Router DOM v6, TanStack Query, next-themes (dark mode), react-i18next (i18n: tr/en/es/zh/de), PostHog (consent-gated ürün analitiği), **vite-plugin-pwa + Workbox (offline shell + service worker)**, **vite-plugin-compression2 (Brotli + Gzip pre-compression)**
+- **Backend:** NestJS (REST + DTO + Validation), Clean Architecture (Use Cases katmanı), **opossum (circuit breaker)**, **prom-client (`/metrics` endpoint)**, **Sharp (image pipeline)**
+- **Veritabanı:** PostgreSQL + Prisma ORM (cursor pagination + tsvector full-text search), **read replica routing (`prismaRead()` raporlar için)**
 - **Ödeme:** Stripe (abonelik + checkout) + Iyzico; webhook imza doğrulama + replay koruması
-- **Test:** Vitest + Testing Library (frontend), Jest (NestJS), Playwright (e2e), @axe-core/playwright (a11y)
+- **Test:** Vitest + Testing Library (frontend), Jest (NestJS), Playwright (e2e — desktop + `mobile-360` Galaxy S5 + `mobile-iphone` projeleri), @axe-core/playwright (a11y), **Lighthouse CI (Performance ≥ 85 + Accessibility ≥ 95)**
+- **Gözlem:** Sentry (frontend + backend), Prometheus Operator (`ServiceMonitor` + `PrometheusRule` SLO alert'leri), Grafana dashboard (`infra/helm/sinavsalonu/grafana-dashboards/sinavsalonu-overview.json`)
 - **Paket yöneticisi:** npm (backend ve frontend ayrı `package.json`; kök `package.json` yalnızca Husky + lint-staged içerir)
-- **Konteyner & Orkestrasyon:** Docker Compose (geliştirme + üretim + CI) ve Helm chart (Kubernetes deploy)
+- **Konteyner & Orkestrasyon:** Docker Compose (geliştirme + üretim + CI) ve Helm chart (Kubernetes deploy), **nginx (brotli + gzip + static asset cache + SPA fallback + CSP)**
 
 ## Dizin Yapısı (gerçek)
 
@@ -39,22 +40,29 @@ apps/
           contract/          → Eğitici sözleşmesi
           report/            → Raporlama
           notification/      → Bildirim tercihleri, digest
-        services/        → Yardımcı servisler (ReviewAggregation vb.)
+        services/        → Yardımcı servisler (ReviewAggregation, AuditLogService, RefundProcessor, TestAttemptService)
+          email/         → EmailDispatcher, EmailRenderer, providers (Brevo/SMTP/Console), workers
+          content-safety/→ AI moderasyon (Claude/Nsfwjs providers)
+          image/         → ImageProcessor.ts (Sharp pipeline: origin + 320w/640w/1024w WebP + thumbnail + EXIF strip)
+          backup/        → BackupService
+          security/      → SecretsVault, TurnstileVerifier
       domain/
         interfaces/      → Repository arayüzleri
         types.ts         → Domain tipleri (AdminSettings vb.)
       infrastructure/
         repositories/    → Prisma repository implementasyonları
-        database/        → Prisma client singleton
+        database/        → Prisma client singleton + dbRouter.ts (prismaRead() read replica)
         cache/           → RedisCache
+        resilience/      → circuitBreaker.ts (opossum named breaker registry + prom-client metrics)
+        metrics/         → prom-client registry (request count, latency histogram, queue depth)
       nest/
         controllers/     → HTTP katmanı (ince — iş mantığı YOK)
         controllers/dto/ → DTO sınıfları (class-validator)
         guards/          → JWT, Roles, WorkerPermissions
         decorators/      → @Public, @Roles, @WorkerPermissions
-        interceptors/    → idempotency.interceptor.ts (Idempotency-Key → Redis, çift fatura koruması)
+        interceptors/    → idempotency.interceptor.ts (Idempotency-Key → Redis, çift fatura koruması), metrics.interceptor.ts
         modules/         → NestJS modülleri (cron, vb.)
-        services/        → BackupSchedulerService vb. NestJS servisleri
+        services/        → BackupSchedulerService, GracefulShutdownService (SIGTERM → Prisma+Redis+Sentry flush)
         security/        → CSP builder, verifyWebhookSignature.ts (Stripe HMAC-SHA256 + Iyzico SHA-1, timing-safe)
     prisma/
       schema.prisma      → Tek şema dosyası
@@ -64,18 +72,34 @@ apps/
       pages/             → Sayfa bileşenleri (Her route bir dosya, lazy import için default export)
       components/        → Paylaşılan React bileşenleri
         layout/          → Sidebar, Header, Layout, ThemeToggle
-        ui/              → Radix UI primitive'leri (shadcn tarzı), Skeleton
+        ui/              → Radix UI primitive'leri (shadcn tarzı), Skeleton, ResponsiveImage (Sharp pipeline tüketicisi)
         test/            → Test'e özgü bileşenler
+        onboarding/      → OnboardingTour (5 adım + analytics events), tourSteps (candidate + educator persona flow)
         ErrorBoundary.jsx → Root error boundary
       api/
         dalClient.js     → Tüm API çağrıları burada merkezi
       lib/               → Util fonksiyonları, hook'lar
         i18n.js          → react-i18next init (LanguageDetector; tr/en/es/zh/de; namespace: common/auth/pages/onboarding)
         analytics.js     → PostHog wrapper (track/identify/reset; KVKK/GDPR consent-gated; session replay opt-in)
+        pwa.js           → setupPwa() — vite-plugin-pwa SW registration + online/offline event'leri
+        cdn.js           → CDN URL helper (VITE_CDN_BASE_URL rewrite)
       locales/           → Çeviri JSON dosyaları: <lang>/<namespace>.json
       pages.config.js    → Sayfa-route eşlemesi (React.lazy ile)
       lib/routeRoles.js  → Sayfa bazlı rol erişim kontrolü
-      e2e/specs/a11y.spec.ts → axe-core ile a11y testleri
+    public/
+      pwa-source.svg     → PWA ikon kaynağı
+      pwa-{192,512}.png  → Android home screen + splash
+      apple-touch-icon.png (180×180) → iOS home screen
+      favicon.png (32×32)
+    scripts/
+      generate-pwa-icons.mjs → public/pwa-source.svg → 32/180/192/512 PNG (Sharp ile)
+    e2e/
+      specs/
+        a11y.spec.ts        → axe-core ile masaüstü a11y testleri
+        mobile-a11y.spec.ts → 360px + iPhone — yatay scroll, touch target ≥ 40px, skip link
+        purchase-flow.spec.ts, refund-flow.spec.ts, live-session-flow.spec.ts, ...
+    lighthouserc.json    → Lighthouse CI thresholds (perf ≥ .85, a11y ≥ .95, LCP < 2.5s, CLS < .1, TBT < 300ms)
+    playwright.config.js → 3 project: desktop / mobile-360 (Galaxy S5) / mobile-iphone (iPhone 12)
 infra/
   docker/
     docker-compose.yml            → Geliştirme ortamı
@@ -83,19 +107,26 @@ infra/
     docker-compose.ci.yml         → CI ortamı
     docker-compose.pgbouncer.yml  → PgBouncer connection pooling
     backend.Dockerfile
-    frontend.Dockerfile           → Nginx tabanlı (CSP başlıkları dahil)
+    frontend.Dockerfile           → Nginx + ngx_http_brotli (Alpine edge community) + envsubst CSP
   helm/
     sinavsalonu/                  → Kubernetes Helm chart (Chart.yaml v0.1.0, appVersion 1.0.0)
-      values.yaml                 → Yapılandırılabilir değerler
-      templates/                  → backend/frontend/worker-deployment, configmap, secret, migration-job, ingress, _helpers.tpl
+      values.yaml                 → Yapılandırılabilir değerler (metrics.enabled vb.)
+      templates/                  → backend/frontend/worker-deployment, configmap, secret, migration-job, ingress,
+                                    servicemonitor.yaml (Prometheus Operator), prometheusrule.yaml (8 SLO alert)
+      grafana-dashboards/         → sinavsalonu-overview.json (7 panel: latency, error rate, queue, replica lag, breaker)
   nginx/
-    default.conf         → CSP-Report-Only, SPA fallback, gzip, asset cache
+    default.conf.template → envsubst ile CSP başlığı, SPA fallback, brotli_static + gzip_static, asset cache
 .github/
   dependabot.yml         → Otomatik bağımlılık güncelleme (haftalık, gruplu)
-  workflows/             → CI/CD (npm audit dahil)
+  workflows/
+    lighthouse.yml       → PR + main push → 4 sayfa Lighthouse audit, perf/a11y eşiğin altına düşerse PR red
+    ... (npm audit, CI, e2e)
 .husky/
   pre-commit             → Backend tsc + frontend lint-staged
 .lintstagedrc.cjs        → Staged JS/JSX dosyaları için ESLint
+docs/
+  observability/slo.md   → SLO hedefleri + error budget
+  ops/graceful-shutdown.md
 ```
 
 ## Domain Sözlüğü
@@ -133,7 +164,11 @@ npm run dev           # Vite dev server
 npm test              # Vitest
 npm run lint          # ESLint
 npm run typecheck     # tsc --noEmit (jsconfig.json)
-npm run test:e2e      # Playwright (a11y + akış testleri)
+npm run test:e2e      # Playwright — desktop + mobile-360 + mobile-iphone projeleri
+npm run test:e2e -- --project=mobile-360 e2e/specs/mobile-a11y.spec.ts
+npm run pwa:icons     # public/pwa-source.svg → 32/180/192/512 PNG üret
+ANALYZE=1 npm run build  # dist/stats.html bundle treemap
+npx lhci autorun --config=./lighthouserc.json  # Lighthouse CI manuel koşum
 
 # Güvenlik
 cd apps/backend && npm audit --audit-level=high
@@ -147,12 +182,17 @@ cd apps/frontend && npm audit --audit-level=high
 - Her endpoint için `Use Case` sınıfı — domain alt klasörüne yaz: `apps/backend/src/application/use-cases/<domain>/<AdUseCase>.ts` (örn. `discount/CreateDiscountCodeUseCase.ts`).
 - DTO'lar `class-validator` ile, her endpoint için ayrı. Her query/body param için en az bir validator zorunlu.
 - Prisma query'leri yalnızca Repository veya Use Case içinde — controller'da direkt Prisma yasak.
+- **Read/Write ayrımı:** Admin raporları ve "stale tolerated" listeler `prismaRead()` ile replica'dan; transactional işlemler (purchase, attempt submit, audit) primary `prisma`'dan. Detay: `infrastructure/database/dbRouter.ts`.
 - **Select discipline:** Liste endpoint'lerinde `findMany({ select: { ... } })` ile sadece UI'ın gösterdiği alanlar çekilir. `include: true` çıplak yasak.
 - **Cursor pagination:** Büyüyebilen listelerde `cursor + take`, offset (`skip`) değil.
 - **Composite index:** Yeni WHERE + ORDER BY kombinasyonu için `@@index([equality, range_or_sort, tie_breaker])` ekle.
 - **Full-text search:** Arama endpoint'lerinde `ILIKE '%...%'` yerine `tsvector` + GIN.
 - Birden fazla tablo değişiyorsa `prisma.$transaction`.
 - Async fonksiyonlar `try/catch` yerine NestJS exception filter'a güvensin.
+- **Circuit breaker:** 3. taraf servis çağrıları (Stripe, Iyzico, Brevo, Turnstile, Google OAuth) `breakerFor('<name>', { timeout, fallback })` ile sarmalanır — `infrastructure/resilience/circuitBreaker.ts`. DB/Redis için breaker YOK (Prisma/ioredis kendi retry'ını yapar).
+- **Görsel yükleme:** `upload.controller.ts` Sharp pipeline'ından geçer (`application/services/image/ImageProcessor.ts`). Origin + 320w/640w/1024w WebP + 96px thumbnail diske yazılır; response `responsive: { srcset, sizes, thumb, width, height }` döner. EXIF strip + auto-rotate + magic byte validation zorunlu — controller'da `validateImageUpload()` çağrısı atlanamaz.
+- **Graceful shutdown:** Yeni provider `OnModuleDestroy` implement etmeli (DB/Redis pool/cron); cross-cutting concern'ler `GracefulShutdownService`'te (`Prisma $disconnect` + `RedisCache.quit()` + `Sentry.flush()`). `main.ts` `app.enableShutdownHooks()` zorunlu.
+- **Metrik:** Yeni iş kuyruğu, breaker veya hot-path için `infrastructure/metrics/` registry'sine counter/histogram ekle. Grafana dashboard (`infra/helm/sinavsalonu/grafana-dashboards/`) ve `PrometheusRule` alert template'lerini güncelle.
 
 **Frontend**
 - Fonksiyonel component, named export. Varsayılan export yok. **İstisna:** `pages/` altındaki sayfalar React.lazy için default export verir.
@@ -162,7 +202,10 @@ cd apps/frontend && npm audit --audit-level=high
 - Rol kontrolü `apps/frontend/src/lib/routeRoles.js` ile merkezi yapılır.
 - Tailwind utility-first. Dinamik class ismi üretme (`bg-${color}-500`) yasak.
 - **Dark mode:** Renkli her utility için `dark:` karşılığı (`bg-white dark:bg-gray-900`). `<ThemeProvider>` App.jsx'te kurulu, persistency `next-themes` ile.
-- **Accessibility:** Semantic HTML, `<label htmlFor>` / `aria-label`, focus-visible ring, ikon-only buton'da `aria-label`. Yeni sayfa için `e2e/specs/a11y.spec.ts`'e test ekle.
+- **Accessibility:** Semantic HTML, `<label htmlFor>` / `aria-label`, focus-visible ring, ikon-only buton'da `aria-label`. Yeni sayfa için `e2e/specs/a11y.spec.ts`'e test ekle. **Mobil (360px) için `e2e/specs/mobile-a11y.spec.ts`** — touch target ≥ 40×40, yatay scroll yok.
+- **Görsel kullanımı:** Backend `/upload/image` `responsive` payload'unu döner — `<ResponsiveImage>` ile bas: srcset (320w/640w/1024w WebP) + sizes + `loading="lazy"` + `decoding="async"`. Hero için `priority` prop'u eager + `fetchpriority=high` yapar. Hardcoded `<img src>` üretme.
+- **i18n:** Kullanıcıya görünen tüm metinler `t('namespace:key')` ile; **5 dile (tr/en/es/zh/de) anahtarı senkron ekle.** Tek dile ekleyip diğerlerini atlamak yasak.
+- **PWA:** `vite-plugin-pwa autoUpdate` aktif. `manifest.webmanifest` + `sw.js` build çıktısı. Yeni ikona ihtiyaç varsa `public/pwa-source.svg` güncellenip `npm run pwa:icons` çalıştırılır. Service worker runtime caching: fonts/uploads cache-first, marketplace API network-first (4s timeout). `setupPwa()` `main.jsx`'te çağrılır.
 
 **Genel**
 - Türkçe/İngilizce: kod İngilizce, UI Türkçe, yorumlar Türkçe olabilir.
@@ -194,6 +237,23 @@ cd apps/frontend && npm audit --audit-level=high
 - **Frontend ürün analitiği:** `frontend/src/lib/analytics.js` — PostHog wrapper (EU host). `track`/`identify`/`reset`. KVKK/GDPR uyumu: consent verilmeden PII gönderilmez, session replay default kapalı + opt-in.
 - **Helm / Kubernetes deploy:** `infra/helm/sinavsalonu/` — backend/frontend/worker deployment, configmap, secret, migration-job, ingress template'leri. Docker Compose'a ek olarak K8s'e deploy için.
 
+### Sprint 10 — Production sertifikasyonu
+
+- **Graceful shutdown:** `nest/services/graceful-shutdown.service.ts` — `OnApplicationShutdown` ile SIGTERM yakalanır, sırasıyla Prisma `$disconnect` (5s timeout) → Redis `quit()` (3s) → Sentry `flush()` (2s) çalıştırılır. `main.ts` `app.enableShutdownHooks()` + SIGTERM log handler. K8s `terminationGracePeriodSeconds: 30` + `preStop sleep 5` beklenir.
+- **Circuit breaker (opossum):** `infrastructure/resilience/circuitBreaker.ts` — named breaker registry. `breakerFor('stripe', { timeout, errorThresholdPercentage, resetTimeout, fallback })`. State: CLOSED/OPEN/HALF_OPEN. Stripe, Iyzico, Brevo, Turnstile, Google OAuth için kullanılır. State değişimleri prom-client metric'ine yansır (`circuit_breaker_state{name}`).
+- **Prometheus / Grafana stack:** `infra/helm/sinavsalonu/templates/servicemonitor.yaml` (Prometheus Operator CRD) + `prometheusrule.yaml` (8 SLO alert: HighLatencyP95, VeryHighLatencyP99, ElevatedErrorRate, CriticalErrorRate, PaymentWebhookFailures, ReplicaLagHigh, CircuitBreakerOpen, EmailQueueBacklog, PodRestartingFrequently). Grafana dashboard JSON: `grafana-dashboards/sinavsalonu-overview.json` (7 panel).
+- **Read replica routing:** `infrastructure/database/dbRouter.ts` `prismaRead()` — admin raporları (`GetCommissionReportUseCase`, `GetCandidateReportUseCase`) replica'dan; transactional işlemler primary'den. Replica lag toleranslı endpoint'ler için.
+- **SLO dokümantasyonu:** `docs/observability/slo.md` (140 satır, error budget hesabı), `docs/ops/graceful-shutdown.md`.
+
+### Sprint 11 — Mobil UX + performans
+
+- **Brotli compression:** `infra/docker/frontend.Dockerfile` Alpine edge community'den `nginx-mod-http-brotli` paketini kurar, `/etc/nginx/modules-enabled/00-brotli-*.conf` ile module load eder. `infra/nginx/default.conf.template`: `brotli on / brotli_static on / brotli_comp_level 5`. Vite tarafı `vite-plugin-compression2` ile build sırasında `.br` + `.gz` dosyaları üretir (threshold 1024B) — nginx `brotli_static + gzip_static` runtime sıkıştırma yapmadan servisler.
+- **Sharp image pipeline:** `application/services/image/ImageProcessor.ts` — origin (rotate + EXIF strip + sRGB normalize) + 320w/640w/1024w WebP + 96×96 thumbnail. GIF pass-through (animasyon korunur). `upload.controller.ts` `validateImageUpload` + opsiyonel ClamAV + `processImage()` zinciri. Response shape: `{ url, filename, responsive: { srcset, sizes, thumb, width, height }, variants[] }`. Frontend `<ResponsiveImage>` (`components/ui/ResponsiveImage.jsx`) bu payload'u doğrudan `<img srcset>` + `loading=lazy + decoding=async` ile basar; `priority` prop'u hero için `eager + fetchpriority=high`.
+- **PWA + service worker:** `vite-plugin-pwa` (`registerType: 'autoUpdate'`). Manifest plugin tarafından üretilir (`dist/manifest.webmanifest`). Workbox runtime caching: fonts cache-first 30d, `/uploads/` cache-first 30d, marketplace API network-first 4s timeout. Navigation fallback `/index.html` (offline shell), API path'leri denylist. Icons: `public/pwa-source.svg` → `npm run pwa:icons` (`scripts/generate-pwa-icons.mjs` Sharp ile 32/180/192/512 PNG üretir). `src/lib/pwa.js` `setupPwa()` + online/offline event'leri; `main.jsx`'te çağrılır.
+- **Lighthouse CI:** `apps/frontend/lighthouserc.json` — 4 URL × 3 run. Thresholds: Performance ≥ .85 (error), Accessibility ≥ .95 (error), Best Practices ≥ .9 (warn), SEO ≥ .85 (warn). LCP < 2500ms, CLS < .1, TBT < 300ms. `.github/workflows/lighthouse.yml` PR + main push trigger, artifact 30 gün.
+- **360px mobile viewport:** `playwright.config.js` 3 project: `desktop` / `mobile-360` (Galaxy S5) / `mobile-iphone` (iPhone 12). `e2e/specs/mobile-a11y.spec.ts` her sayfa için axe-core WCAG AA + yatay scroll yok + touch target ≥ 40×40 + skip-link Tab erişimi (26 test × 2 mobil project).
+- **Onboarding wizard + activation analytics:** `components/onboarding/OnboardingTour.jsx` `tourKey` + `persona` prop'ları, PostHog event'leri: `onboarding_tour_started`, `onboarding_tour_step_viewed` (her adımda), `onboarding_tour_completed`, `onboarding_tour_skipped`. Activation funnel drop-off oranı PostHog dashboard'da görünür. `CANDIDATE_WELCOME` ve `EDUCATOR_WELCOME` 4 → 5 adıma genişledi (aday: skor takibi; eğitici: reklam + indirim kodu). 5 dilde (`s4`) çeviri.
+
 ## Delege Rehberi
 
 | Task tipi | Agent |
@@ -215,5 +275,7 @@ cd apps/frontend && npm audit --audit-level=high
 @.claude/skills/exam-domain/SKILL.md           <!-- domain modeli detayları -->
 @.claude/skills/pagination/SKILL.md             <!-- cursor pagination pattern -->
 @.claude/skills/full-text-search/SKILL.md       <!-- tsvector + GIN -->
-@.claude/skills/accessibility/SKILL.md          <!-- axe-core + WCAG kuralları -->
+@.claude/skills/accessibility/SKILL.md          <!-- axe-core + WCAG + mobil viewport + touch target -->
 @.claude/skills/email-traffic/SKILL.md          <!-- 3 kuyruk + provider fallback + kill switch + SuppressedEmail -->
+@.claude/skills/observability/SKILL.md          <!-- SLO + circuit breaker + graceful shutdown + Prometheus -->
+@.claude/skills/react-component/SKILL.md        <!-- ResponsiveImage + PWA + lazy + dark mode -->

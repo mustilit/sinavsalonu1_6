@@ -420,6 +420,81 @@ function ExamCardSkeleton() {
 }
 ```
 
+## Görsel Kullanımı — `<ResponsiveImage>` (Sprint 11 #2)
+
+> **Backend Sharp pipeline** her yüklemeden sonra `responsive: { srcset, sizes, thumb, width, height }` döner. `<img src="...">` hardcoded YAZMA — `<ResponsiveImage>` kullan.
+
+**Component:** `apps/frontend/src/components/ui/ResponsiveImage.jsx`
+
+```jsx
+import { ResponsiveImage } from '@/components/ui/ResponsiveImage';
+
+// Backend payload'undan — TestPackage kapak, soru görseli vb.
+<ResponsiveImage
+  src={pkg.coverImageUrl}
+  responsive={pkg.coverImageResponsive}  // { srcset, sizes, thumb, width, height }
+  alt={pkg.title}
+  className="w-full h-48 object-cover rounded"
+/>
+
+// Avatar / kart önizleme — sadece 96px thumbnail
+<ResponsiveImage
+  src={user.avatarUrl}
+  responsive={user.avatarResponsive}
+  variant="thumb"
+  alt={user.name}
+/>
+
+// Hero / above-the-fold — LCP'yi etkiler
+<ResponsiveImage
+  src={hero.url}
+  responsive={hero.responsive}
+  priority
+  alt={hero.alt}
+/>
+
+// Legacy kayıt — sadece src bilinen eski purchases.thumbnail
+<ResponsiveImage src="/uploads/old.jpg" alt="..." />
+```
+
+**Otomatik davranışlar:**
+- `<img srcset>` → browser ekran boyutuna göre 320w/640w/1024w WebP seçer (4MB orijinal yerine ~80KB)
+- `loading="lazy"` (`priority` ile `eager`) — viewport altı görseller LCP'ye etki etmez
+- `decoding="async"` — main thread'i bloklamaz
+- `width`/`height` attribute → layout reserve, **CLS = 0**
+- `priority` → `fetchpriority="high"` + `loading="eager"` (hero ve above-the-fold için)
+
+**Backend response shape (`POST /upload/image`):**
+
+```jsonc
+{
+  "url": "http://api/uploads/abc.jpg",       // origin (geriye dönük uyumlu)
+  "filename": "abc.jpg",
+  "size": 482039,
+  "detectedType": "jpeg",
+  "responsive": {
+    "thumb": "http://api/uploads/abc-thumb.webp",
+    "srcset": "http://api/uploads/abc-320w.webp 320w, .../abc-640w.webp 640w, .../abc-1024w.webp 1024w",
+    "sizes": "(max-width: 640px) 100vw, 1024px",
+    "width": 2000,
+    "height": 1500
+  },
+  "variants": [/* { label, width, height, bytes, url } */]
+}
+```
+
+**Database'de iki alan tutuluyor (öneri pattern):**
+- `coverImageUrl: string`     — origin (geriye dönük)
+- `coverImageResponsive: Json` — `{ srcset, sizes, thumb, width, height }`
+
+Eski kayıtlarda `coverImageResponsive = null` ise component fallback'e düşer (sadece `src`); kırılma yok.
+
+**Yapmayacakların:**
+- Hardcoded `<img src="/uploads/...">` — kullanıcı 4MB indirir.
+- `width`/`height` set etmemek — CLS skoru bozulur, Lighthouse fail.
+- Decorative görselde `alt=""` yerine açıklayıcı alt — gereksiz screen reader gürültüsü.
+- `priority` her görsele — 3+ hero "high priority" performans kazancını yutar.
+
 ## Accessibility
 
 Temel kurallar burada özet — detaylı: `accessibility` skill'i.
@@ -430,8 +505,48 @@ Temel kurallar burada özet — detaylı: `accessibility` skill'i.
 - Modal için Radix UI primitives (focus trap dahil).
 - `focus-visible:ring-2` görünür odak halkası.
 - Renk kontrastı AA (4.5:1) — `text-gray-400 on bg-white` riskli.
+- **Touch target ≥ 40×40px** — mobil 360px viewport'ta test edilir (`mobile-a11y.spec.ts`).
 
-Yeni sayfaya **mutlaka** axe-core e2e testi ekle (`accessibility` skill).
+Yeni sayfaya **mutlaka** axe-core e2e testi ekle (`accessibility` skill). Public sayfaysa `mobile-a11y.spec.ts`'in `PAGES` array'ine de ekle.
+
+## PWA + Service Worker (Sprint 11 #3)
+
+`vite-plugin-pwa autoUpdate` aktif. SW kayıtı `setupPwa()` ile `main.jsx`'te yapılır.
+
+```js
+// apps/frontend/src/main.jsx
+import { setupPwa } from './lib/pwa';
+initAnalytics();
+setupPwa();   // prod build'de aktif; dev'de noop
+```
+
+**Service worker davranışları:**
+- `registerType: 'autoUpdate'` — yeni SW deploy edilince kullanıcı **bir sonraki sayfa açılışında** yeni asset'leri alır. Manuel "yenile" prompt'u **yok**.
+- Workbox runtime caching: fonts cache-first 30d, `/uploads/` cache-first 30d (Sharp pipeline hash'li URL'leri zaten immutable), marketplace API network-first 4s timeout.
+- Navigation fallback `/index.html` — offline'da shell açılır, route'lar React Router içinde yüklenir.
+- API path'leri denylist: `/auth/*`, `/admin/*`, `/me/*`, `/marketplace/*`, `/uploads/*` — SW navigation bunlara müdahale etmez.
+
+**Online/offline durumu:**
+```js
+window.addEventListener('sinavsalonu:offline', () => { /* banner göster */ });
+window.addEventListener('sinavsalonu:online', () => { /* banner kapat */ });
+if (window.__sinavSalonuOffline) { /* statik kontrol */ }
+```
+
+**Manifest** (`vite-plugin-pwa` üretir, `dist/manifest.webmanifest`):
+- `name`, `short_name`, `theme_color: #4f46e5`, `display: standalone`, `lang: tr`.
+- Icons: `/pwa-192.png`, `/pwa-512.png` (purpose any + maskable).
+
+**Yeni icon gerekirse:**
+```bash
+# public/pwa-source.svg güncelle (SVG kaynağı)
+npm run pwa:icons         # 32/180/192/512 PNG'ları regenerate eder
+```
+
+**Yapmayacakların:**
+- Service worker'ı manuel `navigator.serviceWorker.register()` ile kayıt — plugin yönetir.
+- Dev ortamında SW açmak (devOptions.enabled=true) — Vite HMR + cache çakışır.
+- API endpoint'ini cache-first yapmak — stale data 4xx/5xx response döndürür.
 
 ## Yapmayacakların
 

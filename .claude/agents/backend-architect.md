@@ -12,25 +12,35 @@ Sınav Salonu backend'i için NestJS + Prisma uzmanısın. Modüller tutarlı, e
 ```
 apps/backend/src/
   application/
-    use-cases/          → İş mantığı — 17 domain alt klasörüne ayrılmış
+    use-cases/          → İş mantığı — 19 domain alt klasörüne ayrılmış
       auth/ educator/ test/ question/ attempt/ purchase/ refund/ discount/
       review/ objection/ ad/ package/ live/ admin/ contract/ report/ notification/
+      billing/ moderation/
     services/           → Yardımcı domain servisleri
+      email/            → EmailDispatcher + providers + workers
+      content-safety/   → AI moderasyon providers
+      image/            → ImageProcessor.ts (Sharp pipeline — Sprint 11)
+      backup/           → BackupService
+      security/         → SecretsVault, TurnstileVerifier
   domain/
     interfaces/         → Repository arayüzleri (IUserRepository vb.)
     types.ts            → Domain tipleri (AdminSettings vb.)
   infrastructure/
     repositories/       → Prisma repository implementasyonları
-    database/           → prisma.ts singleton
+    database/           → prisma.ts singleton + dbRouter.ts (prismaRead())
     queue/              → BullMQ worker'ları
     cache/              → RedisCache
+    resilience/         → circuitBreaker.ts (opossum named breaker registry — Sprint 10)
+    metrics/            → prom-client registry
   nest/
     controllers/        → HTTP katmanı — ince, iş mantığı YOK
     controllers/dto/    → DTO sınıfları (class-validator)
-    guards/             → JwtAuthGuard, RolesGuard, WorkerPermissionsGuard
+    guards/             → JwtAuthGuard, RolesGuard, WorkerPermissionsGuard, InternalOnly
     decorators/         → @Public(), @Roles(), @WorkerPermissions()
+    interceptors/       → idempotency + metrics
     modules/            → NestJS modülleri (CronModule vb.)
-    services/           → BackupSchedulerService gibi NestJS servisleri
+    services/           → BackupSchedulerService, GracefulShutdownService (Sprint 10)
+    security/           → CSP builder, verifyWebhookSignature
     app.module.ts       → Tüm controller ve sağlayıcıların kaydı
 apps/backend/prisma/
   schema.prisma         → Tek şema dosyası
@@ -293,13 +303,73 @@ de `prisma.<model>.update/create` yaparsa audit log zorunludur. Tercihen update 
 
 **Detaylı checklist:** `observability` skill'i, "Audit log zorunluluğu" + "Checklist (servis/provider veya cron katmanı)" başlıkları.
 
+## Read/Write Ayrımı (Sprint 9-10)
+
+Admin raporları ve "stale tolerated" listeler için **`prismaRead()`** (replica), transactional işlemler ve audit için **`prisma`** (primary).
+
+```ts
+import { prisma } from '../../../infrastructure/database/prisma';
+import { prismaRead } from '../../../infrastructure/database/dbRouter';
+
+// Admin commission report — replica'dan oku (lag toleranslı)
+const result = await prismaRead().$queryRawUnsafe(sql, ...params);
+
+// Purchase create — primary, transactional
+await prisma.$transaction(async (tx) => { ... });
+```
+
+Yeni rapor yazıyorsan `prismaRead()` kullan. Aktif örnekler: `GetCommissionReportUseCase`, `GetCandidateReportUseCase`.
+
+## Circuit Breaker (Sprint 10)
+
+3. taraf entegrasyonları **mutlaka** `breakerFor()` registry'sinden geçer. Yeni breaker yazma — registry'ye isim + fallback ekle.
+
+```ts
+import { breakerFor } from '../../../infrastructure/resilience/circuitBreaker';
+
+const stripeBreaker = breakerFor('stripe', {
+  timeout: 10000,
+  errorThresholdPercentage: 50,
+  fallback: () => ({ status: 'queued' }),
+});
+const result = await stripeBreaker.fire(() => stripe.charges.create(params));
+```
+
+DB/Redis için breaker YOK. Mevcut: `stripe`, `iyzico`, `brevo`, `turnstile`, `google-oauth`. Detay: `observability` skill'i.
+
+## Image Upload Pipeline (Sprint 11)
+
+Yeni bir görsel yükleme endpoint'i gerekiyorsa **mevcut `upload.controller.ts`'i yeniden yazma** — referans olarak kullan ve `processImage()` çağrısını koru:
+
+```ts
+import { processImage, buildImageUrls } from '../../application/services/image/ImageProcessor';
+import { validateImageUpload } from '../../application/security/fileTypeDetection';
+
+const validation = validateImageUpload(file.buffer);
+if (!validation.ok) throw new BadRequestException(validation.reason);
+
+// Magic byte + (opsiyonel) ClamAV sonrası Sharp pipeline
+const processed = await processImage(file.buffer, {
+  outputDir: UPLOAD_DIR,
+  baseSlug,
+  detected: validation.detected,
+});
+const urls = buildImageUrls(processed, baseUrl);
+return { url: urls.original, responsive: urls, variants: processed.variants };
+```
+
+Sharp pipeline: origin (EXIF strip + auto-rotate) + 320w/640w/1024w WebP + 96px thumbnail. GIF pass-through. Detay test: `apps/backend/tests/services/ImageProcessor.test.ts`.
+
 ## Import Derinliği
 
 Domain alt klasöründen (`use-cases/<domain>/`) erişim:
 - `../../../infrastructure/database/prisma` (3 seviye)
+- `../../../infrastructure/database/dbRouter` (prismaRead)
+- `../../../infrastructure/resilience/circuitBreaker`
 - `../../errors/AppError`
 - `../../constants`
 - `../../services/SomeService`
+- `../../services/image/ImageProcessor`
 - `../../../domain/interfaces/IFoo`
 
 ## Çıktı
