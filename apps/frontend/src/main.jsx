@@ -19,6 +19,7 @@ import App from './App.jsx'
 import './index.css'
 import './lib/i18n';              // side-effect: i18next init
 import { initAnalytics } from './lib/analytics';
+import { setupPwa } from './lib/pwa';
 
 // Tema migration: eski sürümlerde defaultTheme="system" idi; bazı bileşenlerin
 // dark: varyantları eksik olduğundan tutarsız görünüm oluyordu. Yeni ayar
@@ -33,6 +34,9 @@ try {
 } catch { /* sessiz */ }
 
 initAnalytics();
+// Sprint 11 #3 — Service worker + offline shell. Dev'de devOptions.enabled=false
+// olduğundan virtual modül noop döner; prod build'de aktif.
+setupPwa();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <App />

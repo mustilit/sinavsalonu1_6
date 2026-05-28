@@ -3,6 +3,8 @@ import { defineConfig } from 'vite'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { compression } from 'vite-plugin-compression2'
+import { VitePWA } from 'vite-plugin-pwa'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // Windows'ta localhost → IPv6 (::1) farklı process'e gidebiliyor; IPv4 sabitle
@@ -12,6 +14,136 @@ const srcPath = path.resolve(__dirname, 'src')
 export default defineConfig({
   plugins: [
     react(),
+    // Sprint 11 #1 — Build sırasında pre-compressed .br ve .gz dosyaları üret.
+    // nginx brotli_static + gzip_static bu dosyaları runtime'da sıkıştırma yapmadan
+    // direkt servis eder (CPU tasarrufu + en yüksek kalite sıkıştırma).
+    // Sadece prod build (NODE_ENV=production) — dev'de gereksiz disk yazımı yok.
+    compression({
+      algorithm: 'brotliCompress',
+      include: /\.(js|mjs|json|css|html|svg|wasm)(\?.*)?$/i,
+      threshold: 1024, // 1KB altı dosyalar sıkıştırma overhead'i yapmaz
+      deleteOriginalAssets: false,
+    }),
+    compression({
+      algorithm: 'gzip',
+      include: /\.(js|mjs|json|css|html|svg|wasm)(\?.*)?$/i,
+      threshold: 1024,
+      deleteOriginalAssets: false,
+    }),
+    // Sprint 11 #3 — PWA + service worker.
+    //
+    // Strateji:
+    //   - registerType: 'autoUpdate' → SW kendi kendini günceller, kullanıcı bir
+    //     sonraki açılışta yeni sürümü alır. Manuel "yeni sürüm var, yenile" prompt
+    //     UX'i tercih edilirse: 'prompt' yapıp `useRegisterSW` ile yönet.
+    //   - Workbox runtime caching:
+    //       * fonts (Google Fonts veya self-hosted): cache-first, 30 gün
+    //       * images: stale-while-revalidate, 7 gün
+    //       * /uploads/ (Sharp pipeline çıktıları): cache-first, 30 gün — hash'li URL
+    //       * API (/marketplace, /tests, /me): network-first, 1 dakika fallback
+    //   - Navigation fallback: SPA route'u 404 olursa index.html (offline shell).
+    //
+    // CSP UYUMU: SW kendi origin'inden serve edildiği için ek CSP gerekmez.
+    // Workbox CDN'den değil, bundle'a inline edilir.
+    VitePWA({
+      registerType: 'autoUpdate',
+      // public/manifest.json'un yerini alır — tek doğru kaynak burası.
+      manifest: {
+        name: 'Sınav Salonu',
+        short_name: 'SinavSalonu',
+        description: 'Test marketplace — eğiticiler hazırlar, adaylar çözer.',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        background_color: '#ffffff',
+        theme_color: '#4f46e5',
+        lang: 'tr',
+        dir: 'ltr',
+        orientation: 'portrait',
+        icons: [
+          {
+            src: '/pwa-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/pwa-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/pwa-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+        // iOS Safari özel: apple-touch-icon link <head>'e elle eklendi (index.html).
+      },
+      // public/manifest.json'un kendisini overwrite etmemize gerek yok — plugin
+      // dist/manifest.webmanifest üretir; <link rel="manifest"> auto-injected.
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'pwa-source.svg'],
+      workbox: {
+        // Bundle dışındaki asset'leri precache et — JS/CSS/HTML otomatik dahil.
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // SPA fallback: bilinmeyen route → index.html (offline'da bile shell açılır)
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [
+          /^\/api\//,
+          /^\/auth\//,
+          /^\/marketplace\//,
+          /^\/admin\//,
+          /^\/me\//,
+          /^\/uploads\//,
+        ],
+        runtimeCaching: [
+          // Google Fonts (varsa)
+          {
+            urlPattern: ({ url }) => /fonts\.(googleapis|gstatic)\.com/.test(url.hostname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gfonts',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Backend tarafından serve edilen kullanıcı görselleri
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/uploads/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'user-uploads',
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Marketplace, test listeleri — read-only ve invalidation tolere edilir
+          {
+            urlPattern: ({ url }) =>
+              ['/marketplace', '/tests', '/educators', '/site', '/home'].some((p) =>
+                url.pathname.startsWith(p),
+              ),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-readonly',
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 5 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+        // Skip waiting → yeni SW hemen aktif, sayfa yenilenince yeni asset'ler.
+        skipWaiting: true,
+        clientsClaim: true,
+      },
+      devOptions: {
+        // Dev server'da SW'i devre dışı bırak — hot reload + service worker
+        // kombinasyonu Vite dev'i sık sık eski cache'le bozar.
+        enabled: false,
+      },
+    }),
     // ANALYZE=1 npm run build → dist/stats.html üretir, CI artifact'ı olarak yüklenebilir
     process.env.ANALYZE === '1' && visualizer({
       filename: 'dist/stats.html',

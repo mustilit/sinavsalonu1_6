@@ -4,16 +4,18 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
 import type { Request } from 'express';
 import { join } from 'path';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import { randomBytes } from 'crypto';
 import { validateImageUpload } from '../../application/security/fileTypeDetection';
 import { isClean as scanForVirus } from '../../application/security/clamavScan';
+import { processImage, buildImageUrls } from '../../application/services/image/ImageProcessor';
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
@@ -41,6 +43,8 @@ if (!existsSync(UPLOAD_DIR)) {
 @ApiTags('Upload')
 @Controller('upload')
 export class UploadController {
+  private readonly logger = new Logger(UploadController.name);
+
   @Post('image')
   @Roles('CANDIDATE', 'EDUCATOR', 'ADMIN', 'WORKER')
   @ApiConsumes('multipart/form-data')
@@ -93,21 +97,50 @@ export class UploadController {
     // Filename'i CRYPTO ile üret — kullanıcı originalName'i ile alakası yok.
     // Extension magic byte'tan geliyor → fake `.svg.jpg` gibi denemeler etkisiz.
     const randomName = randomBytes(16).toString('hex');
-    const filename = `${Date.now()}-${randomName}${validation.detected.extension}`;
-    const fullPath = join(UPLOAD_DIR, filename);
+    const baseSlug = `${Date.now()}-${randomName}`;
 
-    // Buffer'ı disk'e yaz (memoryStorage kullandığımız için manuel)
-    writeFileSync(fullPath, file.buffer);
+    // KATMAN 3: Sharp image pipeline — Sprint 11 #2.
+    // Origin + 320w/640w/1024w WebP varyantları + 96x96 thumbnail üretir.
+    // EXIF strip + auto-rotate + sRGB normalize burada olur.
+    let processed;
+    try {
+      processed = await processImage(file.buffer, {
+        outputDir: UPLOAD_DIR,
+        baseSlug,
+        detected: validation.detected,
+      });
+    } catch (err) {
+      // Sharp decode hatası — magic byte geçti ama bitstream bozuk olabilir
+      // (truncated upload, partial multipart). Kullanıcıya 400 ver.
+      this.logger.warn(`Sharp processing failed: ${(err as Error).message}`);
+      throw new BadRequestException('Görsel işlenemedi — dosya bozuk veya desteklenmiyor');
+    }
 
     const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 3000}`;
-    const url = `${baseUrl}/uploads/${filename}`;
+    const urls = buildImageUrls(processed, baseUrl);
 
     return {
-      url,
-      filename,
+      // Geriye dönük uyumluluk için `url` + `filename`. Yeni alanlar:
+      url: urls.original,
+      filename: processed.original.filename,
       size: file.size,
       detectedType: validation.detected.type,
       mimeType: validation.detected.mimeType,
+      // Responsive payload — frontend `<img srcset>`'e doğrudan basabilir.
+      responsive: {
+        thumb: urls.thumb,
+        srcset: urls.srcset,
+        sizes: urls.sizes,
+        width: urls.width,
+        height: urls.height,
+      },
+      variants: processed.variants.map((v) => ({
+        label: v.label,
+        width: v.width,
+        height: v.height,
+        bytes: v.bytes,
+        url: `${baseUrl}/uploads/${v.filename}`,
+      })),
     };
   }
 }

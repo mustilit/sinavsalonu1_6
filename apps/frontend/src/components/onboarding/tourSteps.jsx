@@ -127,6 +127,34 @@ const IllustrationMyTests = () => (
   </div>
 );
 
+// Sprint 11 #6 — Aday persona 5. adım: "Skor takibi" — kullanıcının ilerlemesini
+// gösterir, aktivasyon (=ilk test çözümü) için motivasyon yaratır.
+const IllustrationCandidateActivation = () => (
+  <div className="w-full max-w-xs space-y-2">
+    <MockCard className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold text-slate-800">Skor Takibi</span>
+        <MockBadge label="🔥 5 gün" color="amber" />
+      </div>
+      <div className="grid grid-cols-3 gap-1.5">
+        {[
+          { label: "Çözülen", val: "12" },
+          { label: "Doğru %", val: "87" },
+          { label: "Rütbe", val: "#42" },
+        ].map((s) => (
+          <div key={s.label} className="text-center bg-indigo-50 rounded-lg p-1.5">
+            <div className="text-sm font-bold text-indigo-700">{s.val}</div>
+            <div className="text-[8px] text-slate-500">{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <button className="w-full text-[10px] bg-indigo-600 text-white py-1.5 rounded-lg font-semibold">
+        İlk Sınavını Çöz
+      </button>
+    </MockCard>
+  </div>
+);
+
 // NOT: title ve description i18n key'leridir; OnboardingTour.jsx t() ile çözer.
 // Bu sayede tüm tur içerikleri 5 dilde (tr/en/es/zh/de) görüntülenir.
 export const CANDIDATE_WELCOME_STEPS = [
@@ -159,6 +187,11 @@ export const CANDIDATE_WELCOME_STEPS = [
     title: "onboarding:candidateWelcome.s3.title",
     description: "onboarding:candidateWelcome.s3.description",
     illustration: <IllustrationEducators />,
+  },
+  {
+    title: "onboarding:candidateWelcome.s4.title",
+    description: "onboarding:candidateWelcome.s4.description",
+    illustration: <IllustrationCandidateActivation />,
   },
 ];
 
@@ -355,11 +388,39 @@ const IllustrationProfile = () => (
   </div>
 );
 
+// Sprint 11 #6 — Eğitici persona 5. adım: "Öne çık" — reklam paketi ve indirim
+// kodu kullanmanın satışa etkisini gösterir, aktivasyon (=ilk paket yayımı) için
+// motivasyon yaratır.
+const IllustrationEducatorActivation = () => (
+  <div className="w-full max-w-xs space-y-2">
+    <MockCard className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold text-slate-800">Öne Çıkar</span>
+        <MockBadge label="+320% görüntülenme" color="emerald" />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-gradient-to-br from-amber-50 to-rose-50 rounded-lg p-2 border border-amber-100">
+          <div className="text-[9px] font-bold text-amber-700">⭐ Reklam Paketi</div>
+          <div className="text-[8px] text-slate-500 mt-0.5">Anasayfa öneri kutusu</div>
+        </div>
+        <div className="bg-gradient-to-br from-violet-50 to-indigo-50 rounded-lg p-2 border border-violet-100">
+          <div className="text-[9px] font-bold text-violet-700">🎟️ İndirim Kodu</div>
+          <div className="text-[8px] text-slate-500 mt-0.5">Yeni adaylar için</div>
+        </div>
+      </div>
+      <button className="w-full text-[10px] bg-indigo-600 text-white py-1.5 rounded-lg font-semibold">
+        İlk Paketini Yayınla
+      </button>
+    </MockCard>
+  </div>
+);
+
 export const EDUCATOR_WELCOME_STEPS = [
   { title: "onboarding:educatorWelcome.s0.title", description: "onboarding:educatorWelcome.s0.description", illustration: <IllustrationEduDashboard /> },
   { title: "onboarding:educatorWelcome.s1.title", description: "onboarding:educatorWelcome.s1.description", illustration: <IllustrationCreateTestBtn /> },
   { title: "onboarding:educatorWelcome.s2.title", description: "onboarding:educatorWelcome.s2.description", illustration: <IllustrationSalesChart /> },
   { title: "onboarding:educatorWelcome.s3.title", description: "onboarding:educatorWelcome.s3.description", illustration: <IllustrationProfile /> },
+  { title: "onboarding:educatorWelcome.s4.title", description: "onboarding:educatorWelcome.s4.description", illustration: <IllustrationEducatorActivation /> },
 ];
 
 /* ═══════════════════════════════════════════════

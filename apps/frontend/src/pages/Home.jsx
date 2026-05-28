@@ -390,6 +390,8 @@ export default function Home() {
       {showWelcomeTour && (
         <OnboardingTour
           steps={CANDIDATE_WELCOME_STEPS}
+          tourKey={TOUR_KEYS.CANDIDATE_WELCOME}
+          persona="candidate"
           onComplete={() => completeTour(TOUR_KEYS.CANDIDATE_WELCOME)}
           onSkip={() => completeTour(TOUR_KEYS.CANDIDATE_WELCOME)}
         />

@@ -71,6 +71,8 @@ export default function EducatorDashboard() {
       {showWelcomeTour && (
         <OnboardingTour
           steps={EDUCATOR_WELCOME_STEPS}
+          tourKey={TOUR_KEYS.EDUCATOR_WELCOME}
+          persona="educator"
           onComplete={() => completeTour(TOUR_KEYS.EDUCATOR_WELCOME)}
           onSkip={() => completeTour(TOUR_KEYS.EDUCATOR_WELCOME)}
         />

@@ -23,6 +23,10 @@
     "s3": {
       "title": "Eğiticileri Takip Et",
       "description": "Alanında uzman eğiticilerin profillerini inceleyerek onların diğer paketlerine de göz atabilirsin."
+    },
+    "s4": {
+      "title": "İlk Sınavını Çöz, Skoru Görüntüle",
+      "description": "Çözdüğün her test 'Sonuçlarım' sayfanda kayıt altına alınır: doğru yüzdesi, süre, konu bazlı dağılım. Şimdi bir paket seçip ilk sınavını çöz — 5 dakika içinde ilk skoruna ulaş."
     }
   },
   "candidateTest": {
@@ -63,6 +67,10 @@
     "s3": {
       "title": "Profilini Tamamla",
       "description": "Profil sayfana biyografi, uzmanlık alanları ve ödeme bilgileri (IBAN) ekle. Eksiksiz profil daha fazla aday çeker."
+    },
+    "s4": {
+      "title": "Öne Çık: Reklam ve İndirim Kodu",
+      "description": "İlk paketini yayımladıktan sonra reklam paketi satın alarak anasayfa öneri kutusunda görünebilir, indirim kodu paylaşarak yeni adayların ilk satın almalarını kolaylaştırabilirsin. İki araç ortalama %320 görüntülenme artışı sağlıyor."
     }
   },
   "educatorCreate": {

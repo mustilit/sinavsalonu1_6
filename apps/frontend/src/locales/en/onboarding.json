@@ -23,6 +23,10 @@
     "s3": {
       "title": "Follow Educators",
       "description": "Check expert educators' profiles and browse their other packages."
+    },
+    "s4": {
+      "title": "Take Your First Test, Track Your Score",
+      "description": "Every test you take is recorded on your 'My Results' page: accuracy, time, topic breakdown. Pick a package now and solve your first test — reach your first score within 5 minutes."
     }
   },
   "candidateTest": {
@@ -63,6 +67,10 @@
     "s3": {
       "title": "Complete Your Profile",
       "description": "Add a biography, areas of expertise, and payment info (IBAN) on your profile. A complete profile attracts more candidates."
+    },
+    "s4": {
+      "title": "Get Noticed: Ad Slots and Discount Codes",
+      "description": "Once your first package is live, buy an ad slot to appear in the homepage recommendation box, and share a discount code to encourage first-time purchases. Together these average a 320% impression lift."
     }
   },
   "educatorCreate": {

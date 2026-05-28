@@ -950,6 +950,8 @@ export default function TakeTest() {
         {showTestTour && (
           <OnboardingTour
             steps={CANDIDATE_TEST_STEPS}
+            tourKey={TOUR_KEYS.CANDIDATE_TEST}
+            persona="candidate"
             onComplete={() => completeTour(TOUR_KEYS.CANDIDATE_TEST)}
             onSkip={() => completeTour(TOUR_KEYS.CANDIDATE_TEST)}
           />

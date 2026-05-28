@@ -23,6 +23,10 @@
     "s3": {
       "title": "Ausbildern folgen",
       "description": "Sehen Sie die Profile von Fachausbildern und entdecken Sie ihre weiteren Pakete."
+    },
+    "s4": {
+      "title": "Erste Prüfung schreiben, Punktzahl sehen",
+      "description": "Jede absolvierte Prüfung wird auf der Seite 'Meine Ergebnisse' festgehalten: Richtigkeitsquote, Zeit, Themenverteilung. Wählen Sie jetzt ein Paket und absolvieren Sie Ihre erste Prüfung — die erste Punktzahl in 5 Minuten."
     }
   },
   "candidateTest": {
@@ -63,6 +67,10 @@
     "s3": {
       "title": "Profil vervollständigen",
       "description": "Fügen Sie Bio, Fachgebiete und Zahlungsdaten (IBAN) hinzu. Ein vollständiges Profil zieht mehr Kandidaten an."
+    },
+    "s4": {
+      "title": "Hervorheben: Anzeigen und Rabattcodes",
+      "description": "Sobald Ihr erstes Paket live ist, buchen Sie einen Anzeigenplatz, um in der Empfehlungsbox der Startseite zu erscheinen, und teilen Sie einen Rabattcode, um Erstkäufe zu fördern. Zusammen führen diese Maßnahmen im Schnitt zu 320 % mehr Impressionen."
     }
   },
   "educatorCreate": {

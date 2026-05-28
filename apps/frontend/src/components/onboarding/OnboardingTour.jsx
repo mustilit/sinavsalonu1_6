@@ -2,20 +2,58 @@
  * OnboardingTour — Çok adımlı rehberlik popup'ı
  *
  * Props:
- *   steps    : { title, description, illustration: ReactNode }[]
+ *   steps     : { title, description, illustration: ReactNode }[]
  *   onComplete: () => void   — son adımda "Başla" ya da "Tamamla" butonuna basılınca
- *   onSkip   : () => void    — "Atla" butonuna basılınca
+ *   onSkip    : () => void   — "Atla" butonuna basılınca
+ *   tourKey   : string       — analytics namespace (ör. "ob_cand_welcome").
+ *                              Activation funnel ölçümü için zorunlu (Sprint 11 #6).
+ *   persona   : "candidate"|"educator"|null — analytics property (opsiyonel).
+ *
+ * ANALYTICS (Sprint 11 #6):
+ *   - onboarding_tour_started     — tour mount edildiğinde
+ *   - onboarding_tour_step_viewed — kullanıcı bir adımı görüntülediğinde
+ *   - onboarding_tour_completed   — son adım "Hadi Başlayalım"a basıldığında
+ *   - onboarding_tour_skipped     — X veya "Atla" tıklandığında
+ *
+ *   Activation funnel: started → step_viewed (her N) → completed.
+ *   Drop-off oranı her adımda PostHog dashboard'da görünür.
  */
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { X, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
-export default function OnboardingTour({ steps = [], onComplete, onSkip }) {
+export default function OnboardingTour({
+  steps = [],
+  onComplete,
+  onSkip,
+  tourKey = "unknown",
+  persona = null,
+}) {
   const { t } = useTranslation(["onboarding"]);
   const [current, setCurrent] = useState(0);
   const [visible, setVisible] = useState(true);
+  const startedRef = useRef(false);
+
+  // İlk mount'ta tour_started + step_viewed(0) emit et.
+  useEffect(() => {
+    if (!steps.length || startedRef.current) return;
+    startedRef.current = true;
+    track("onboarding_tour_started", {
+      tourKey,
+      persona,
+      stepCount: steps.length,
+    });
+    track("onboarding_tour_step_viewed", { tourKey, persona, stepIndex: 0 });
+  }, [steps.length, tourKey, persona]);
+
+  // Sonraki adımlar — current değişince step_viewed.
+  useEffect(() => {
+    if (!startedRef.current || current === 0) return;
+    track("onboarding_tour_step_viewed", { tourKey, persona, stepIndex: current });
+  }, [current, tourKey, persona]);
 
   if (!visible || !steps.length) return null;
 
@@ -25,12 +63,23 @@ export default function OnboardingTour({ steps = [], onComplete, onSkip }) {
 
   const handleClose = () => {
     setVisible(false);
+    track("onboarding_tour_skipped", {
+      tourKey,
+      persona,
+      atStep: current,
+      totalSteps: steps.length,
+    });
     onSkip?.();
   };
 
   const handleNext = () => {
     if (isLast) {
       setVisible(false);
+      track("onboarding_tour_completed", {
+        tourKey,
+        persona,
+        totalSteps: steps.length,
+      });
       onComplete?.();
     } else {
       setCurrent((c) => c + 1);

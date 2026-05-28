@@ -1382,6 +1382,8 @@ export default function CreateTest() {
       {showCreateTour && (
         <OnboardingTour
           steps={EDUCATOR_CREATE_STEPS}
+          tourKey={TOUR_KEYS.EDUCATOR_CREATE}
+          persona="educator"
           onComplete={() => completeTour(TOUR_KEYS.EDUCATOR_CREATE)}
           onSkip={() => completeTour(TOUR_KEYS.EDUCATOR_CREATE)}
         />

@@ -19,6 +19,20 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 
+# Sprint 11 #1 — Brotli dynamic module.
+# Alpine edge community repo'da nginx-mod-http-brotli paketi var; ana repo'da yok.
+# Module load satırları /etc/nginx/conf.d/ ÜSTÜNDE (top-level main context)
+# olmalı; main entrypoint nginx.conf'a include via modules-enabled/.
+RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
+    && apk update \
+    && apk add --no-cache nginx-mod-http-brotli \
+    && mkdir -p /etc/nginx/modules-enabled \
+    && echo 'load_module /usr/lib/nginx/modules/ngx_http_brotli_filter_module.so;' \
+         > /etc/nginx/modules-enabled/00-brotli-filter.conf \
+    && echo 'load_module /usr/lib/nginx/modules/ngx_http_brotli_static_module.so;' \
+         > /etc/nginx/modules-enabled/00-brotli-static.conf \
+    && sed -i '1i include /etc/nginx/modules-enabled/*.conf;' /etc/nginx/nginx.conf
+
 # Build çıktısını nginx default root'una kopyala
 COPY --from=builder /usr/src/app/dist /usr/share/nginx/html
 
