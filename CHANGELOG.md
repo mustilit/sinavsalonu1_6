@@ -4,6 +4,12 @@ Bu projede yapılan tüm önemli değişiklikler bu dosyada belgelenir.
 
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) ve [Semantic Versioning](https://semver.org/lang/tr/) standartlarına uygundur.
 
+## [1.3.1](https://github.com/mustilit/sinavsalonu1_6/compare/v1.3.0...v1.3.1) (2026-05-28)
+
+### 🐛 Düzeltmeler
+
+* **MyTests:** root container Explore'la hizala — max-w-7xl + mx-auto ([11fcb0e](https://github.com/mustilit/sinavsalonu1_6/commit/11fcb0e8c5639221fa5b700e54122db17382adbe))
+
 ## [1.3.0](https://github.com/mustilit/sinavsalonu1_6/compare/v1.2.0...v1.3.0) (2026-05-28)
 
 ### ✨ Özellikler
