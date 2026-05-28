@@ -228,7 +228,9 @@ export default function MyTests() {
   const isLoading = loadingPurchases;
 
   return (
-    <div>
+    // max-w-7xl + mx-auto: Explore sayfasıyla aynı container genişliği.
+    // Wide ekranda yanlarda otomatik boşluk; içerik 1280px ile sınırlı kalır.
+    <div className="max-w-7xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">{t("pages:myTests.title")}</h1>
         <p className="text-slate-500 mt-2">{t("pages:myTests.subtitle")}</p>
