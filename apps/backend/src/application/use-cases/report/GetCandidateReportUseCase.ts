@@ -1,4 +1,7 @@
 import { prisma } from '../../../infrastructure/database/prisma';
+import { prismaRead } from '../../../infrastructure/database/dbRouter';
+
+// Sprint 10 — Admin aday raporu, replica'dan oku (lag toleranslı).
 
 export interface CandidateReportItem {
   id: string;
@@ -131,7 +134,7 @@ export class GetCandidateReportUseCase {
 
     // Count query
     const countSql = `SELECT COUNT(*) as total FROM (SELECT u.id ${baseSql}) sub`;
-    const countResult = await prisma.$queryRawUnsafe(countSql, ...params) as any[];
+    const countResult = await prismaRead().$queryRawUnsafe(countSql, ...params) as any[];
     const total = Number(countResult[0]?.total ?? 0);
 
     // Data query
@@ -161,7 +164,7 @@ export class GetCandidateReportUseCase {
       LIMIT $${pIdx} OFFSET $${pIdx + 1}
     `;
 
-    const rows = await prisma.$queryRawUnsafe(dataSql, ...params) as any[];
+    const rows = await prismaRead().$queryRawUnsafe(dataSql, ...params) as any[];
     const items: CandidateReportItem[] = rows.map(r => ({
       id: r.id,
       email: r.email,

@@ -1,0 +1,33 @@
+{{- if .Values.metrics.enabled }}
+# ServiceMonitor — Prometheus Operator CRD (kube-prometheus-stack).
+# Prometheus, ServiceMonitor.spec.selector ile eşleşen Service'lerin
+# /metrics endpoint'lerini scrape eder.
+#
+# Aktivasyon: values.yaml içinde `metrics.enabled: true` set et.
+# Bağımlılık: cluster'da prometheus-operator yüklü olmalı:
+#   helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "sinavsalonu.fullname" . }}-backend
+  labels:
+    {{- include "sinavsalonu.labels" . | nindent 4 }}
+    # kube-prometheus-stack default release label
+    release: {{ .Values.metrics.prometheusRelease | default "prometheus" }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "sinavsalonu.labels" . | nindent 6 }}
+      component: backend
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.metrics.scrapeInterval | default "30s" }}
+      scrapeTimeout: {{ .Values.metrics.scrapeTimeout | default "10s" }}
+      # Prom-client default metrics + custom counters expose edilir.
+      # MetricsController @Public + InternalOnlyGuard ile sadece cluster içinden.
+      honorLabels: true
+{{- end }}

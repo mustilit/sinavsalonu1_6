@@ -1,0 +1,117 @@
+{{- if .Values.metrics.alerts.enabled }}
+# PrometheusRule — kube-prometheus-stack tarafından otomatik yüklenir.
+# Alertmanager'a SLO ihlallerini bildirir.
+#
+# SLO HEDEFLERİ (docs/observability/slo.md):
+#   1. Availability: p95 endpoint hatası < %1 (rolling 5dk)
+#   2. Latency:      p95 HTTP < 500ms, p99 < 1500ms
+#   3. Para akışı:   purchase + webhook error rate < %0.5
+#   4. Replica lag:  < 5s
+#   5. Queue depth:  email_critical < 100 (DLQ değil)
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "sinavsalonu.fullname" . }}-slo
+  labels:
+    {{- include "sinavsalonu.labels" . | nindent 4 }}
+    release: {{ .Values.metrics.prometheusRelease | default "prometheus" }}
+spec:
+  groups:
+    - name: sinavsalonu.slo
+      interval: 30s
+      rules:
+        # ─── Latency SLO ────────────────────────────────────────────────────
+        - alert: HighLatencyP95
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route)
+            ) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+            slo: latency
+          annotations:
+            summary: "p95 latency > 500ms ({{`{{ $labels.route }}`}})"
+            description: "Son 5dk içinde {{`{{ $labels.route }}`}} endpoint'in p95 latency'si {{`{{ $value }}`}}s."
+            runbook: "https://github.com/mustilit/sinavsalonu1_6/blob/main/docs/observability/slo.md"
+
+        - alert: VeryHighLatencyP99
+          expr: |
+            histogram_quantile(0.99,
+              sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route)
+            ) > 1.5
+          for: 3m
+          labels:
+            severity: critical
+            slo: latency
+          annotations:
+            summary: "p99 latency > 1.5s ({{`{{ $labels.route }}`}})"
+
+        # ─── Error rate SLO ─────────────────────────────────────────────────
+        - alert: ElevatedErrorRate
+          expr: |
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+              / sum(rate(http_requests_total[5m])) > 0.01
+          for: 5m
+          labels:
+            severity: warning
+            slo: availability
+          annotations:
+            summary: "5xx error rate > %1"
+
+        - alert: CriticalErrorRate
+          expr: |
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+              / sum(rate(http_requests_total[5m])) > 0.05
+          for: 2m
+          labels:
+            severity: critical
+            slo: availability
+
+        # ─── Para akışı (Stripe/Iyzico webhook) ─────────────────────────────
+        - alert: PaymentWebhookFailures
+          expr: |
+            sum(rate(http_requests_total{route=~"/webhooks/(stripe|iyzico)", status=~"5.."}[10m]))
+              / sum(rate(http_requests_total{route=~"/webhooks/(stripe|iyzico)"}[10m])) > 0.005
+          for: 5m
+          labels:
+            severity: critical
+            slo: payment
+          annotations:
+            summary: "Ödeme webhook fail rate > %0.5"
+            description: "Ödemeler kayboluyor olabilir; idempotency + replay protection kontrol et."
+
+        # ─── Replica lag ────────────────────────────────────────────────────
+        - alert: ReplicaLagHigh
+          expr: pg_replication_lag_seconds > 5
+          for: 5m
+          labels:
+            severity: warning
+            slo: data_freshness
+
+        # ─── Circuit breaker open ───────────────────────────────────────────
+        - alert: CircuitBreakerOpen
+          expr: circuit_breaker_state == 1
+          for: 2m
+          labels:
+            severity: warning
+            slo: dependency
+          annotations:
+            summary: "Circuit breaker {{`{{ $labels.name }}`}} OPEN durumda"
+
+        # ─── Email queue depth (BullMQ critical) ────────────────────────────
+        - alert: EmailQueueBacklog
+          expr: email_queue_size{queue="critical"} > 100
+          for: 5m
+          labels:
+            severity: warning
+            slo: queue
+
+        # ─── Pod restart (CrashLoopBackOff indicator) ───────────────────────
+        - alert: PodRestartingFrequently
+          expr: rate(kube_pod_container_status_restarts_total{namespace="{{ .Release.Namespace }}"}[15m]) > 0
+          for: 10m
+          labels:
+            severity: warning
+            slo: stability
+{{- end }}

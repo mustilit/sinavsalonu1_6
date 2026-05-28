@@ -1,5 +1,10 @@
 import { prisma } from '../../../infrastructure/database/prisma';
+import { prismaRead } from '../../../infrastructure/database/dbRouter';
 import type { CommissionRateHistory } from '@prisma/client';
+
+// Sprint 10 — Bu use case admin raporlama. Lag toleranslı; replica'ya yönlendirildi.
+// AdminSettings ve CommissionRateHistory mutation'larından sonraki ilk okuma için
+// 5s lag göz ardı edilebilir (raporlar günlük gözle bakılır).
 
 /**
  * Komisyon raporunda her eğitici için döndürülen tek kalem.
@@ -104,12 +109,15 @@ export class GetCommissionReportUseCase {
     if (!Number.isInteger(year) || year < 2020 || year > 2100) throw new Error('Invalid year');
     if (!Number.isInteger(month) || month < 1 || month > 12) throw new Error('Invalid month');
 
+    // Admin raporlama — replica'dan oku (lag toleranslı).
+    const readDb = prismaRead();
+
     // Admin ayarlarından mevcut komisyon yüzdesini oku; kayıt yoksa %20 varsayılan
-    const settings = await prisma.adminSettings.findFirst({ where: { id: 1 } });
+    const settings = await readDb.adminSettings.findFirst({ where: { id: 1 } });
     const currentCommissionPercent = settings?.commissionPercent ?? 20;
 
     // Tüm oran geçmişini effectiveFrom azalan sırada getir
-    const allHistory = await prisma.commissionRateHistory.findMany({
+    const allHistory = await readDb.commissionRateHistory.findMany({
       orderBy: { effectiveFrom: 'desc' },
     });
 
@@ -138,7 +146,7 @@ export class GetCommissionReportUseCase {
       purchaseDate: Date;
     }
 
-    const rows = await prisma.$queryRawUnsafe<RawRowWithDate[]>(`
+    const rows = await readDb.$queryRawUnsafe<RawRowWithDate[]>(`
       SELECT
         u.id               AS "educatorId",
         u.username,

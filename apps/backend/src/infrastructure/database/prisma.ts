@@ -32,7 +32,9 @@ if (!databaseUrl) {
   );
 }
 
-const basePrisma =
+// basePrisma export edilir ki graceful-shutdown.service.ts direkt $disconnect
+// çağırabilsin. Aksi halde $extends edilmiş `prisma`'da $disconnect override yok.
+export const basePrisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: [

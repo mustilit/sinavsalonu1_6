@@ -195,9 +195,28 @@ containerSecurityContext:
 # ── Observability ────────────────────────────────────────────────────────
 monitoring:
   serviceMonitor:
-    enabled: false  # Prometheus operator varsa true
+    enabled: false  # Prometheus operator varsa true (eski legacy)
     interval: 30s
-    path: /metrics  # /metrics endpoint eklenirse
+    path: /metrics
+
+# Sprint 10 — Metrics + Alerts (yeni)
+# kube-prometheus-stack helm chart yüklü olmalı:
+#   helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring
+# Sonra:
+#   helm upgrade sinavsalonu ./infra/helm/sinavsalonu --set metrics.enabled=true
+metrics:
+  enabled: false
+  prometheusRelease: prometheus  # ServiceMonitor + PrometheusRule label
+  scrapeInterval: 30s
+  scrapeTimeout: 10s
+  alerts:
+    enabled: false  # Alertmanager aktif olunca true
+  # Grafana dashboard JSON: infra/helm/sinavsalonu/grafana-dashboards/
+  # ConfigMap olarak deploy edilir (sidecar otomatik yükler):
+  #   kubectl create configmap sinavsalonu-dashboards \
+  #     --from-file=infra/helm/sinavsalonu/grafana-dashboards/ \
+  #     -n monitoring \
+  #     --dry-run=client -o yaml | kubectl apply -f -
 
 nodeSelector: {}
 tolerations: []

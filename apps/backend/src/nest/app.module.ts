@@ -215,6 +215,7 @@ import { AdminEmailController } from './controllers/admin.email.controller';
 import { MeEmailPreferencesController } from './controllers/me.email-preferences.controller';
 import { MeAccountController } from './controllers/me.account.controller';
 import { DeleteMyAccountUseCase } from '../application/use-cases/auth/DeleteMyAccountUseCase';
+import { GracefulShutdownService } from './services/graceful-shutdown.service';
 import { EmailWebhookController } from './controllers/email-webhook.controller';
 import { EmailSeedService } from './bootstrap/email-seed.service';
 import { SendEmailUseCase } from '../application/use-cases/email/SendEmailUseCase';
@@ -342,6 +343,9 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
       inject: ['PRISMA', AuditLogger],
       useFactory: (prisma: any, audit: any) => new DeleteMyAccountUseCase(prisma, audit),
     },
+    // Sprint 10 — Graceful shutdown koordinatörü.
+    // app.enableShutdownHooks() main.ts'te aktif; SIGTERM bu service'i çağırır.
+    GracefulShutdownService,
     { provide: UnsubscribeViaTokenUseCase, useFactory: () => new UnsubscribeViaTokenUseCase() },
     { provide: GetEmailTrafficMetricsUseCase, useFactory: () => new GetEmailTrafficMetricsUseCase() },
     { provide: AnonymizeOldEmailLogsUseCase, useFactory: () => new AnonymizeOldEmailLogsUseCase() },

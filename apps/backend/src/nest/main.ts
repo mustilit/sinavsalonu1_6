@@ -36,6 +36,24 @@ async function bootstrap() {
     validateRedisUrl();
   }
   const app = await NestFactory.create(AppModule);
+
+  // Graceful shutdown — NestJS lifecycle hook'ları SIGTERM/SIGINT'te tetiklenir.
+  // K8s pod restart (rolling deploy + autoscale) ve docker stop senaryoları için
+  // ZORUNLU. Hook'lar app.module.ts içindeki provider'ların onModuleDestroy /
+  // onApplicationShutdown metodlarını çağırır:
+  //   - Prisma: $disconnect() (active query'ler tamamlanır)
+  //   - Redis: cache + BullMQ connection'ları quit
+  //   - BullMQ: worker pause + wait drain
+  //   - Sentry: flush(2000ms) pending event'leri gönder
+  //   - HTTP server: yeni connection reddet, in-flight'leri bekle (timeout 30s)
+  // Ayrıntı: docs/ops/graceful-shutdown.md
+  app.enableShutdownHooks();
+  // K8s preStop hook için 5 saniye grace period (LB endpoint propagation)
+  process.on('SIGTERM', async () => {
+    // eslint-disable-next-line no-console
+    console.log('[shutdown] SIGTERM alındı — graceful shutdown başlıyor');
+  });
+
   // Security headers via helmet (CSP driven by env)
   const cspEnabled = process.env.CSP_ENABLED !== 'false';
   const reportOnly = process.env.CSP_REPORT_ONLY === 'true';
