@@ -1,6 +1,9 @@
 /**
  * Register sayfası unit testleri
- * Kapsam: form render, alan validasyonu, submit akışı, hata state, educator modu
+ * Kapsam: form render, educator modu, sözleşme onay popup akışı, submit, hata state
+ *
+ * Sprint 16 — Sözleşme onayı artık inline checkbox değil, "Kayıt Ol" sonrası
+ * açılan ContractAcceptDialog (popup) içinde alınır. Testler bu akışı simüle eder.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -9,15 +12,14 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Register from '../Register';
 
-// auth modülünü mock'la — ağ çağrısı yapma
+// auth + contracts modülünü mock'la — ağ çağrısı yapma.
+// contracts.getActive popup AÇILDIĞINDA (on-demand) çağrılır.
 vi.mock('@/api/dalClient', () => ({
   auth: {
     register: vi.fn(),
     registerEducator: vi.fn(),
   },
   entities: {},
-  // Sprint 14 — Register kayıt akışı useEffect ile contracts.getActive('CANDIDATE'|'EDUCATOR')
-  // ve contracts.getActive('PRIVACY') çağırır. Bu mock her ikisini de çözer.
   contracts: {
     getActive: vi.fn().mockImplementation((type) =>
       Promise.resolve({
@@ -30,6 +32,11 @@ vi.mock('@/api/dalClient', () => ({
       }),
     ),
   },
+}));
+
+// react-markdown ESM — jsdom'da basit pass-through mock yeterli
+vi.mock('react-markdown', () => ({
+  default: ({ children }) => <div data-testid="markdown">{children}</div>,
 }));
 
 // TurnstileWidget — Cloudflare widget; test ortamında render etme
@@ -56,101 +63,100 @@ vi.mock('@/utils', () => ({
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
+// NOT: Register `window.location.search`'i HER render'da okur (memoize yok).
+// Bu yüzden search'i render sonrası geri yüklemeyiz — yoksa re-render'da
+// (örn. alan değişince) isEducator yanlış hesaplanır. search beforeEach'te
+// sıfırlanır, test boyunca sabit kalır.
 function renderRegister(search = '') {
-  // Register sayfası window.location.search ile URL parametrelerini okuyor
-  const originalSearch = window.location.search;
   Object.defineProperty(window, 'location', {
     writable: true,
+    configurable: true,
     value: { ...window.location, search },
   });
 
-  const result = render(
+  return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[`/Register${search}`]}>
         <Register />
       </MemoryRouter>
     </QueryClientProvider>
   );
+}
 
-  // Cleanup
-  Object.defineProperty(window, 'location', {
-    writable: true,
-    value: { ...window.location, search: originalSearch },
-  });
+/** Form alanlarını doldur + "Kayıt Ol" → sözleşme popup'ını açar. */
+function fillAndOpenDialog({ email = 'test@example.com', username = 'testuser', password = 'pass123' } = {}) {
+  fireEvent.change(screen.getByLabelText(/e-posta/i), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText(/kullanıcı adı/i), { target: { value: username } });
+  fireEvent.change(screen.getByLabelText(/şifre/i), { target: { value: password } });
+  fireEvent.submit(screen.getByRole('button', { name: /kayıt ol/i }).closest('form'));
+}
 
-  return result;
+/** Popup'ta iki sözleşme checkbox'ını işaretle + "Onayla ve Kaydı Tamamla"ya bas. */
+async function acceptInDialog() {
+  const checkboxes = await screen.findAllByRole('checkbox');
+  checkboxes.forEach((cb) => fireEvent.click(cb));
+  const confirmBtn = await screen.findByRole('button', { name: /onayla ve kaydı tamamla/i });
+  await waitFor(() => expect(confirmBtn).not.toBeDisabled());
+  fireEvent.click(confirmBtn);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Her test öncesi window.location.search'i sıfırla (testler arası sızma olmasın)
+  Object.defineProperty(window, 'location', {
+    writable: true,
+    configurable: true,
+    value: { ...window.location, search: '' },
+  });
 });
 
 describe('Register sayfası', () => {
-  // --- Arrange/Act/Assert ---
-
   it('aday modu URL\'si olmadığında temel form alanları render edilir', () => {
-    // Arrange & Act
     renderRegister();
-    // Assert
     expect(screen.getByLabelText(/e-posta/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/kullanıcı adı/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/şifre/i)).toBeInTheDocument();
   });
 
   it('educator rolü seçildiğinde ad ve soyad alanları görünür', () => {
-    // Arrange & Act
     renderRegister('?role=educator');
-    // Assert — educator alanları render edilmeli (exact match: "Ad", "Soyad")
     expect(screen.getByLabelText(/^ad$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^soyad$/i)).toBeInTheDocument();
   });
 
   it('aday modu seçildiğinde ad/soyad alanları görünmez', () => {
-    // Arrange & Act
     renderRegister('?role=candidate');
-    // Assert
     expect(screen.queryByLabelText(/^ad$/i)).not.toBeInTheDocument();
   });
 
-  /**
-   * Sprint 14 — Sözleşme onay checkbox'larını işaretler.
-   * Register form artık 2 zorunlu checkbox içerir (üyelik + KVKK).
-   * Submit butonu sözleşmeler kabul edilene kadar disabled.
-   */
-  async function acceptContracts() {
-    const checkboxes = await screen.findAllByRole('checkbox');
-    checkboxes.forEach((cb) => fireEvent.click(cb));
-  }
-
-  it('submit butonu sözleşme onaylanmadan disabled, onaylandıktan sonra aktif', async () => {
-    // Arrange & Act
+  it('"Kayıt Ol" butonu başlangıçta aktiftir (onay popup\'ta alınır)', () => {
     renderRegister();
     const btn = screen.getByRole('button', { name: /kayıt ol/i });
     expect(btn).toBeInTheDocument();
-    // Sprint 14 — başlangıçta disabled (sözleşmeler yüklenmemiş veya onay yok)
-    expect(btn).toBeDisabled();
-
-    // Sözleşmeleri onayla → buton aktif
-    await acceptContracts();
-    await waitFor(() => expect(btn).not.toBeDisabled());
+    expect(btn).not.toBeDisabled();
   });
 
-  it('başarılı aday kaydında auth.register çağrılır', async () => {
-    // Arrange
+  it('"Kayıt Ol" tıklanınca sözleşme popup\'ı açılır ve onay butonu işaretlenene kadar disabled', async () => {
+    renderRegister();
+    fillAndOpenDialog();
+    // Popup başlığı + onay butonu görünür
+    expect(await screen.findByText(/sözleşmeleri onayla/i)).toBeInTheDocument();
+    const confirmBtn = await screen.findByRole('button', { name: /onayla ve kaydı tamamla/i });
+    expect(confirmBtn).toBeDisabled();
+    // İki checkbox işaretlenince aktifleşir
+    const checkboxes = await screen.findAllByRole('checkbox');
+    checkboxes.forEach((cb) => fireEvent.click(cb));
+    await waitFor(() => expect(confirmBtn).not.toBeDisabled());
+  });
+
+  it('başarılı aday kaydında auth.register contract ID\'leri ile çağrılır', async () => {
     const { auth } = await import('@/api/dalClient');
     auth.register.mockResolvedValue({ ok: true });
     renderRegister();
 
-    // Sprint 14 — sözleşmeleri onayla (submit butonunu aktif hale getirir)
-    await acceptContracts();
+    fillAndOpenDialog();
+    await acceptInDialog();
 
-    // Act
-    fireEvent.change(screen.getByLabelText(/e-posta/i), { target: { value: 'test@example.com' } });
-    fireEvent.change(screen.getByLabelText(/kullanıcı adı/i), { target: { value: 'testuser' } });
-    fireEvent.change(screen.getByLabelText(/şifre/i), { target: { value: 'pass123' } });
-    fireEvent.submit(screen.getByRole('button', { name: /kayıt ol/i }).closest('form'));
-
-    // Assert — Sprint 14: contract ID'leri opts içinde gönderilir
     await waitFor(() => {
       expect(auth.register).toHaveBeenCalledWith(
         'test@example.com',
@@ -164,33 +170,58 @@ describe('Register sayfası', () => {
     });
   });
 
-  it('API hata döndüğünde hata mesajı gösterilir', async () => {
-    // Arrange
+  it('educator kaydında registerEducator EDUCATOR contract ID ile çağrılır', async () => {
+    const { auth } = await import('@/api/dalClient');
+    auth.registerEducator.mockResolvedValue({ ok: true });
+    renderRegister('?role=educator');
+
+    fireEvent.change(screen.getByLabelText(/^ad$/i), { target: { value: 'Ahmet' } });
+    fireEvent.change(screen.getByLabelText(/^soyad$/i), { target: { value: 'Yılmaz' } });
+    fillAndOpenDialog({ email: 'edu@example.com', username: 'eduuser', password: 'pass123' });
+    await acceptInDialog();
+
+    await waitFor(() => {
+      expect(auth.registerEducator).toHaveBeenCalledWith(
+        'edu@example.com',
+        'eduuser',
+        'pass123',
+        expect.objectContaining({
+          acceptedEducatorContractId: 'mock-terms-id',
+          acceptedPrivacyContractId: 'mock-privacy-id',
+        }),
+      );
+    });
+  });
+
+  it('API hata döndüğünde popup kapanır ve hata mesajı gösterilir', async () => {
     const { auth } = await import('@/api/dalClient');
     auth.register.mockRejectedValue({
       response: { data: { message: 'Bu email zaten kayıtlı' } },
     });
     renderRegister();
 
-    // Sprint 14 — sözleşmeleri onayla
-    await acceptContracts();
+    fillAndOpenDialog({ email: 'existing@example.com', username: 'existinguser', password: 'pass123' });
+    await acceptInDialog();
 
-    // Act
-    fireEvent.change(screen.getByLabelText(/e-posta/i), { target: { value: 'existing@example.com' } });
-    fireEvent.change(screen.getByLabelText(/kullanıcı adı/i), { target: { value: 'existinguser' } });
-    fireEvent.change(screen.getByLabelText(/şifre/i), { target: { value: 'pass123' } });
-    fireEvent.submit(screen.getByRole('button', { name: /kayıt ol/i }).closest('form'));
-
-    // Assert
     await waitFor(() => {
       expect(screen.getByText('Bu email zaten kayıtlı')).toBeInTheDocument();
     });
   });
 
-  it('Login sayfasına giden link mevcut', () => {
-    // Arrange & Act
+  it('sözleşme yüklenemezse popup hata mesajı gösterir (dead-end yok)', async () => {
+    const { contracts } = await import('@/api/dalClient');
+    contracts.getActive.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     renderRegister();
-    // Assert
+
+    fillAndOpenDialog();
+
+    await waitFor(() => {
+      expect(screen.getByText(/sözleşme metinleri şu an yüklenemedi/i)).toBeInTheDocument();
+    });
+  });
+
+  it('Login sayfasına giden link mevcut', () => {
+    renderRegister();
     const loginLink = screen.getByRole('link', { name: /giriş yap/i });
     expect(loginLink).toBeInTheDocument();
     expect(loginLink).toHaveAttribute('href', '/Login');
