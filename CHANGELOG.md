@@ -4,6 +4,12 @@ Bu projede yapılan tüm önemli değişiklikler bu dosyada belgelenir.
 
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) ve [Semantic Versioning](https://semver.org/lang/tr/) standartlarına uygundur.
 
+## [1.5.0](https://github.com/mustilit/sinavsalonu1_6/compare/v1.4.0...v1.5.0) (2026-05-29)
+
+### ✨ Özellikler
+
+* **sprint15:** indirim kodu kullanım akışı — 3 kademe (aday paket + eğitici canlı + eğitici reklam) ([42a9829](https://github.com/mustilit/sinavsalonu1_6/commit/42a9829b20249e3f9461b90f272c80126e29499c))
+
 ## [1.4.0](https://github.com/mustilit/sinavsalonu1_6/compare/v1.3.1...v1.4.0) (2026-05-28)
 
 ### ✨ Özellikler
