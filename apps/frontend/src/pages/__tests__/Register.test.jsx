@@ -129,6 +129,17 @@ describe('Register sayfası', () => {
     expect(screen.queryByLabelText(/^ad$/i)).not.toBeInTheDocument();
   });
 
+  it('rol seçici: parametre yokken Aday varsayılan; "Eğitici" tıklanınca ad/soyad açılır', async () => {
+    renderRegister(); // ?role= yok → varsayılan aday
+    // Başlangıçta eğitici alanları yok
+    expect(screen.queryByLabelText(/^ad$/i)).not.toBeInTheDocument();
+    // Görünür rol seçici: "Eğitici" kartına tıkla
+    fireEvent.click(screen.getByRole("button", { name: /eğitici/i }));
+    // Ad + Soyad alanları açılır
+    expect(await screen.findByLabelText(/^ad$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^soyad$/i)).toBeInTheDocument();
+  });
+
   it('"Kayıt Ol" butonu başlangıçta aktiftir (onay popup\'ta alınır)', () => {
     renderRegister();
     const btn = screen.getByRole('button', { name: /kayıt ol/i });

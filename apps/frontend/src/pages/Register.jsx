@@ -9,13 +9,31 @@ import { Link } from 'react-router-dom';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import TurnstileWidget from '@/components/auth/TurnstileWidget';
 import { ContractAcceptDialog } from '@/components/auth/ContractAcceptDialog';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, Briefcase } from 'lucide-react';
 
 export default function Register() {
   const { t } = useTranslation(['auth', 'common']);
-  const urlParams = new URLSearchParams(window.location.search);
-  const roleParam = urlParams.get('role'); // 'candidate' | 'educator' | null
-  const isEducator = roleParam === 'educator';
+  // Rol seçimi artık görünür ve değiştirilebilir (Sprint 16).
+  // Başlangıç değeri ?role= parametresinden (Home CTA), yoksa 'candidate'.
+  // Sessiz aday-varsayımı yerine kullanıcı seçimi her zaman ekranda.
+  const [role, setRole] = useState(() => {
+    const p = new URLSearchParams(window.location.search).get('role');
+    return p === 'educator' ? 'educator' : 'candidate';
+  });
+  const isEducator = role === 'educator';
+
+  // Rol değişince state + URL senkron (yenileme/geri tutarlı, paylaşılabilir link)
+  const selectRole = (next) => {
+    setRole(next);
+    setError(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('role', next);
+      window.history.replaceState({}, '', url);
+    } catch {
+      /* ignore — eski tarayıcı / SSR */
+    }
+  };
 
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -89,11 +107,55 @@ export default function Register() {
         </Link>
         <h1 className="text-2xl font-bold text-slate-900 mb-2 text-center">{t('auth:register.title')}</h1>
 
-        {roleParam && (
-          <div className={`mb-6 text-center text-sm font-medium px-4 py-2 rounded-xl ${isEducator ? 'bg-violet-50 text-violet-700' : 'bg-indigo-50 text-indigo-700'}`}>
-            {isEducator ? t('auth:register.signingUpAsEducator') : t('auth:register.signingUpAsCandidate')}
+        {/* Sprint 16 — Görünür rol seçici (sessiz aday-varsayımı yerine).
+            Aday/Eğitici her zaman ekranda; tek tıkla değişir, form ona göre uyarlanır. */}
+        <div className="mb-6">
+          <p className="text-sm font-medium text-slate-700 mb-2 text-center">
+            {t('auth:register.roleSelect.label', { defaultValue: 'Nasıl kaydolmak istersiniz?' })}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                val: 'candidate',
+                label: t('auth:register.roleSelect.candidate', { defaultValue: 'Aday' }),
+                desc: t('auth:register.roleSelect.candidateDesc', {
+                  defaultValue: 'Test paketi satın al, çöz, skorunu takip et',
+                }),
+                Icon: GraduationCap,
+              },
+              {
+                val: 'educator',
+                label: t('auth:register.roleSelect.educator', { defaultValue: 'Eğitici' }),
+                desc: t('auth:register.roleSelect.educatorDesc', {
+                  defaultValue: 'Test ve paket oluştur, yayımla, sat',
+                }),
+                Icon: Briefcase,
+              },
+            ].map(({ val, label, desc, Icon }) => {
+              const active = role === val;
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => selectRole(val)}
+                  aria-pressed={active}
+                  className={`p-4 rounded-xl border-2 text-left transition-all min-h-10 ${
+                    active
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <Icon
+                    className={`w-5 h-5 mb-2 ${active ? 'text-indigo-600' : 'text-slate-400'}`}
+                    aria-hidden="true"
+                  />
+                  <p className="font-medium text-sm text-slate-900">{label}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+                </button>
+              );
+            })}
           </div>
-        )}
+        </div>
 
         <form onSubmit={submit} className="space-y-4">
           {/* Eğitici kaydında ad ve soyad zorunlu — resmi kayıt için */}
