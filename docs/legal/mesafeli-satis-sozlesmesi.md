@@ -4,12 +4,13 @@
 >
 > 6502 sayılı Tüketicinin Korunması Hakkında Kanun (TKHK) m.48 ve Mesafeli
 > Sözleşmeler Yönetmeliği uyarınca **her satın alma öncesi** tüketiciye
-> sunulması zorunludur.
+> sunulması ve onaylatılması zorunludur. `[KÖŞELİ PARANTEZ]` alanları satıcı
+> bilgileri ve satın alma anı verileriyle doldurulur.
 
 **Yürürlük tarihi:** [TARİH]
 **Versiyon:** 1
 
-## 1. Satıcı
+## 1. Satıcı (Sağlayıcı) Bilgileri
 
 - **Unvan:** [ŞİRKET UNVANI]
 - **MERSİS:** [NO]
@@ -18,69 +19,97 @@
 - **E-posta:** [SATIS_EMAIL]
 - **Telefon:** [TELEFON]
 
-## 2. Alıcı
+## 2. Alıcı (Tüketici)
 
-Üye olduğu hesabın bilgileri ile satın alma yapan tüketici.
+Üyesi olduğu hesabın bilgileri ile satın alma yapan tüketici. Fatura ve iletişim
+bilgileri sipariş anında hesap profilinden alınır.
 
 ## 3. Sözleşmenin Konusu
 
-Alıcının, Sınav Salonu web sitesi üzerinden seçtiği dijital içerikli
-sınav paketi (test) hizmetinin satışı ve sunumudur. Hizmet **dijital
-içerikli olup, fiziksel teslimat yoktur.**
+Alıcının, Sınav Salonu web sitesi üzerinden seçtiği **dijital içerikli** sınav
+paketi (test) hizmetinin satışı ve sunumudur. Hizmet elektronik ortamda ifa
+edilir; **fiziksel teslimat yoktur.**
 
-## 4. Sözleşme Konusu Hizmet Bilgileri
+## 4. Ön Bilgilendirme — Hizmetin Temel Nitelikleri (Yönetmelik m.5)
+
+Aşağıdaki bilgiler, satın alma onayından önce Alıcı'ya sunulur:
 
 | Bilgi | Alanı |
 |---|---|
 | Hizmet adı | [PAKET ADI — satın alma anında doldurulur] |
 | Eğitici | [EĞİTİCİ KULLANICI ADI] |
-| Test sayısı | [ADET] |
-| Soru sayısı | [ADET] |
-| Süre / kullanım hakkı | Sınırsız çözüm hakkı (hesap aktif olduğu sürece) |
-| Fiyat (KDV dahil) | [FIYAT] ₺ |
-| Ödeme şekli | Kredi kartı / banka kartı / [iyzico/stripe seçili olanlar] |
+| Test sayısı / Soru sayısı | [ADET] / [ADET] |
+| Kullanım hakkı | Sınırsız çözüm hakkı (hesap aktif olduğu sürece) |
+| Liste fiyatı (KDV dahil) | [LISTE_FIYAT] ₺ |
+| Uygulanan indirim / promosyon kodu | [VARSA KOD — %X] |
+| **Ödenecek tutar (KDV dahil)** | [ODENEN_TUTAR] ₺ |
+| Ödeme şekli | Kredi/banka kartı ([iyzico/stripe seçili olan]) |
+| İfa şekli/süresi | Ödeme onayıyla **anında** hesaba tanımlanır |
+| Cayma hakkı | Dijital içerik istisnası — bkz. madde 7 |
+| Şikayet/başvuru mercii | [SATIS_EMAIL] + Tüketici Hakem Heyeti/Mahkemesi |
 
-## 5. Hizmetin Sunulması
+## 5. İndirim ve Promosyon Kodu
 
-Ödemenin başarıyla tamamlanmasıyla birlikte test paketi alıcının "Testlerim"
-sayfasında **anında erişilebilir** hale gelir. Dijital hizmet süresi sınırsızdır.
+- Alıcı, geçerli bir indirim kodu uygulayabilir; bu durumda **ödenecek tutar**
+  indirimli olarak yukarıdaki tabloda ve ödeme ekranında gösterilir.
+- Uygulanan kod, indirim oranı ve nihai ödenen tutar, satın alma kaydında
+  **delil olarak saklanır** (raporlama ve TKHK kanıt zinciri için).
+- İndirim kodları, koşulları (geçerlilik tarihi, kullanım limiti) sağlandığı
+  sürece geçerlidir; kötüye kullanım hâlinde iptal edilebilir.
 
-## 6. Cayma Hakkı — DİJİTAL İÇERİK İSTİSNASI ⚠️
+## 6. Hizmetin Sunulması ve Faturalandırma
 
-Mesafeli Sözleşmeler Yönetmeliği m.15/1-(ğ) uyarınca, **tüketicinin
-onayı ile başlatılan ve cayma hakkı sona ermeden ifa edilen dijital
-içerik teslimatı için cayma hakkı YOKTUR.**
+- Ödemenin başarıyla tamamlanmasıyla test paketi, Alıcı'nın "Testlerim"
+  sayfasında **anında erişilebilir** hale gelir.
+- Satışa ilişkin fatura/bilgi fişi, mevzuata uygun şekilde düzenlenir ve
+  Alıcı'nın hesabına/e-postasına iletilir.
 
-Satın alma onayı verildiği anda dijital içerik (sınav paketi) anında
-hesabınıza tanımlandığı için cayma hakkınız kullanılamaz.
+## 7. Cayma Hakkı — DİJİTAL İÇERİK İSTİSNASI ⚠️
 
-İade talepleri ayrı bir akıştan değerlendirilir:
-- Sınava başlanmadıysa: 14 gün içinde tam iade
-- Sınava başlanmışsa ama tamamlanmamışsa: %50 iade
-- Sınav tamamlanmışsa: iade yapılmaz
+Mesafeli Sözleşmeler Yönetmeliği m.15/1-(ğ) uyarınca, **tüketicinin onayı ile
+başlatılan ve cayma hakkı süresi sona ermeden ifa edilen elektronik ortamda
+anında ifa edilen dijital içerik** teslimatına ilişkin sözleşmelerde **cayma
+hakkı bulunmamaktadır.**
 
-Bu kurallar Sınav Salonu'nun gönüllü politikasıdır; yasal cayma hakkı yerine geçmez.
+Satın alma onayı verildiği anda dijital içerik (sınav paketi) hesabınıza anında
+tanımlandığından, yasal cayma hakkı kullanılamaz. Alıcı, satın alma onayı ile
+bu istisnayı bildiğini ve cayma hakkından feragat ettiğini açıkça kabul eder.
+Bu onay; tarih, IP ve tarayıcı bilgisiyle birlikte delil olarak kaydedilir.
 
-## 7. Ödeme
+## 8. İade Politikası (Gönüllü)
 
-Ödemeler PCI-DSS uyumlu Iyzico / Stripe altyapısı üzerinden yapılır.
-Kart bilgileri Sınav Salonu sunucularında **saklanmaz**.
+Yasal cayma hakkının bulunmadığı durumlarda dahi, Sınav Salonu aşağıdaki
+**gönüllü** iade politikasını uygular:
+- Pakete ait **hiçbir** teste başlanmadıysa: 14 gün içinde **tam iade**,
+- Bir teste başlandıysa ama paket tamamlanmadıysa: **%50 iade**,
+- Paketteki testler tamamlandıysa: iade yapılmaz.
 
-## 8. Şikayet ve İtiraz
+Teknik bir hata (erişilememe, bozuk içerik) nedeniyle hizmetin hiç sunulamaması
+hâlinde tam iade yapılır. İade, ödemenin yapıldığı yönteme makul sürede iade edilir.
 
-- Eğiticinin sorulu / cevaplı içeriğine itiraz: Platform "İtiraz Et" akışı
-- Ödeme şikayeti: [SATIS_EMAIL] + KEP
-- Tüketici uyuşmazlığı: Tüketici Hakem Heyeti (sınır değeri altında) veya
-  Tüketici Mahkemesi
+## 9. Ödeme Güvenliği
 
-## 9. Yetkili Mercii
+Ödemeler PCI-DSS uyumlu Iyzico / Stripe altyapısı üzerinden alınır. Kart
+bilgileri Sınav Salonu sunucularında **saklanmaz**. Ters ibraz (chargeback)
+suistimali tespit edilen hesaplar askıya alınabilir.
 
-İşbu sözleşmeden doğan uyuşmazlıklarda Türkiye Cumhuriyeti hukuku uygulanır.
-Tüketici Hakem Heyetleri için Bilim, Sanayi ve Teknoloji Bakanlığı'nca her
-yıl belirlenen parasal sınırlar geçerlidir.
+## 10. Şikayet, İtiraz ve Yetkili Mercii
+
+- Eğiticinin sorulu/cevaplı içeriğine itiraz: Platform "İtiraz Et" akışı,
+- Ödeme/iade şikayeti: [SATIS_EMAIL] + [KEP],
+- Tüketici uyuşmazlıkları: Gümrük ve Ticaret Bakanlığı'nca her yıl belirlenen
+  parasal sınırlar dâhilinde **Tüketici Hakem Heyetleri**, sınırı aşan
+  uyuşmazlıklarda **Tüketici Mahkemeleri** yetkilidir.
+- İşbu sözleşmeden doğan uyuşmazlıklarda Türkiye Cumhuriyeti hukuku uygulanır.
+
+## 11. Sözleşmenin Saklanması
+
+İşbu sözleşme ve ön bilgilendirme formu, satın alma kaydıyla birlikte elektronik
+ortamda saklanır; Alıcı dilediğinde "Sözleşmeler" ve satın alma geçmişi
+üzerinden erişebilir.
 
 ---
 
-**Alıcı, bu Mesafeli Satış Sözleşmesi'ni ve Ön Bilgilendirme Formu'nu
-okuduğunu, hizmetin **dijital içerikli** olduğunu ve **cayma hakkının
-bulunmadığını** bilerek, satın alma onayı vermektedir.**
+**Alıcı; bu Mesafeli Satış Sözleşmesi'ni ve Ön Bilgilendirme Formu'nu okuduğunu,
+hizmetin dijital içerikli olduğunu, anında ifa edileceğini ve bu nedenle
+cayma hakkının bulunmadığını bilerek satın alma onayı verdiğini beyan eder.**

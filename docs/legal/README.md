@@ -17,9 +17,16 @@
 ## Seed davranışı
 
 `apps/backend/src/nest/bootstrap/seed.service.ts` her sistem boot'unda
-4 contract'ı idempotent şekilde upsert eder. Admin paneli (`/yonetim/sozlesmeler`)
-metinleri runtime'da güncelleyebilir; yeni versiyon `version` alanı +1 ile
-yayımlanır, eski versiyon `isActive=false` olur.
+4 contract'ı bu dosyalardan idempotent şekilde upsert eder (v1 içeriği `.md`
+ile senkronlanır). Admin, **Sözleşme Yönetimi** sayfasından (`/ManageContracts`,
+sidebar "Sözleşmeler") metinleri runtime'da düzenleyebilir, yeni versiyon
+yayımlayabilir ve aktif versiyonu seçebilir. Yeni versiyon `version` +1 ile
+eklenir, "Aktif Yap" ile eski versiyon `isActive=false` olur.
+
+> Not (Sprint 16): 4 taslak daha kapsamlı hale getirildi (tanımlar, mücbir
+> sebep, bölünebilirlik, tebligat, KVKK veri güvenliği/ihlal bildirimi/açık
+> rıza, mesafeli ön-bilgilendirme zorunlu unsurları, eğitici payout/clawback,
+> canlı sınav). Şirket-özel `[PLACEHOLDER]` alanları + avukat onayı hâlâ gerekli.
 
 ## Versiyon politikası
 
