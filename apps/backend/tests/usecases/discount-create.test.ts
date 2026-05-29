@@ -21,6 +21,11 @@ jest.mock('../../src/infrastructure/database/prisma', () => ({
       findUnique: jest.fn(),
       create: jest.fn(),
     },
+    // Çapraz benzersizlik kontrolü (Sprint 15+): kod platform promo kodu olarak
+    // kullanımda mı? Varsayılan null — çakışma yok.
+    platformPromoCode: {
+      findUnique: jest.fn(async () => null),
+    },
     // EDUCATOR için maxDiscountPercent kontrolü (AdminSettings sorgusu).
     // Varsayılan 50 — testler bu limiti aşmadığı sürece şikayet etmez.
     $queryRaw: jest.fn(async () => [{ maxDiscountPercent: 50 }]),

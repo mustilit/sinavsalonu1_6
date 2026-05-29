@@ -129,12 +129,22 @@ describe('ValidateDiscountCodeUseCase', () => {
     });
   });
 
-  it('createdById null → DISCOUNT_NOT_OWNED (legacy kod, sahipsiz)', async () => {
+  it('createdById null → GLOBAL kod (admin): her pakette kabul edilir', async () => {
+    // Admin oluşturduğunda createdById=null → herhangi bir teste/pakete uygulanır.
+    // PurchaseUseCase ile hizalı (OR: [{educatorId}, {null}]).
     mockDiscountCodeFindUnique.mockResolvedValue(makeDiscount({ createdById: null }));
     const uc = new ValidateDiscountCodeUseCase();
-    await expect(uc.execute(BASE_INPUT)).rejects.toMatchObject({
-      code: 'DISCOUNT_NOT_OWNED',
-    });
+    const result = await uc.execute(BASE_INPUT);
+    expect(result.code).toBe('SAVE20');
+    expect(result.percentOff).toBe(20);
+    expect(result.finalAmountCents).toBe(8000);
+  });
+
+  it('global kod (null) paket sahibi farklı eğitici olsa bile kabul edilir', async () => {
+    mockTestPackageFindUnique.mockResolvedValue(makePackage({ educatorId: 'edu-bambaska' }));
+    mockDiscountCodeFindUnique.mockResolvedValue(makeDiscount({ createdById: null }));
+    const uc = new ValidateDiscountCodeUseCase();
+    await expect(uc.execute(BASE_INPUT)).resolves.toMatchObject({ code: 'SAVE20' });
   });
 
   it('validFrom gelecekte → DISCOUNT_OUT_OF_WINDOW', async () => {

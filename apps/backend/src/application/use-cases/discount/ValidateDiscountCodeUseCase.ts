@@ -19,12 +19,16 @@ import { AppError } from '../../errors/AppError';
  *   - DISCOUNT_NOT_ACTIVE    : isActive=false
  *   - DISCOUNT_OUT_OF_WINDOW : validFrom/validUntil dışında
  *   - DISCOUNT_USAGE_EXHAUSTED : maxUses aşıldı
- *   - DISCOUNT_NOT_OWNED      : kod farklı eğiticinin (paket sahibiyle eşleşmiyor)
+ *   - DISCOUNT_NOT_OWNED      : kod başka eğiticinin (paket sahibiyle eşleşmiyor)
  *
- * NOT: `DiscountCode.educatorId` ile `TestPackage.educatorId` eşleşmesi zorunlu —
- * eğitici sadece kendi paketleri için indirim kodu oluşturur. Bu kontrol burada
- * yapılır; UX'te "geçersiz kod" mesajı gösterilir (eğiticinin gerçek paket
- * sahipliği bilgisini ifşa etmiyoruz).
+ * KAPSAM (PurchaseUseCase ile hizalı):
+ *   - `createdById === null` → GLOBAL kod (admin oluşturdu): her pakette geçerli,
+ *     hiçbir eğiticiye bağlı değil. "herhangi bir teste bağlanır, eğiticiye bağlanmaz".
+ *   - `createdById === TestPackage.educatorId` → eğiticinin kendi paketine bağlı kodu.
+ *   - aksi → DISCOUNT_NOT_OWNED (başka eğiticinin paket sahipliğini ifşa etmeden
+ *     "geçersiz kod" mesajı gösterilir).
+ * Admin platform promo kodları (canlı test/reklam — PlatformPromoCode) AYRI bir
+ * sistemdir; bu use case'e hiç girmez (kod string'leri çapraz benzersizdir).
  */
 export class ValidateDiscountCodeUseCase {
   /**
@@ -78,8 +82,12 @@ export class ValidateDiscountCodeUseCase {
     if (!discount.isActive) {
       throw new AppError('DISCOUNT_NOT_ACTIVE', 'İndirim kodu pasif', 409);
     }
-    // Sahiplik: kodun yaratıcısı (createdById) paketin sahibi (educatorId) olmalı.
-    if (!discount.createdById || discount.createdById !== pkg.educatorId) {
+    // Sahiplik / kapsam (PurchaseUseCase ile birebir hizalı):
+    //   - createdById === null            → GLOBAL kod (admin oluşturdu): her pakette geçerli.
+    //   - createdById === pkg.educatorId   → eğiticinin kendi paketine bağlı kodu.
+    //   - aksi (başka eğiticinin kodu)     → DISCOUNT_NOT_OWNED.
+    // PurchaseUseCase eşleşmesi: OR: [{ createdById: test.educatorId }, { createdById: null }].
+    if (discount.createdById !== null && discount.createdById !== pkg.educatorId) {
       throw new AppError('DISCOUNT_NOT_OWNED', 'Bu kod bu paket için geçerli değil', 409);
     }
     const now = new Date();

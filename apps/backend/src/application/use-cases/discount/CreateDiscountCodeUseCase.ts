@@ -84,7 +84,23 @@ export class CreateDiscountCodeUseCase {
     if (existing) {
       throw new BadRequestException({ code: 'CODE_EXISTS', message: 'Discount code already exists' });
     }
+    // Çapraz benzersizlik: aynı kod string'i admin platform promo kodu (canlı test /
+    // reklam — PlatformPromoCode) olarak da kullanılamaz. Aday indirim kodu ile eğitici
+    // promo kodu aynı kodu paylaşırsa "hangi indirim?" belirsizliği doğar — engelle.
+    const promoClash = await prisma.platformPromoCode.findUnique({ where: { code } });
+    if (promoClash) {
+      throw new AppError(
+        'CODE_EXISTS_AS_PROMO',
+        'Bu kod platform promo kodu (canlı test/reklam) olarak kullanımda — farklı bir kod seçin',
+        409,
+      );
+    }
 
+    // Admin oluşturduğunda kod GLOBAL'dir (createdById=null): herhangi bir eğiticinin
+    // herhangi bir paketinde geçerli, hiçbir eğiticiye bağlı değil. Eğitici oluşturduğunda
+    // yalnızca kendi paketlerinde geçerli (createdById=educatorId).
+    // PurchaseUseCase eşleşmesi: OR: [{ createdById: test.educatorId }, { createdById: null }].
+    const isAdmin = user.role === 'ADMIN';
     const created = await prisma.discountCode.create({
       data: {
         code,
@@ -93,7 +109,7 @@ export class CreateDiscountCodeUseCase {
         validFrom: input.validFrom ?? null,
         validUntil: input.validUntil ?? null,
         description: input.description ?? null,
-        createdById: educatorId,
+        createdById: isAdmin ? null : educatorId,
       },
     });
 

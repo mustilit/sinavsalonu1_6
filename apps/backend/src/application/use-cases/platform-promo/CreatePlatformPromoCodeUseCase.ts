@@ -67,6 +67,17 @@ export class CreatePlatformPromoCodeUseCase {
     if (existing) {
       throw new AppError('DUPLICATE_CODE', 'Bu kod zaten mevcut', 409);
     }
+    // Çapraz benzersizlik: aynı kod string'i aday indirim kodu (DiscountCode) olarak da
+    // kullanılamaz. Eğitici canlı-test/reklam promo kodu ile aday paket indirim kodu
+    // aynı kodu paylaşırsa belirsizlik doğar — engelle (iki sistem çakışmasın).
+    const discountClash = await prisma.discountCode.findUnique({ where: { code } });
+    if (discountClash) {
+      throw new AppError(
+        'CODE_EXISTS_AS_DISCOUNT',
+        'Bu kod aday indirim kodu olarak kullanımda — farklı bir kod seçin',
+        409,
+      );
+    }
 
     const created = await prisma.platformPromoCode.create({
       data: {

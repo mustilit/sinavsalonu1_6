@@ -17,6 +17,7 @@
 
 const mockDiscountCodeCreate = jest.fn();
 const mockDiscountCodeFindUnique = jest.fn();
+const mockPromoFindUnique = jest.fn();
 const mockPrismaQueryRaw = jest.fn();
 
 jest.mock('../../../src/infrastructure/database/prisma', () => ({
@@ -24,6 +25,9 @@ jest.mock('../../../src/infrastructure/database/prisma', () => ({
     discountCode: {
       create: (...args: any[]) => mockDiscountCodeCreate(...args),
       findUnique: (...args: any[]) => mockDiscountCodeFindUnique(...args),
+    },
+    platformPromoCode: {
+      findUnique: (...args: any[]) => mockPromoFindUnique(...args),
     },
     $queryRaw: (...args: any[]) => mockPrismaQueryRaw(...args),
   },
@@ -54,6 +58,7 @@ describe('CreateDiscountCodeUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockDiscountCodeFindUnique.mockResolvedValue(null); // kod yok
+    mockPromoFindUnique.mockResolvedValue(null); // platform promo çakışması yok
     mockPrismaQueryRaw.mockResolvedValue([{ maxDiscountPercent: 50 }]);
     mockDiscountCodeCreate.mockResolvedValue({
       id: 'disc-1',
@@ -145,6 +150,35 @@ describe('CreateDiscountCodeUseCase', () => {
     const uc = new CreateDiscountCodeUseCase(userRepo as any, makeAuditRepo() as any);
     // ADMIN 75% girebilir — hata fırlatmamalı
     await expect(uc.execute('admin-1', { ...BASE_INPUT, percentOff: 75 })).resolves.toBeDefined();
+  });
+
+  it('ADMIN oluşturduğunda kod GLOBAL: createdById=null', async () => {
+    const userRepo = makeUserRepo(makeEducator({ role: 'ADMIN' }));
+    const uc = new CreateDiscountCodeUseCase(userRepo as any, makeAuditRepo() as any);
+    await uc.execute('admin-1', BASE_INPUT);
+    expect(mockDiscountCodeCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ createdById: null }) }),
+    );
+  });
+
+  it('EDUCATOR oluşturduğunda kod kendine bağlı: createdById=educatorId', async () => {
+    const userRepo = makeUserRepo(makeEducator());
+    const uc = new CreateDiscountCodeUseCase(userRepo as any, makeAuditRepo() as any);
+    await uc.execute('edu-1', BASE_INPUT);
+    expect(mockDiscountCodeCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ createdById: 'edu-1' }) }),
+    );
+  });
+
+  it('kod platform promo kodu olarak varsa → CODE_EXISTS_AS_PROMO (çakışma engeli)', async () => {
+    mockPromoFindUnique.mockResolvedValue({ id: 'promo-1', code: 'SAVE20' });
+    const userRepo = makeUserRepo(makeEducator({ role: 'ADMIN' }));
+    const uc = new CreateDiscountCodeUseCase(userRepo as any, makeAuditRepo() as any);
+    await expect(uc.execute('admin-1', BASE_INPUT)).rejects.toMatchObject({
+      code: 'CODE_EXISTS_AS_PROMO',
+      status: 409,
+    });
+    expect(mockDiscountCodeCreate).not.toHaveBeenCalled();
   });
 
   it('başarı: kod büyük harfe çevrilir, discountCode.create çağrılır', async () => {

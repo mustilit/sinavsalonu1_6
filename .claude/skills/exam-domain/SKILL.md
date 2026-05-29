@@ -95,11 +95,15 @@ DB yedekleme audit log.
 
 ### DiscountCode
 
-EDUCATOR'ın oluşturduğu indirim kodu. **TestPackage üzerine uygulanır (aday akışı).**
+EDUCATOR veya ADMIN'in oluşturduğu indirim kodu. **TestPackage üzerine uygulanır (aday akışı).**
 
-- `id, code, createdById (educator), percentOff, validFrom, validUntil, maxUses, usedCount, isActive, description`
-- Sahiplik kuralı: `DiscountCode.createdById === TestPackage.educatorId` zorunlu — başka eğiticinin kodu o pakette geçerli değil.
-- Doğrulama: `ValidateDiscountCodeUseCase` aday "Uygula" tıklayınca kodu doğrular (aktiflik, tarih, usage limit, sahiplik). %50 indirim üst sınırı clamp.
+- `id, code, createdById (nullable), percentOff, validFrom, validUntil, maxUses, usedCount, isActive, description`
+- **Kapsam (`createdById` ile belirlenir):**
+  - **Eğitici kodu** → `createdById = educatorId`: yalnızca o eğiticinin paketlerinde geçerli. Sahiplik kuralı `createdById === TestPackage.educatorId`. %50 üst sınır.
+  - **Admin kodu → GLOBAL** → `createdById = null`: **herhangi bir teste/pakete** uygulanır, hiçbir eğiticiye bağlı değil ("herhangi bir teste bağlanır, eğiticiye bağlanmaz"). Admin 1-100 girebilir (üst sınır yok).
+  - `PurchaseUseCase` eşleşmesi: `OR: [{ createdById: test.educatorId }, { createdById: null }]`. `ValidateDiscountCodeUseCase` bununla **birebir hizalı** (null → her pakette kabul; başka eğiticinin kodu → `DISCOUNT_NOT_OWNED`).
+- **Çapraz benzersizlik:** Aynı kod string'i `DiscountCode` VE `PlatformPromoCode` tablolarında **aynı anda olamaz**. Her iki create akışı diğer tabloyu kontrol eder (`CODE_EXISTS_AS_PROMO` / `CODE_EXISTS_AS_DISCOUNT`, 409) — aday indirim kodu ile eğitici canlı-test/reklam promo kodu çakışmaz.
+- Doğrulama: `ValidateDiscountCodeUseCase` aday "Uygula" tıklayınca kodu doğrular (aktiflik, tarih, usage limit, kapsam).
 - usedCount artırma: ayrı endpoint DEĞİL; asıl `PurchaseUseCase` transaction'ı içinde race-safe (`updateMany ... lt: maxUses` + `Purchase.discountCodeId/discountAmount` snapshot). Yarış kontrolünden çıkmaz.
 - Hata kodları: `DISCOUNT_NOT_FOUND/NOT_ACTIVE/NOT_OWNED/OUT_OF_WINDOW/USAGE_EXHAUSTED`.
 

@@ -12,12 +12,16 @@
 
 const mockPromoCreate = jest.fn();
 const mockPromoFindUnique = jest.fn();
+const mockDiscountFindUnique = jest.fn();
 
 jest.mock('../../../src/infrastructure/database/prisma', () => ({
   prisma: {
     platformPromoCode: {
       create: (...args: any[]) => mockPromoCreate(...args),
       findUnique: (...args: any[]) => mockPromoFindUnique(...args),
+    },
+    discountCode: {
+      findUnique: (...args: any[]) => mockDiscountFindUnique(...args),
     },
   },
 }));
@@ -41,6 +45,7 @@ describe('CreatePlatformPromoCodeUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockPromoFindUnique.mockResolvedValue(null);
+    mockDiscountFindUnique.mockResolvedValue(null); // aday indirim kodu çakışması yok
     mockPromoCreate.mockResolvedValue({
       id: 'promo-1',
       code: 'LAUNCH50',
@@ -138,6 +143,16 @@ describe('CreatePlatformPromoCodeUseCase', () => {
       code: 'DUPLICATE_CODE',
       status:409,
     });
+  });
+
+  it('kod aday indirim kodu (DiscountCode) olarak varsa → CODE_EXISTS_AS_DISCOUNT (çakışma engeli)', async () => {
+    mockDiscountFindUnique.mockResolvedValue({ id: 'disc-1', code: 'LAUNCH50' });
+    const uc = new CreatePlatformPromoCodeUseCase();
+    await expect(uc.execute(ADMIN_ID, BASE_INPUT)).rejects.toMatchObject({
+      code: 'CODE_EXISTS_AS_DISCOUNT',
+      status: 409,
+    });
+    expect(mockPromoCreate).not.toHaveBeenCalled();
   });
 
   it('başarı: kod büyük harfe çevrilir, create çağrılır', async () => {
