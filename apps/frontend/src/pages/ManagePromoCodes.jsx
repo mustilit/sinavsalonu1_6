@@ -24,7 +24,33 @@ const SCOPE_LABEL = {
   AD_PACKAGE: "Reklam Paketi",
 };
 
+/**
+ * Standalone sayfa: başlık + panel. Doğrudan /ManagePromoCodes route'undan
+ * erişilebilir (sidebar'da olmasa da). Asıl yönetim UI'ı `PromoCodesPanel`
+ * içinde; bu sayede `MyDiscountCodes` ikinci sekmesinde de yeniden kullanılır.
+ */
 export default function ManagePromoCodes() {
+  return (
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+          <Ticket className="w-8 h-8 text-indigo-600" />
+          Platform Promo Kodları
+        </h1>
+        <p className="text-slate-500 mt-2">
+          Eğiticilerin canlı test ve reklam paketi satın alımında kullanacağı admin-issued promo kodu.
+        </p>
+      </div>
+      <PromoCodesPanel />
+    </div>
+  );
+}
+
+/**
+ * Platform promo kodu yönetim paneli (başlıksız gövde) — hem standalone sayfada
+ * hem `MyDiscountCodes` "Eğitici Promo Kodları" sekmesinde kullanılır.
+ */
+export function PromoCodesPanel() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [filterScope, setFilterScope] = useState("");
@@ -68,20 +94,15 @@ export default function ManagePromoCodes() {
   const items = data?.items ?? [];
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <Ticket className="w-8 h-8 text-indigo-600" />
-            Platform Promo Kodları
-          </h1>
-          <p className="text-slate-500 mt-2">
-            Eğiticilerin canlı test ve reklam paketi satın alımında kullanacağı admin-issued promo kodu.
-          </p>
-        </div>
+    <div>
+      {/* Açıklama + Yeni Kod */}
+      <div className="flex items-start justify-between mb-4 gap-3">
+        <p className="text-sm text-slate-500">
+          Eğiticilerin canlı test ve reklam paketi satın alımında kullanacağı admin-issued promo kodu.
+        </p>
         <Button
           onClick={() => setShowForm(!showForm)}
-          className="bg-indigo-600 hover:bg-indigo-700"
+          className="bg-indigo-600 hover:bg-indigo-700 flex-shrink-0"
         >
           <Plus className="w-4 h-4 mr-2" />
           Yeni Kod

@@ -691,6 +691,7 @@
   },
   "myDiscountCodes": {
     "newCode": "Nuevo código",
+    "tabs": { "candidateCodes": "Códigos de descuento de candidatos", "educatorPromos": "Códigos promocionales de educadores" },
     "filter": {
       "codeLabel": "Código",
       "codePlaceholder": "Buscar código…",

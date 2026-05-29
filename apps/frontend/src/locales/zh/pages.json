@@ -688,6 +688,7 @@
   },
   "myDiscountCodes": {
     "newCode": "新代码",
+    "tabs": { "candidateCodes": "考生折扣码", "educatorPromos": "教育者促销码" },
     "filter": {
       "codeLabel": "代码",
       "codePlaceholder": "搜索代码…",

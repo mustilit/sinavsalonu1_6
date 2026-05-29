@@ -688,6 +688,7 @@
   },
   "myDiscountCodes": {
     "newCode": "Yeni Kod",
+    "tabs": { "candidateCodes": "Aday İndirim Kodları", "educatorPromos": "Eğitici Promo Kodları" },
     "filter": {
       "codeLabel": "Kod",
       "codePlaceholder": "Kod ara…",

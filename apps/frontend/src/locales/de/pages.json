@@ -688,6 +688,7 @@
   },
   "myDiscountCodes": {
     "newCode": "Neuer Code",
+    "tabs": { "candidateCodes": "Rabattcodes für Kandidaten", "educatorPromos": "Promo-Codes für Trainer" },
     "filter": {
       "codeLabel": "Code",
       "codePlaceholder": "Code suchen…",

@@ -688,6 +688,7 @@
   },
   "myDiscountCodes": {
     "newCode": "New Code",
+    "tabs": { "candidateCodes": "Candidate Discount Codes", "educatorPromos": "Educator Promo Codes" },
     "filter": {
       "codeLabel": "Code",
       "codePlaceholder": "Search code…",

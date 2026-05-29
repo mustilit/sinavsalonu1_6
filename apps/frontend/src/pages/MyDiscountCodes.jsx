@@ -20,6 +20,9 @@ import {
 import { toast } from "sonner";
 import { format, parseISO, startOfDay, endOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
+// Sprint 15 — Admin "Eğitici Promo Kodları" sekmesi (PlatformPromoCode CRUD).
+// Standalone ManagePromoCodes sayfasının gövdesi; burada ikinci sekme olarak gömülür.
+import { PromoCodesPanel } from "./ManagePromoCodes";
 
 /**
  * MyDiscountCodes (İndirim Kodlarım) sayfası — eğiticinin kendi test
@@ -30,6 +33,9 @@ export default function MyDiscountCodes() {
   const { t } = useTranslation(["pages"]);
   const { user } = useAuth();
   const isAdmin = (user?.role || "").toUpperCase() === "ADMIN";
+  // Sekme: 'discount' (aday indirim kodları) | 'promo' (admin → eğitici platform promo).
+  // 'promo' sekmesi yalnızca admin'e gösterilir.
+  const [activeTab, setActiveTab] = useState("discount");
   // Yeni kod oluşturma diyaloğunun açık/kapalı durumu
   const [showDialog, setShowDialog] = useState(false);
   // Yeni kod formu alanları; varsayılan değerler: %10 indirim, 100 kullanım hakkı
@@ -178,12 +184,49 @@ export default function MyDiscountCodes() {
             {t("pages:titles.myDiscountCodesDesc")}
           </p>
         </div>
-        <Button onClick={() => setShowDialog(true)} className="bg-indigo-600 hover:bg-indigo-700">
-          <Plus className="w-4 h-4 mr-2" />
-          {t("pages:myDiscountCodes.newCode")}
-        </Button>
+        {/* "Yeni Kod" butonu yalnızca aday indirim kodu sekmesinde; promo sekmesinin
+            kendi "Yeni Kod" butonu PromoCodesPanel içindedir. */}
+        {(!isAdmin || activeTab === "discount") && (
+          <Button onClick={() => setShowDialog(true)} className="bg-indigo-600 hover:bg-indigo-700">
+            <Plus className="w-4 h-4 mr-2" />
+            {t("pages:myDiscountCodes.newCode")}
+          </Button>
+        )}
       </div>
 
+      {/* Sekmeler — yalnızca admin: aday indirim kodları + eğitici platform promo kodları */}
+      {isAdmin && (
+        <div className="flex gap-1 mb-6 border-b border-slate-200">
+          <button
+            type="button"
+            onClick={() => setActiveTab("discount")}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors min-h-10 ${
+              activeTab === "discount"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            {t("pages:myDiscountCodes.tabs.candidateCodes")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("promo")}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors min-h-10 ${
+              activeTab === "promo"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            {t("pages:myDiscountCodes.tabs.educatorPromos")}
+          </button>
+        </div>
+      )}
+
+      {/* ─── Eğitici Platform Promo Kodları sekmesi (admin) ─── */}
+      {isAdmin && activeTab === "promo" && <PromoCodesPanel />}
+
+      {/* ─── Aday İndirim Kodları sekmesi (varsayılan) ─── */}
+      {(!isAdmin || activeTab === "discount") && (<>
       {/* Filtre Paneli */}
       <Card className="mb-4">
         <CardContent className="p-4">
@@ -359,6 +402,7 @@ export default function MyDiscountCodes() {
           )}
         </CardContent>
       </Card>
+      </>)}
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent>
