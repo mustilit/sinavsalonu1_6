@@ -364,7 +364,7 @@ export default function EducatorSettings() {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-8">
+          <TabsList>
             <TabsTrigger value="profile">{t("pages:educatorSettings.tabs.profile")}</TabsTrigger>
             <TabsTrigger value="verification">{t("pages:educatorSettings.tabs.verification")}</TabsTrigger>
             <TabsTrigger value="contact">{t("pages:educatorSettings.tabs.contact")}</TabsTrigger>

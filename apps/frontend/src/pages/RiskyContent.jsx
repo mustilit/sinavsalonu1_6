@@ -55,13 +55,9 @@ export default function RiskyContent() {
       </header>
 
       <Tabs value={active} onValueChange={handleChange}>
-        <TabsList className="h-auto flex-wrap gap-1 bg-slate-100 dark:bg-gray-800 p-1">
+        <TabsList>
           {TABS.map(({ value, label, icon: Icon }) => (
-            <TabsTrigger
-              key={value}
-              value={value}
-              className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-900 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-300"
-            >
+            <TabsTrigger key={value} value={value}>
               <Icon className="w-4 h-4" aria-hidden="true" />
               {label}
             </TabsTrigger>

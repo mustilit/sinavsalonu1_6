@@ -52,16 +52,9 @@ export default function EmailManagement() {
       </div>
 
       <Tabs value={active} onValueChange={setActive}>
-        <TabsList
-          className="flex h-auto flex-wrap gap-1 bg-gray-100 dark:bg-gray-800 p-1 w-full justify-start"
-          aria-label="Mail yönetimi sekmeleri"
-        >
+        <TabsList aria-label="Mail yönetimi sekmeleri">
           {TABS.map(({ value, label, icon: Icon }) => (
-            <TabsTrigger
-              key={value}
-              value={value}
-              className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700"
-            >
+            <TabsTrigger key={value} value={value}>
               <Icon className="w-4 h-4" aria-hidden="true" />
               <span>{label}</span>
             </TabsTrigger>

@@ -289,7 +289,7 @@ export default function ProfileSettings() {
         </div>
 
         <Tabs defaultValue="contact" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsList>
             <TabsTrigger value="contact">{t("pages:profileSettings.tabs.contact")}</TabsTrigger>
             <TabsTrigger value="notifications">{t("pages:profileSettings.tabs.notifications")}</TabsTrigger>
             <TabsTrigger value="exams">{t("pages:profileSettings.tabs.exams")}</TabsTrigger>

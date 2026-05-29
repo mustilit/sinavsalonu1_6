@@ -5,11 +5,14 @@ import { cn } from "@/lib/utils"
 
 const Tabs = TabsPrimitive.Root
 
+// Underline tab stili (Sınav Salonu standardı — MyDiscountCodes referansı):
+// alt çizgili sekme barı, aktif sekme indigo border + indigo metin. Pill/segmented
+// görünüm yerine tek tutarlı görünüm. Dark varyantlar token regresyonunu önler.
 const TabsList = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
+      "flex flex-wrap gap-1 border-b border-slate-200 dark:border-gray-800 mb-6",
       className
     )}
     {...props} />
@@ -20,7 +23,7 @@ const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow",
+      "inline-flex items-center gap-2 whitespace-nowrap border-b-2 border-transparent -mb-px px-4 py-2.5 min-h-10 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-indigo-600 data-[state=active]:text-indigo-600 dark:text-gray-400 dark:hover:text-gray-100 dark:data-[state=active]:text-indigo-400",
       className
     )}
     {...props} />

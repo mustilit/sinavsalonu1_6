@@ -375,16 +375,16 @@ export default function MyLiveSessions() {
 
       {/* Filtre sekmeleri — pagination cursor'ı statusFilter ile resetlenir
           (queryKey ['myLiveSessions', statusFilter]). */}
-      <div className="flex items-center gap-1 mb-5 border-b border-slate-200">
+      <div className="flex flex-wrap items-center gap-1 mb-6 border-b border-slate-200 dark:border-gray-800">
         {STATUS_FILTERS.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => setStatusFilter(s)}
-            className={`px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            className={`inline-flex items-center gap-2 px-4 py-2.5 min-h-10 text-sm font-medium border-b-2 -mb-px transition-colors ${
               statusFilter === s
-                ? "border-blue-600 text-blue-700"
-                : "border-transparent text-slate-500 hover:text-slate-700"
+                ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                : "border-transparent text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-100"
             }`}
           >
             {t(`pages:myLiveSessions.filters.${s.toLowerCase()}`)}
