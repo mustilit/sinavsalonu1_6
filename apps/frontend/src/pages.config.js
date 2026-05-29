@@ -123,6 +123,8 @@ const Unsubscribe = lazy(() => import('./pages/Unsubscribe'));
 const LegalDocument = lazy(() => import('./pages/LegalDocument'));
 // Sprint 15 — Admin platform promo kodu yönetimi
 const ManagePromoCodes = lazy(() => import('./pages/ManagePromoCodes'));
+// Sprint 16 — Admin yasal sözleşme yönetimi (düzenle / versiyonla / aktif yap)
+const ManageContracts = lazy(() => import('./pages/ManageContracts'));
 const EmailManagement = lazy(() => import('./pages/EmailManagement'));
 // İçerik Moderasyonu
 const ModerationQueue = lazy(() => import('./pages/ModerationQueue'));
@@ -208,6 +210,7 @@ export const PAGES = {
     "Unsubscribe": Unsubscribe,
     "LegalDocument": LegalDocument,
     "ManagePromoCodes": ManagePromoCodes,
+    "ManageContracts": ManageContracts,
     "EmailManagement": EmailManagement,
     "ModerationQueue": ModerationQueue,
     "RiskyEducators": RiskyEducators,

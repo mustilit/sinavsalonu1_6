@@ -1,4 +1,5 @@
 import type { IContractRepository } from '../../../domain/interfaces/IContractRepository';
+import type { ContractType } from '../../../domain/types';
 import { AppError } from '../../errors/AppError';
 
 /**
@@ -24,16 +25,21 @@ export class CreateContractUseCase {
   async execute(input: { type: string; version: number; title: string; content: string; isActive?: boolean }) {
     if (!input.title?.trim()) throw new AppError('INVALID_INPUT', 'Title required', 400);
     if (!input.content?.trim()) throw new AppError('INVALID_INPUT', 'Content required', 400);
-    if (input.type !== 'CANDIDATE' && input.type !== 'EDUCATOR') throw new AppError('INVALID_INPUT', 'Type must be CANDIDATE or EDUCATOR', 400);
+    // Sprint 14 sonrası 4 tip: CANDIDATE / EDUCATOR / PRIVACY / DISTANCE_SALE
+    const VALID_TYPES = ['CANDIDATE', 'EDUCATOR', 'PRIVACY', 'DISTANCE_SALE'] as const;
+    if (!VALID_TYPES.includes(input.type as (typeof VALID_TYPES)[number])) {
+      throw new AppError('INVALID_INPUT', 'Type must be CANDIDATE, EDUCATOR, PRIVACY or DISTANCE_SALE', 400);
+    }
     if (typeof input.version !== 'number' || input.version < 1) throw new AppError('INVALID_INPUT', 'Version must be >= 1', 400);
 
+    const type = input.type as ContractType;
     // Aynı tip için versiyon çakışması kontrolü
-    const list = await this.contractRepo.list(input.type as 'CANDIDATE' | 'EDUCATOR');
+    const list = await this.contractRepo.list(type);
     const versionExists = list.some((c) => c.version === input.version);
     if (versionExists) throw new AppError('VERSION_EXISTS', `Contract version ${input.version} already exists for type ${input.type}`, 409);
 
     return this.contractRepo.create({
-      type: input.type as 'CANDIDATE' | 'EDUCATOR',
+      type,
       version: input.version,
       title: input.title.trim(),
       content: input.content.trim(),

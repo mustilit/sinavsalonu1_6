@@ -1635,6 +1635,32 @@ export const contracts = {
     const { data } = await api.post('/contracts/accept', { contractId });
     return data; // { acceptedAt }
   },
+
+  // ── Admin (ManageContracts sayfası) — ADMIN rolü ──
+  /** Admin: tüm sözleşmeleri listele (tip filtresi opsiyonel; verilmezse 4 tip de gelir). */
+  adminList: async (type) => {
+    const qs = type ? `?type=${encodeURIComponent(type)}` : '';
+    const { data } = await api.get(`/admin/contracts${qs}`);
+    return Array.isArray(data) ? data : (data?.items ?? []);
+  },
+  /**
+   * Admin: yeni sözleşme versiyonu oluştur (varsayılan isActive=false).
+   * @param {{type:string, version:number, title:string, content:string, isActive?:boolean}} input
+   */
+  adminCreate: async (input) => {
+    const { data } = await api.post('/admin/contracts', input);
+    return data;
+  },
+  /** Admin: sözleşmeyi güncelle (kısmi — title/content/isActive). */
+  adminUpdate: async (id, patch) => {
+    const { data } = await api.patch(`/admin/contracts/${id}`, patch);
+    return data;
+  },
+  /** Admin: sözleşmeyi tipi için aktif versiyon yap (diğer versiyonlar pasifleşir). */
+  adminSetActive: async (id) => {
+    const { data } = await api.post(`/admin/contracts/${id}/set-active`, {});
+    return data;
+  },
 };
 
 export default api;

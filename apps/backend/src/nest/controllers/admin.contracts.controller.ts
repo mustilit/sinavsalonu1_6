@@ -30,7 +30,10 @@ export class AdminContractsController {
   @ApiOkResponse({ description: 'List of contracts' })
   @ApiForbiddenResponse({ description: 'Forbidden' })
   async list(@Query('type') type?: string) {
-    const t = type === 'CANDIDATE' || type === 'EDUCATOR' ? type : undefined;
+    // 4 ContractType: CANDIDATE / EDUCATOR / PRIVACY / DISTANCE_SALE.
+    // Geçersiz/boş type → filtresiz tüm sözleşmeler.
+    const VALID = ['CANDIDATE', 'EDUCATOR', 'PRIVACY', 'DISTANCE_SALE'];
+    const t = type && VALID.includes(type) ? (type as any) : undefined;
     return this.listContracts.execute(t);
   }
 

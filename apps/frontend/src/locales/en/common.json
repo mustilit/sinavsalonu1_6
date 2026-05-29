@@ -115,6 +115,7 @@
       "packagesManagementDesc": "Live test capacity packages and educator ad packages",
       "emailManagement": "Email Management",
       "riskyContent": "Risky Content",
+      "contracts": "Contracts",
       "backup": "Backup"
     },
     "collapseAria": "Collapse sidebar",

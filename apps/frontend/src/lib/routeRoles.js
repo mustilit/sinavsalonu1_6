@@ -87,6 +87,8 @@ export const PAGE_ROLES = {
   ManageExamTypes: [ROLES.ADMIN],
   // Sprint 15 — admin platform promo kodu yönetimi
   ManagePromoCodes: [ROLES.ADMIN],
+  // Sprint 16 — admin yasal sözleşme yönetimi
+  ManageContracts: [ROLES.ADMIN],
   ManageTopics: [ROLES.ADMIN],
   ManageUsers: [ROLES.ADMIN],
   ManageTests: [ROLES.ADMIN],

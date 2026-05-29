@@ -35,6 +35,7 @@ import {
   Target,
   Database,
   History,
+  FileText,
 } from "lucide-react";
 
 /**
@@ -132,6 +133,7 @@ export default function Sidebar({ user, currentPage, collapsed = false }) {
     { name: t("sidebar.admin.packagesManagement"), page: "ManagePackages", icon: Megaphone },
     { name: t("sidebar.admin.emailManagement"), page: "EmailManagement", icon: Mail },
     { name: t("sidebar.admin.riskyContent"), page: "RiskyContent", icon: ShieldAlert },
+    { name: t("sidebar.admin.contracts"), page: "ManageContracts", icon: FileText },
     { name: t("sidebar.admin.backup"), page: "BackupManagement", icon: Database },
   ];
 

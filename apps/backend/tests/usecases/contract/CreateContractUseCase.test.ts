@@ -4,7 +4,7 @@
  * Doğrulanan davranışlar:
  * - Boş başlık → INVALID_INPUT
  * - Boş içerik → INVALID_INPUT
- * - Geçersiz tip → INVALID_INPUT (sadece CANDIDATE veya EDUCATOR)
+ * - Geçersiz tip → INVALID_INPUT (4 ContractType dışı: CANDIDATE/EDUCATOR/PRIVACY/DISTANCE_SALE)
  * - version < 1 → INVALID_INPUT
  * - Aynı versiyon varsa VERSION_EXISTS
  * - Başarı: sözleşme oluşturulur, isActive varsayılan false
@@ -90,5 +90,19 @@ describe('CreateContractUseCase', () => {
     const repo = makeContractRepo([]);
     const uc = new CreateContractUseCase(repo as any);
     await expect(uc.execute({ ...VALID_INPUT, type: 'EDUCATOR' })).resolves.toBeDefined();
+  });
+
+  it('PRIVACY tipi de kabul edilir (Sprint 14)', async () => {
+    const repo = makeContractRepo([]);
+    const uc = new CreateContractUseCase(repo as any);
+    await expect(uc.execute({ ...VALID_INPUT, type: 'PRIVACY' })).resolves.toBeDefined();
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'PRIVACY' }));
+  });
+
+  it('DISTANCE_SALE tipi de kabul edilir (Sprint 14)', async () => {
+    const repo = makeContractRepo([]);
+    const uc = new CreateContractUseCase(repo as any);
+    await expect(uc.execute({ ...VALID_INPUT, type: 'DISTANCE_SALE' })).resolves.toBeDefined();
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'DISTANCE_SALE' }));
   });
 });
