@@ -4,6 +4,25 @@ Bu projede yapılan tüm önemli değişiklikler bu dosyada belgelenir.
 
 Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) ve [Semantic Versioning](https://semver.org/lang/tr/) standartlarına uygundur.
 
+## [1.6.0](https://github.com/mustilit/sinavsalonu1_6/compare/v1.5.0...v1.6.0) (2026-05-29)
+
+### ✨ Özellikler
+
+* **admin-contracts:** yasal sözleşme yönetim sayfası (frontend yoktu) ([a440906](https://github.com/mustilit/sinavsalonu1_6/commit/a440906b547a22cfd51cd4a96385e047c6c8cd58))
+* **admin:** Sınav Türleri + Soru Konuları → "İçerik Yönetimi" tek sayfa 2 sekme ([f33746a](https://github.com/mustilit/sinavsalonu1_6/commit/f33746ad5d25d9065f22a2afdd039aa55fda08d6))
+* **discount-codes:** admin platform promo yönetimini İndirim Kodları'na 2. sekme yap ([402c518](https://github.com/mustilit/sinavsalonu1_6/commit/402c5181bc96b098079db558742d4a136e780adc))
+* **discount:** admin indirim kodu global olsun + DiscountCode/PlatformPromoCode çakışma engeli ([6ccf0f3](https://github.com/mustilit/sinavsalonu1_6/commit/6ccf0f3d6b42e4d6bbefedd59d2ab4c31ee9b6a7))
+* **register:** görünür rol seçici — sessiz aday-varsayımı belirsizliğini gider ([10eddd9](https://github.com/mustilit/sinavsalonu1_6/commit/10eddd99d6d15aa65c1828096a4c36b587555953))
+* **register:** sözleşme onayını popup'a taşı — mount fetch dead-end'i kaldır ([d49ae31](https://github.com/mustilit/sinavsalonu1_6/commit/d49ae315ee414ac75a3fccf3d70bddbe9bf804d0))
+
+### 🐛 Düzeltmeler
+
+* **admin-contracts:** use case'lere explicit @Inject — 500 (undefined.execute) gider ([078ce41](https://github.com/mustilit/sinavsalonu1_6/commit/078ce4161f43348e06a259b353541f59d9ae8aa1))
+
+### 📚 Dokümantasyon
+
+* **legal:** 4 sözleşme taslağını kapsamlı hale getir + DB'ye re-import ([3e81d10](https://github.com/mustilit/sinavsalonu1_6/commit/3e81d10ff5be9f7526799737a9a946533357eb2b))
+
 ## [1.5.0](https://github.com/mustilit/sinavsalonu1_6/compare/v1.4.0...v1.5.0) (2026-05-29)
 
 ### ✨ Özellikler
