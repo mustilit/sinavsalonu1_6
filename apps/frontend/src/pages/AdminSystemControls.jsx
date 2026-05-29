@@ -554,18 +554,19 @@ export default function AdminSystemControls() {
         )}
       </div>
 
-      {/* Sekme bar'ı */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+      {/* Sekme bar'ı — standart underline tab stili (tabs.jsx ile aynı).
+          mb yok: parent `space-y-6` dikey aralığı zaten veriyor. */}
+      <div className="flex flex-wrap gap-1 border-b border-slate-200 dark:border-gray-800">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`inline-flex items-center gap-2 px-4 py-2.5 min-h-10 text-sm font-medium border-b-2 -mb-px transition-colors ${
                 activeTab === tab.id
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                  : "border-transparent text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-gray-100"
               }`}
             >
               <Icon className="w-4 h-4" />
