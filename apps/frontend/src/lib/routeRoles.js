@@ -145,19 +145,31 @@ export function normalizeStatus(status) {
 }
 
 /**
- * Reddedilen eğiticinin (REJECTED) yalnızca girebileceği sayfalar.
- * Amaç: Hatasını düzeltip yeniden başvurabilsin, başka bir aksiyon (test/paket/canlı
- * oturum oluşturma, satış görüntüleme vb.) yapamasın. Sidebar buna göre filtrelenir,
- * doğrudan URL girişinde de bu izin matrisi tutar.
+ * Onay aşamasındaki eğitici statüleri (REJECTED veya henüz onaylanmamış).
+ * Bu statülerde eğitici sadece EducatorSettings sayfasına erişebilir; başka
+ * hiçbir aksiyon (test/paket/canlı oturum oluşturma, satış görüntüleme,
+ * mail tercihleri vb.) yapamaz.
  */
-export const REJECTED_EDUCATOR_ALLOWED_PAGES = new Set([
-  'EducatorSettings',     // Red bildirimi + profil düzenle + Yeniden Başvur
-  'EmailPreferences',     // Mail tercihleri (hesap kontrolü)
-  'MyModerationStatus',   // Hesap durumu görünür kalsın
+const ONBOARDING_EDUCATOR_STATUSES = new Set([
+  'REJECTED',
+  'PENDING_EDUCATOR_APPROVAL',
 ]);
 
+/**
+ * Onay aşamasındaki eğiticinin yalnızca girebileceği sayfa(lar).
+ * EducatorSettings = red bildirimi + profil düzenle + "Yeniden Başvur" akışı.
+ * Diğer her şey (Dashboard, MyTests, Settings, MyModerationStatus, mail
+ * tercihleri…) onay sonrasına bırakılır.
+ */
+export const ONBOARDING_EDUCATOR_ALLOWED_PAGES = new Set([
+  'EducatorSettings',
+]);
+
+/** Geriye dönük uyumluluk için eski ad — REJECTED kapsamını korur. */
+export const REJECTED_EDUCATOR_ALLOWED_PAGES = ONBOARDING_EDUCATOR_ALLOWED_PAGES;
+
 /** Aktif bir eğitici hesabı sayılan statüler */
-const ACTIVE_EDUCATOR_STATUSES = new Set(['ACTIVE', 'APPROVED', 'PENDING_EDUCATOR_APPROVAL']);
+const ACTIVE_EDUCATOR_STATUSES = new Set(['ACTIVE', 'APPROVED']);
 
 /**
  * Kullanıcı bu sayfaya erişebilir mi?
@@ -171,9 +183,10 @@ export function canAccessPage(pageName, user) {
   const r = normalizeRole(user.role);
   const status = normalizeStatus(user.status);
 
-  // REJECTED eğitici: sadece beyaz liste sayfalarına girebilir
-  if (r === ROLES.EDUCATOR && status === 'REJECTED') {
-    return REJECTED_EDUCATOR_ALLOWED_PAGES.has(pageName);
+  // Onay aşamasındaki eğitici (REJECTED veya PENDING_EDUCATOR_APPROVAL):
+  // SADECE EducatorSettings — başka hiçbir sayfa.
+  if (r === ROLES.EDUCATOR && ONBOARDING_EDUCATOR_STATUSES.has(status)) {
+    return ONBOARDING_EDUCATOR_ALLOWED_PAGES.has(pageName);
   }
 
   if (r === ROLES.ADMIN) return true;
@@ -191,11 +204,13 @@ export function canAccessPage(pageName, user) {
 export function getHomeForRole(role, user) {
   const r = normalizeRole(role);
   const status = normalizeStatus(user?.status);
-  // REJECTED eğitici doğrudan ayarlar sayfasına gitsin (red bildirimi + düzenleme formu)
-  if (r === ROLES.EDUCATOR && status === 'REJECTED') return 'EducatorSettings';
+  // Onay aşamasındaki eğitici doğrudan EducatorSettings'e iner
+  if (r === ROLES.EDUCATOR && ONBOARDING_EDUCATOR_STATUSES.has(status)) {
+    return 'EducatorSettings';
+  }
   if (r === ROLES.ADMIN) return 'AdminDashboard';
   if (r === ROLES.EDUCATOR) {
-    // Onay bekleyenler de Settings'e — Dashboard'u görmesinler
+    // Bilinmeyen statüler de güvenli tarafta — Settings'e
     if (status && !ACTIVE_EDUCATOR_STATUSES.has(status)) return 'EducatorSettings';
     return 'EducatorDashboard';
   }
@@ -214,6 +229,17 @@ export function isRejectedEducator(user) {
   return (
     normalizeRole(user?.role) === ROLES.EDUCATOR &&
     normalizeStatus(user?.status) === 'REJECTED'
+  );
+}
+
+/**
+ * Eğitici onay aşamasında mı? (REJECTED veya henüz onaylanmamış)
+ * UI/Sidebar filtreleme ve "tek sayfaya kilitleme" mantığı için.
+ */
+export function isOnboardingEducator(user) {
+  return (
+    normalizeRole(user?.role) === ROLES.EDUCATOR &&
+    ONBOARDING_EDUCATOR_STATUSES.has(normalizeStatus(user?.status))
   );
 }
 
