@@ -399,4 +399,9 @@ Her değişiklik için:
 3. Gereken env değişkeni varsa belirt.
 4. `cd apps/backend && npm test` koştur, sonucu raporla.
 
-Skill'ler: `nestjs-module`, `prisma-schema`, `pagination`, `full-text-search`, `api-contract`, `exam-domain`, `observability` (audit log + structured logging).
+Skill'ler:
+- Mimari iskelet & şema: `nestjs-module`, `prisma-schema`, `migration-planner`, `api-contract`, `exam-domain`
+- Performans & arama: `pagination`, `full-text-search`
+- Para akışı & ödeme: `payment-domain` (Stripe + Iyzico + webhook imza), `purchase-flow` (uçtan uca CANDIDATE→TestPackage akışı), `idempotency` (webhook + para akışı çift işlem koruması)
+- Güvenlik & hata: `security-hardening` (AES-256-GCM secret + audit log + KVKK), `error-handling` (HttpExceptionFilter + Prisma error mapping + 500 önleme)
+- Operasyon: `observability` (audit log + circuit breaker + SLO + structured logging)

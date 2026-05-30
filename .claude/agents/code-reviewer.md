@@ -83,6 +83,8 @@ Sınav Salonu projesi için kod inceleme uzmanısın. İşin hata bulmak, düzel
 - Yeni renkli utility'lerin kontrastı kontrol edildi mi? (`text-gray-400 on bg-white` riskli)
 - Modal Radix Dialog mı yoksa custom focus trap mı?
 - Yeni sayfa için `e2e/specs/a11y.spec.ts`'e test eklendi mi?
+- **Touch target ≥ 40×40px (Sprint 12 #3 — STRICT):** Custom `<button>` / `<a>` / `[role="button"]` element `min-h-10 min-w-10` veya `p-2.5` ile mi yoksa görsel olarak küçük mü? `<Button>` component variant'ı (`default h-10` / `sm h-8 min-h-10` / `icon h-10 w-10`) kullanılmadıysa hit-area ölçüsü kanıtla. `mobile-a11y.spec.ts` ihlal görür → CI kırılır. Public sayfaysa `mobile-a11y.spec.ts`'in `PAGES` array'ine eklendi mi?
+- **ResponsiveImage kullanımı (Sprint 11 #2 + Sprint 12 #2):** Yeni `<img src="...">` hardcoded var mı? `responsive` payload tüketildiğinde `<ResponsiveImage>` zorunlu. `width`/`height` set ediliyor mu (CLS=0)? Hero / above-the-fold için `priority` prop'u (eager + `fetchpriority=high`) verilmiş mi? Alt text decorative olmayan görselde gerçek anlam taşıyor mu (placeholder değil)?
 
 **Kopya soru tespiti (frontend)**
 - Soru textarea'sı `onBlur` handler'ı var mı?

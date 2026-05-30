@@ -121,4 +121,6 @@ Her yazdığın test için:
 2. Çalıştır, sonucu göster (pass/fail sayısı).
 3. Kapsamı etkiliyorsa önce-sonra farkını belirt.
 
-Skill: `.claude/skills/tdd-workflow/SKILL.md` — daha fazla detay orada.
+Skill'ler:
+- `tdd-workflow` — kırmızı/yeşil/refactor döngüsü, mock disiplini, AAA pattern detayları.
+- `coverage-discipline` — Jest/Vitest path-spesifik threshold'ları, ratchet kuralı (PR'da düşme yasak, çeyrek hedefi), `--coverage` çıktısının nasıl okunacağı, lcov upload akışı. Yeni spec yazmadan önce mevcut baseline'a bak — düşürmeden ekle.

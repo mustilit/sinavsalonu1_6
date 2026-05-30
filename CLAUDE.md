@@ -299,6 +299,7 @@ Her satın alma türünde indirim kodu girişi tam-akış: backend doğrulama + 
 | Task tipi | Agent |
 |---|---|
 | Kod inceleme / PR review | `code-reviewer` |
+| Güvenlik denetimi (OWASP / yetki sızıntısı / PII / secret leakage / audit log eksikliği / idempotency açıkları / multi-tenant izolasyon) | `security-auditor` |
 | Unit/integration test | `test-writer` |
 | Playwright e2e test (a11y dahil) | `e2e-writer` |
 | Yeni sayfa, form, UI bileşeni | `ui-builder` |
@@ -316,6 +317,11 @@ Her satın alma türünde indirim kodu girişi tam-akış: backend doğrulama + 
 @.claude/skills/pagination/SKILL.md             <!-- cursor pagination pattern -->
 @.claude/skills/full-text-search/SKILL.md       <!-- tsvector + GIN -->
 @.claude/skills/accessibility/SKILL.md          <!-- axe-core + WCAG + mobil viewport + touch target -->
+@.claude/skills/i18n/SKILL.md                   <!-- 5 dil (tr/en/es/zh/de) senkron çeviri disiplini -->
 @.claude/skills/email-traffic/SKILL.md          <!-- 3 kuyruk + provider fallback + kill switch + SuppressedEmail -->
+@.claude/skills/payment-domain/SKILL.md         <!-- Stripe + Iyzico + webhook imza + replay koruması -->
+@.claude/skills/idempotency/SKILL.md            <!-- Idempotency-Key interceptor + webhook + para akışı çift işlem koruması -->
+@.claude/skills/error-handling/SKILL.md         <!-- 500 önleme + HttpExceptionFilter + Prisma error mapping + ApiError -->
+@.claude/skills/security-hardening/SKILL.md     <!-- AES-256-GCM secret encryption + audit log + KVKK + secret rotation -->
 @.claude/skills/observability/SKILL.md          <!-- SLO + circuit breaker + graceful shutdown + Prometheus -->
 @.claude/skills/react-component/SKILL.md        <!-- ResponsiveImage + PWA + lazy + dark mode -->
