@@ -383,6 +383,32 @@ model UserPreference {
   @@map("user_preferences")
 }
 
+// --- Doğrulanmamış Kayıt Bekleme Tablosu ---
+// Kullanıcı email doğrulama tamamlayana kadar User tablosuna yazılmaz.
+// Doğrulama linkine tıklanınca buradan User'a promote edilir.
+// Aynı email/username ile yeni deneme: eski kayıt silinip yeni token üretilir.
+model PendingRegistration {
+  id                        String    @id @default(uuid())
+  email                     String    @unique
+  username                  String    @unique
+  passwordHash              String
+  firstName                 String?
+  lastName                  String?
+  role                      UserRole  @default(CANDIDATE)
+  acceptedTermsContractId   String?
+  acceptedPrivacyContractId String?
+  verificationToken         String    @unique
+  verificationTokenExpiresAt DateTime
+  ip                        String?
+  userAgent                 String?
+  tenantId                  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([verificationTokenExpiresAt])
+  @@map("pending_registrations")
+}
+
 model ExamType {
   id          String          @id @default(uuid())
   name        String

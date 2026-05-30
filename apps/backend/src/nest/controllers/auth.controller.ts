@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Get, Req, HttpException, HttpStatus, UseGuards, HttpCode, Query } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { Throttle } from '@nestjs/throttler';
 import { RegisterUseCase } from '../../application/use-cases/auth/RegisterUseCase';
 import { RegisterEducatorUseCase } from '../../application/use-cases/auth/RegisterEducatorUseCase';
@@ -22,6 +23,10 @@ import { LoginBruteforceGuard } from '../guards/login-bruteforce.guard';
 import { delKey } from '../common/rate-limit';
 import { prisma } from '../../infrastructure/database/prisma';
 import { auditContextFromRequest } from '../../infrastructure/audit/AuditLogger';
+import { PrismaPendingRegistrationRepository } from '../../infrastructure/repositories/PrismaPendingRegistrationRepository';
+import { PrismaContractRepository } from '../../infrastructure/repositories/PrismaContractRepository';
+import { PrismaContractAcceptanceRepository } from '../../infrastructure/repositories/PrismaContractAcceptanceRepository';
+import { PrismaAuditLogRepository } from '../../infrastructure/repositories/PrismaAuditLogRepository';
 
 /**
  * Kimlik doğrulama işlemlerini yönetir: kayıt, giriş, şifre sıfırlama ve oturum bilgisi.
@@ -96,10 +101,10 @@ export class AuthController {
   }
 
   /**
-   * Email ve username uygunluk kontrolü — kayıt formunda sözleşme dialog'u açılmadan
-   * ÖNCE çağrılır. Kullanıcı çakışan email/username ile sözleşmeleri okuyup onaylayıp
-   * sonradan "zaten kayıtlı" hatasıyla karşılaşmasın diye. Public + throttled.
-   * Boş string'ler kontrol edilmez (kısmi kontrole izin verir).
+   * Email ve username uygunluk kontrolü.
+   * Hem User tablosuna hem PendingRegistration tablosuna bakar.
+   * Birinde varsa available=false döner.
+   * Public + throttled.
    */
   @Public()
   @Get('check-availability')
@@ -109,70 +114,109 @@ export class AuthController {
     @Query('username') username?: string,
   ) {
     const result = { emailAvailable: true, usernameAvailable: true };
+    const pendingRepo = new PrismaPendingRegistrationRepository();
+
     const e = (email || '').trim().toLowerCase();
     if (e) {
-      const existing = await this.userRepo.findByEmail(e);
-      if (existing) result.emailAvailable = false;
+      const existingUser = await this.userRepo.findByEmail(e);
+      if (existingUser) {
+        result.emailAvailable = false;
+      } else {
+        const existingPending = await pendingRepo.findByEmail(e);
+        if (existingPending) result.emailAvailable = false;
+      }
     }
     const u = (username || '').trim();
     if (u) {
-      const existing = await this.userRepo.findByUsername(u);
-      if (existing) result.usernameAvailable = false;
+      const existingUser = await this.userRepo.findByUsername(u);
+      if (existingUser) {
+        result.usernameAvailable = false;
+      } else {
+        const existingPending = await pendingRepo.findByUsername(u);
+        if (existingPending) result.usernameAvailable = false;
+      }
     }
     return result;
   }
 
-  /** Yeni aday kaydı — kayıt sonrası email doğrulama linki gönderir (fire-and-forget) */
+  /**
+   * Yeni aday kaydı.
+   * Yeni davranış: PendingRegistration'a yazar, User oluşturmaz.
+   * Doğrulama maili gönderilir. Return: { message, email }.
+   */
   @Post('register')
   @Public()
   @RequireCaptcha()
   async register(@Body() body: any, @Req() req: any) {
     try {
-      // DI bazen dev ortamında undefined kalabiliyor (tsx watch + hot reload). Fail-safe:
       let uc = this.registerUseCase;
       if (!uc) {
-        const { PrismaContractRepository } = require('../../infrastructure/repositories/PrismaContractRepository');
-        const { PrismaContractAcceptanceRepository } = require('../../infrastructure/repositories/PrismaContractAcceptanceRepository');
-        const { PrismaAuditLogRepository } = require('../../infrastructure/repositories/PrismaAuditLogRepository');
         const repo = new PrismaUserRepository();
         const pwd = new PasswordService();
+        const pendingRepo = new PrismaPendingRegistrationRepository();
         uc = new RegisterUseCase(
           repo,
           pwd,
           new PrismaContractRepository(prisma),
           new PrismaContractAcceptanceRepository(prisma),
           new PrismaAuditLogRepository(),
+          pendingRepo,
         );
       }
-      // Sprint 14 — IP/UA delil olarak ContractAcceptance'a yazılır.
       const ip = (req?.headers?.['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim()
         || (req?.socket?.remoteAddress as string | undefined);
       const userAgent = req?.headers?.['user-agent'] as string | undefined;
-      const user = await uc.execute(body, { ip, userAgent });
 
-      // Email doğrulama linkini fire-and-forget gönder — kayıt akışını bekletmez/bozmaz
+      const result = await uc.execute(body, { ip, userAgent });
+
+      // Yeni akış: result.message vardır ve User henüz oluşmamıştır.
+      // PendingRegistration token'ını al ve doğrulama maili gönder.
+      if (result.message === 'Doğrulama maili gönderildi') {
+        try {
+          const pendingRepo = new PrismaPendingRegistrationRepository();
+          const pending = await pendingRepo.findByEmail(
+            (body.email || '').trim().toLowerCase(),
+          );
+          if (pending) {
+            const sendVerify = new SendEmailVerificationUseCase();
+            await sendVerify.execute({ pendingRegistrationId: pending.id });
+          }
+        } catch {
+          // Email gönderim hatası kayıt akışını bozmaz
+        }
+        return result;
+      }
+
+      // Fallback (eski akış, pendingRepo DI'sız): email doğrulama maili userId ile gönder
       try {
-        const sendVerify = new SendEmailVerificationUseCase();
-        await sendVerify.execute({ userId: user.id });
+        if ((result as any).id) {
+          const sendVerify = new SendEmailVerificationUseCase();
+          await sendVerify.execute({ userId: (result as any).id });
+        }
       } catch {
-        // Email gönderim hatası kayıt akışını bozmaz — kullanıcı /auth/resend-verification ile yeniden isteyebilir
+        // Email gönderim hatası kayıt akışını bozmaz
       }
 
-      return user;
+      return result;
     } catch (err: any) {
-      if (err.message === 'DUPLICATE_EMAIL') {
-        throw new HttpException({ error: 'Bu e-posta adresi zaten kayıtlı.' }, HttpStatus.CONFLICT);
+      if (err.code === 'EMAIL_ALREADY_REGISTERED' || err.message === 'DUPLICATE_EMAIL') {
+        throw new HttpException({ error: 'Bu e-posta adresi zaten kayıtlı.', code: 'EMAIL_ALREADY_REGISTERED' }, HttpStatus.BAD_REQUEST);
       }
-      if (err.message === 'DUPLICATE_USERNAME') {
-        throw new HttpException({ error: 'Bu kullanıcı adı zaten alınmış.' }, HttpStatus.CONFLICT);
+      if (err.code === 'USERNAME_ALREADY_TAKEN' || err.message === 'DUPLICATE_USERNAME') {
+        throw new HttpException({ error: 'Bu kullanıcı adı zaten alınmış.', code: 'USERNAME_ALREADY_TAKEN' }, HttpStatus.BAD_REQUEST);
       }
-      // Beklenmedik hatayı stack trace ile logla — dev sırasında "Kayıt sırasında hata oluştu" body'si yeterli değil
+      if (err.code === 'TERMS_NOT_ACCEPTED') {
+        throw new HttpException({ error: err.message, code: err.code }, HttpStatus.BAD_REQUEST);
+      }
+      if (err.code === 'CONTRACTS_NOT_AVAILABLE') {
+        throw new HttpException({ error: err.message, code: err.code }, HttpStatus.SERVICE_UNAVAILABLE);
+      }
       console.error('[register] unexpected error:', err?.message, err?.stack);
       throw new HttpException({ error: 'Kayıt sırasında hata oluştu' }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  /** Email doğrulama — token ile kullanıcının emailVerified bayrağını true yapar */
+  /** Email doğrulama — token ile PendingRegistration'ı User'a promote eder ya da User.emailVerified=true yapar */
   @Post('verify-email')
   @Public()
   @HttpCode(200)
@@ -192,8 +236,8 @@ export class AuthController {
 
   /**
    * Email doğrulama bağlantısını yeniden gönderir.
-   * E-posta adresi kayıtlı değilse veya zaten doğrulanmışsa yine 200 döner —
-   * kullanıcı numaralandırma saldırılarına karşı.
+   * Hem PendingRegistration'a hem User'a bakar.
+   * Kullanıcı numaralandırma saldırılarına karşı: her zaman 200.
    */
   @Post('resend-verification')
   @Public()
@@ -205,6 +249,34 @@ export class AuthController {
       throw new HttpException({ error: 'E-posta gerekli' }, HttpStatus.BAD_REQUEST);
     }
 
+    // Önce PendingRegistration kontrol et
+    try {
+      const pendingRepo = new PrismaPendingRegistrationRepository();
+      const pending = await pendingRepo.findByEmail(email);
+      if (pending) {
+        // Yeni token üret ve pending'i güncelle
+        const newToken = randomBytes(32).toString('hex');
+        const newExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        // Raw SQL — Prisma client regenerate edilmedi (Windows EPERM)
+        await prisma.$executeRaw`
+          UPDATE pending_registrations
+          SET "verificationToken" = ${newToken},
+              "verificationTokenExpiresAt" = ${newExpiresAt}
+          WHERE email = ${email}
+        `;
+        // Güncel pending'i al ve mail gönder
+        const updatedPending = await pendingRepo.findByEmail(email);
+        if (updatedPending) {
+          const sendVerify = new SendEmailVerificationUseCase();
+          await sendVerify.execute({ pendingRegistrationId: updatedPending.id });
+        }
+        return { message: 'Doğrulama bağlantısı yeniden gönderildi.' };
+      }
+    } catch {
+      // hata durumunda sessizce devam et
+    }
+
+    // User tablosunda kontrol et (legacy)
     const user: any = await (prisma as any).user.findUnique({
       where: { email },
       select: { id: true, emailVerified: true },
@@ -224,8 +296,9 @@ export class AuthController {
   }
 
   /**
-   * Eğitici kaydı — sözleşme varlığı kontrol edilir; 30 istek/5 dakika throttle uygulanır.
-   * firstName + lastName zorunlu. Kayıt sonrası email doğrulama linki gönderir.
+   * Eğitici kaydı.
+   * Yeni davranış: PendingRegistration'a yazar, User oluşturmaz.
+   * Return: { message, email }.
    */
   @Post('register/educator')
   @Public()
@@ -241,12 +314,9 @@ export class AuthController {
     @Req() req: any,
   ) {
     try {
-      // DI bazen dev ortamında undefined kalabiliyor (tsx watch + hot reload). Fail-safe:
       let uc = this.registerEducatorUseCase;
       if (!uc) {
-        const { PrismaContractRepository } = require('../../infrastructure/repositories/PrismaContractRepository');
-        const { PrismaContractAcceptanceRepository } = require('../../infrastructure/repositories/PrismaContractAcceptanceRepository');
-        const { PrismaAuditLogRepository } = require('../../infrastructure/repositories/PrismaAuditLogRepository');
+        const pendingRepo = new PrismaPendingRegistrationRepository();
         uc = new RegisterEducatorUseCase(
           new PrismaUserRepository(),
           new PrismaContractRepository(prisma),
@@ -254,9 +324,9 @@ export class AuthController {
           new PrismaAuditLogRepository(),
           new PasswordService(),
           new JwtService(),
+          pendingRepo,
         );
       }
-      // Sprint 14 — IP/UA delil için ContractAcceptance'a yazılır
       const ip = (req?.headers?.['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim()
         || (req?.socket?.remoteAddress as string | undefined);
       const userAgent = req?.headers?.['user-agent'] as string | undefined;
@@ -273,10 +343,29 @@ export class AuthController {
         { ip, userAgent },
       );
 
-      // Email doğrulama linkini fire-and-forget gönder
+      // Yeni akış: PendingRegistration oluşturulmuşsa mail gönder
+      if ((result as any).message === 'Doğrulama maili gönderildi') {
+        try {
+          const pendingRepo = new PrismaPendingRegistrationRepository();
+          const pending = await pendingRepo.findByEmail(
+            (body.email || '').trim().toLowerCase(),
+          );
+          if (pending) {
+            const sendVerify = new SendEmailVerificationUseCase();
+            await sendVerify.execute({ pendingRegistrationId: pending.id });
+          }
+        } catch {
+          // Email gönderim hatası kayıt akışını bozmaz
+        }
+        return result;
+      }
+
+      // Fallback (eski akış): userId ile mail gönder
       try {
-        const sendVerify = new SendEmailVerificationUseCase();
-        await sendVerify.execute({ userId: result.user.id });
+        if ((result as any).user?.id) {
+          const sendVerify = new SendEmailVerificationUseCase();
+          await sendVerify.execute({ userId: (result as any).user.id });
+        }
       } catch {
         // Email gönderim hatası kayıt akışını bozmaz
       }
@@ -286,18 +375,17 @@ export class AuthController {
       if (err.code === 'CONTRACT_NOT_AVAILABLE') {
         throw new HttpException({ error: 'Eğitici sözleşmesi henüz tanımlanmamış.' }, HttpStatus.BAD_REQUEST);
       }
-      // Yeni alan doğrulama hataları
       if (err.code === 'FIRSTNAME_REQUIRED' || err.code === 'FIRSTNAME_INVALID') {
         throw new HttpException({ error: err.message || 'Ad gereklidir', code: err.code }, HttpStatus.BAD_REQUEST);
       }
       if (err.code === 'LASTNAME_REQUIRED' || err.code === 'LASTNAME_INVALID') {
         throw new HttpException({ error: err.message || 'Soyad gereklidir', code: err.code }, HttpStatus.BAD_REQUEST);
       }
-      if (err.message === 'DUPLICATE_EMAIL') {
-        throw new HttpException({ error: 'Bu e-posta adresi zaten kayıtlı.' }, HttpStatus.CONFLICT);
+      if (err.code === 'EMAIL_ALREADY_REGISTERED' || err.message === 'DUPLICATE_EMAIL') {
+        throw new HttpException({ error: 'Bu e-posta adresi zaten kayıtlı.', code: 'EMAIL_ALREADY_REGISTERED' }, HttpStatus.BAD_REQUEST);
       }
-      if (err.message === 'DUPLICATE_USERNAME') {
-        throw new HttpException({ error: 'Bu kullanıcı adı zaten alınmış.' }, HttpStatus.CONFLICT);
+      if (err.code === 'USERNAME_ALREADY_TAKEN' || err.message === 'DUPLICATE_USERNAME') {
+        throw new HttpException({ error: 'Bu kullanıcı adı zaten alınmış.', code: 'USERNAME_ALREADY_TAKEN' }, HttpStatus.BAD_REQUEST);
       }
       console.error('[register/educator] unexpected error:', err?.message, err?.stack);
       throw new HttpException({ error: 'Kayıt sırasında hata oluştu' }, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -320,24 +408,18 @@ export class AuthController {
       );
     }
     try {
-      // DI bazen dev ortamında undefined kalabiliyor (tsx watch + hot reload). Fail-safe:
-      // Fallback'te de notifyDevice + audit dahil olur; aksi halde yeni cihaz uyarı maili tetiklenmez.
       let uc = this.loginUseCase;
       if (!uc) {
         const repo = new PrismaUserRepository();
         const pwd = new PasswordService();
         const jwt = new JwtService();
-        // Lazy require — circular import'tan kaçınmak için
         const { SendEmailUseCase } = require('../../application/use-cases/email/SendEmailUseCase');
         const { NotifyNewDeviceLoginUseCase } = require('../../application/use-cases/auth/NotifyNewDeviceLoginUseCase');
         const notifyDevice = new NotifyNewDeviceLoginUseCase(new SendEmailUseCase());
         uc = new LoginUseCase(repo, pwd, jwt, undefined, notifyDevice);
       }
-      // Audit context: ip + userAgent + (varsa) requestId — login akışında PII filtresi
-      // use case içinde uygulanır.
       const ctx = auditContextFromRequest(req);
       const result = await uc.execute({ email, password }, ctx);
-      // Başarılı giriş → brute-force sayaçlarını sıfırla (başarılı girişler bloke etmesin)
       const ip = (req.headers?.['x-forwarded-for']
         ? String(req.headers['x-forwarded-for']).split(',')[0].trim()
         : req.ip || 'unknown');
@@ -357,7 +439,7 @@ export class AuthController {
     }
   }
 
-  /** Şifre sıfırlama e-postası gönderir; kullanıcı bulunamasa da 200 döner (kullanıcı numaralandırmayı önler) */
+  /** Şifre sıfırlama e-postası gönderir; kullanıcı bulunamasa da 200 döner */
   @Post('forgot-password')
   @Public()
   @Throttle({ default: { limit: 5, ttl: 300000 } })
@@ -365,10 +447,10 @@ export class AuthController {
     const email = String(body?.email ?? '').trim().toLowerCase();
     if (!email) throw new HttpException({ error: 'E-posta gerekli' }, HttpStatus.BAD_REQUEST);
     await this.forgotPasswordUC.execute(email);
-    return { message: 'E-posta gönderildi' }; // Always success
+    return { message: 'E-posta gönderildi' };
   }
 
-  /** Token ile yeni şifre belirler; 10 istek/5 dakika throttle — brute-force token tahminine karşı */
+  /** Token ile yeni şifre belirler */
   @Post('reset-password')
   @Public()
   @Throttle({ default: { limit: 10, ttl: 300000 } })

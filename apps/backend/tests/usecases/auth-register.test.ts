@@ -1,8 +1,10 @@
 import { RegisterUseCase } from '../../src/application/use-cases/auth/RegisterUseCase';
 
-function makeUserRepo(savedUser: any = null) {
+function makeUserRepo(savedUser: any = null, existingEmail: any = null, existingUsername: any = null) {
   return {
     save: jest.fn(async (u: any) => savedUser ?? { ...u, id: u.id || 'new-id' }),
+    findByEmail: jest.fn(async (_email: string) => existingEmail),
+    findByUsername: jest.fn(async (_username: string) => existingUsername),
   };
 }
 
@@ -13,12 +15,12 @@ function makePasswordService() {
 }
 
 describe('RegisterUseCase', () => {
-  it('yeni CANDIDATE kullanıcı oluşturur, public bilgi döner', async () => {
+  it('yeni CANDIDATE kullanıcı oluşturur, public bilgi döner (fallback path: pendingRepo yok)', async () => {
     const uc = new RegisterUseCase(makeUserRepo() as any, makePasswordService() as any);
     const result = await uc.execute({ email: 'New@Test.COM', username: 'newuser', password: 'securepass' });
-    expect(result.email).toBe('new@test.com'); // normalize
-    expect(result.role).toBe('CANDIDATE');
-    expect(result.status).toBe('ACTIVE');
+    expect((result as any).email).toBe('new@test.com'); // normalize
+    expect((result as any).role).toBe('CANDIDATE');
+    expect((result as any).status).toBe('ACTIVE');
     expect((result as any).passwordHash).toBeUndefined();
   });
 
@@ -54,7 +56,7 @@ describe('RegisterUseCase', () => {
   it('createdAt alanı döner', async () => {
     const uc = new RegisterUseCase(makeUserRepo() as any, makePasswordService() as any);
     const result = await uc.execute({ email: 'x@x.com', username: 'u', password: 'pass' });
-    expect(result.createdAt).toBeInstanceOf(Date);
+    expect((result as any).createdAt).toBeInstanceOf(Date);
   });
 
   // ---------------------------------------------------------------------------
@@ -90,7 +92,7 @@ describe('RegisterUseCase', () => {
     it('contract repo DI verilmediğinde acceptance kontrolü atlanır (backward compat)', async () => {
       const uc = new RegisterUseCase(makeUserRepo() as any, makePasswordService() as any);
       const result = await uc.execute({ email: 'x@x.com', username: 'u', password: 'p12345' });
-      expect(result.email).toBe('x@x.com');
+      expect((result as any).email).toBe('x@x.com');
     });
 
     it('DI varsa acceptedTermsContractId verilmezse TERMS_NOT_ACCEPTED atar', async () => {
@@ -135,6 +137,7 @@ describe('RegisterUseCase', () => {
         makeContractRepo() as any,
         acceptanceRepo as any,
         auditRepo as any,
+        // pendingRepo verilmez → fallback path: User.save çağrılır
       );
       const result = await uc.execute(
         {
@@ -146,9 +149,8 @@ describe('RegisterUseCase', () => {
         },
         { ip: '1.2.3.4', userAgent: 'Mozilla/5.0' },
       );
-      expect(result.email).toBe('aday@test.com');
+      expect((result as any).email).toBe('aday@test.com');
       expect(acceptanceRepo.create).toHaveBeenCalledTimes(2);
-      // İlk acceptance: CANDIDATE üyelik
       expect(acceptanceRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           contractId: 'ctr-candidate-1',
@@ -156,11 +158,9 @@ describe('RegisterUseCase', () => {
           userAgent: 'Mozilla/5.0',
         }),
       );
-      // İkinci acceptance: PRIVACY
       expect(acceptanceRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ contractId: 'ctr-privacy-1' }),
       );
-      // 2 audit log (CONTRACT_ACCEPTED) yazıldı
       expect(auditRepo.create).toHaveBeenCalledTimes(2);
     });
 
@@ -181,6 +181,101 @@ describe('RegisterUseCase', () => {
           acceptedPrivacyContractId: 'whatever',
         }),
       ).rejects.toMatchObject({ code: 'CONTRACTS_NOT_AVAILABLE' });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Pending-first akış (pendingRepo verilince)
+  // ---------------------------------------------------------------------------
+  describe('Pending-first kayıt akışı', () => {
+    function makePendingRepo() {
+      const store: any[] = [];
+      return {
+        create: jest.fn(async (input: any) => {
+          const record = { id: 'pending-' + Math.random(), ...input, createdAt: new Date() };
+          store.push(record);
+          return record;
+        }),
+        findByEmail: jest.fn(async (email: string) => store.find((r) => r.email === email) ?? null),
+        findByUsername: jest.fn(async (u: string) => store.find((r) => r.username === u) ?? null),
+        deleteByEmail: jest.fn(async () => { /* noop */ }),
+        deleteByUsername: jest.fn(async () => { /* noop */ }),
+        deleteById: jest.fn(async () => { /* noop */ }),
+        deleteExpired: jest.fn(async () => 0),
+      };
+    }
+
+    it('pendingRepo verilince User.save çağrılmaz, PendingRegistration.create çağrılır', async () => {
+      const userRepo = makeUserRepo();
+      const pendingRepo = makePendingRepo();
+      const uc = new RegisterUseCase(
+        userRepo as any,
+        makePasswordService() as any,
+        undefined,
+        undefined,
+        undefined,
+        pendingRepo as any,
+      );
+      const result = await uc.execute({ email: 'test@new.com', username: 'testnew', password: 'pw123' });
+      expect(result.message).toBe('Doğrulama maili gönderildi');
+      expect(result.email).toBe('test@new.com');
+      expect(userRepo.save).not.toHaveBeenCalled();
+      expect(pendingRepo.create).toHaveBeenCalledTimes(1);
+      expect(pendingRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'test@new.com', username: 'testnew', role: 'CANDIDATE' }),
+      );
+    });
+
+    it('User tablosunda email varsa EMAIL_ALREADY_REGISTERED atar', async () => {
+      const existingUser = { id: 'u1', email: 'taken@x.com' };
+      const userRepo = makeUserRepo(null, existingUser);
+      const pendingRepo = makePendingRepo();
+      const uc = new RegisterUseCase(
+        userRepo as any,
+        makePasswordService() as any,
+        undefined,
+        undefined,
+        undefined,
+        pendingRepo as any,
+      );
+      await expect(
+        uc.execute({ email: 'taken@x.com', username: 'newuser', password: 'pw' }),
+      ).rejects.toMatchObject({ code: 'EMAIL_ALREADY_REGISTERED' });
+    });
+
+    it('User tablosunda username varsa USERNAME_ALREADY_TAKEN atar', async () => {
+      const existingUser = { id: 'u1', username: 'taken' };
+      const userRepo = makeUserRepo(null, null, existingUser);
+      const pendingRepo = makePendingRepo();
+      const uc = new RegisterUseCase(
+        userRepo as any,
+        makePasswordService() as any,
+        undefined,
+        undefined,
+        undefined,
+        pendingRepo as any,
+      );
+      await expect(
+        uc.execute({ email: 'new@x.com', username: 'taken', password: 'pw' }),
+      ).rejects.toMatchObject({ code: 'USERNAME_ALREADY_TAKEN' });
+    });
+
+    it('aynı email ile yeniden kayıt: eski pending silinir, yeni pending oluşur', async () => {
+      const userRepo = makeUserRepo();
+      const pendingRepo = makePendingRepo();
+      const uc = new RegisterUseCase(
+        userRepo as any,
+        makePasswordService() as any,
+        undefined,
+        undefined,
+        undefined,
+        pendingRepo as any,
+      );
+      await uc.execute({ email: 'retry@x.com', username: 'retryuser', password: 'pw' });
+      // İkinci deneme — aynı email/username (re-issue)
+      await uc.execute({ email: 'retry@x.com', username: 'retryuser', password: 'pw2' });
+      expect(pendingRepo.deleteByEmail).toHaveBeenCalledTimes(2);
+      expect(pendingRepo.create).toHaveBeenCalledTimes(2);
     });
   });
 });

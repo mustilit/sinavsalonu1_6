@@ -1,24 +1,25 @@
-import { randomUUID } from 'crypto';
-import { User, UserPublic } from '../../../domain/entities/User';
-import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
+import { randomBytes, randomUUID } from 'crypto';
+import type { IUserRepository } from '../../../domain/interfaces/IUserRepository';
 import type { IContractRepository } from '../../../domain/interfaces/IContractRepository';
 import type { IContractAcceptanceRepository } from '../../../domain/interfaces/IContractAcceptanceRepository';
 import type { IAuditLogRepository } from '../../../domain/interfaces/IAuditLogRepository';
+import type { IPendingRegistrationRepository } from '../../../domain/interfaces/IPendingRegistrationRepository';
 import { PasswordService } from '../../../infrastructure/services/PasswordService';
 import { AppError } from '../../errors/AppError';
+import { getDefaultTenantId } from '../../../common/tenant';
 
 /**
  * Aday (CANDIDATE) kullanıcı kaydını gerçekleştirir.
  *
- * Sprint 14 — Sözleşme onayı zorunluluğu:
- *   Üye kayıt formunda iki sözleşme kabulü ZORUNLUDUR:
- *     - CANDIDATE (Üyelik / Kullanım Sözleşmesi)
- *     - PRIVACY   (KVKK Aydınlatma Metni)
- *   Frontend `acceptedTermsContractId` ve `acceptedPrivacyContractId` gönderir.
- *   ID'ler aktif sözleşme ID'leriyle eşleşmezse 400 döner — eski versiyona
- *   onay verilemez, geçerli yasal kanıt zinciri için aktif sözleşme şart.
+ * Sprint 14 — Sözleşme onayı zorunluluğu.
  *
- * Kayıt sonrası hesap hemen ACTIVE olur — eğiticilerden farklı olarak onay gerekmez.
+ * Yeni davranış (pending-first kayıt):
+ *   1. User tablosuna YAZILMAZ.
+ *   2. PendingRegistration tablosuna yazılır.
+ *   3. Email doğrulama linki gönderilir.
+ *   4. Kullanıcı linke tıklayınca VerifyEmailUseCase User'ı oluşturur.
+ *
+ * Mevcut User kayıtları (emailVerified=false olanlar dahil) dokunulmaz.
  */
 export class RegisterUseCase {
   constructor(
@@ -26,26 +27,18 @@ export class RegisterUseCase {
     private readonly passwordService: PasswordService,
     /**
      * Sprint 14 — Sözleşme zorlamak için. Opsiyonel: DI verilmediği test
-     * senaryolarında acceptance step'i atlanır (backward compatible). Production
-     * DI container her zaman verir, böylece akış zorunlu.
+     * senaryolarında acceptance step'i atlanır (backward compatible).
      */
     private readonly contractRepo?: IContractRepository,
     private readonly acceptanceRepo?: IContractAcceptanceRepository,
     private readonly auditRepo?: IAuditLogRepository,
+    private readonly pendingRepo?: IPendingRegistrationRepository,
   ) {}
 
   /**
-   * Yeni bir aday hesabı oluşturur.
+   * Yeni bir aday kaydı başlatır: PendingRegistration oluşturur, User YARATMAZ.
    *
-   * @param dto.email                       - Kullanıcının e-posta adresi (küçük harfe dönüştürülür).
-   * @param dto.username                    - Kullanıcı adı.
-   * @param dto.password                    - Şifre (hash'lenerek saklanır).
-   * @param dto.acceptedTermsContractId     - Sprint 14: Aktif CANDIDATE contract ID (üyelik sözleşmesi).
-   * @param dto.acceptedPrivacyContractId   - Sprint 14: Aktif PRIVACY contract ID (KVKK aydınlatma).
-   * @param ctx.ip                          - IP adresi (delil için ContractAcceptance.ip'ye yazılır).
-   * @param ctx.userAgent                   - User-Agent (delil için saklanır).
-   * @returns Kaydedilen kullanıcının public bilgileri (passwordHash içermez).
-   * @throws TERMS_NOT_ACCEPTED — contract ID'leri verilmediyse veya geçersiz ID.
+   * @returns { message, email } — token ve user bilgisi dönmez (güvenlik).
    */
   async execute(
     dto: {
@@ -56,7 +49,9 @@ export class RegisterUseCase {
       acceptedPrivacyContractId?: string;
     },
     ctx?: { ip?: string; userAgent?: string },
-  ): Promise<UserPublic> {
+  ): Promise<{ message: string; email: string }> {
+    const email = dto.email.toLowerCase();
+
     // Sözleşme zorlaması — DI verilmişse contract kontrolü yap
     let activeTerms: { id: string } | null = null;
     let activePrivacy: { id: string } | null = null;
@@ -64,7 +59,6 @@ export class RegisterUseCase {
       activeTerms = await this.contractRepo.getActiveByType('CANDIDATE');
       activePrivacy = await this.contractRepo.getActiveByType('PRIVACY');
       if (!activeTerms || !activePrivacy) {
-        // Sistem hatası — admin yasal metinleri seed/yayımlamamış. Üyelik kapatılır.
         throw new AppError(
           'CONTRACTS_NOT_AVAILABLE',
           'Aktif üyelik veya gizlilik sözleşmesi bulunamadı — sistem yöneticisine başvurun',
@@ -85,25 +79,60 @@ export class RegisterUseCase {
       }
     }
 
+    // Mevcut User çakışma kontrolü — User tablosunda varsa hata ver
+    const existingByEmail = await this.userRepository.findByEmail(email);
+    if (existingByEmail) {
+      throw new AppError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta adresi zaten kayıtlı', 400);
+    }
+    const existingByUsername = await this.userRepository.findByUsername(dto.username);
+    if (existingByUsername) {
+      throw new AppError('USERNAME_ALREADY_TAKEN', 'Bu kullanıcı adı zaten alınmış', 400);
+    }
+
     const passwordHash = await this.passwordService.hash(dto.password);
 
-    // Aday rolüyle ve hemen aktif statüsüyle oluşturulur
-    const user: User = {
+    // PendingRegistration desteği varsa pending-first akış
+    if (this.pendingRepo) {
+      // Aynı email için eski pending varsa temizle (re-issue)
+      await this.pendingRepo.deleteByEmail(email);
+      // Aynı username için eski pending varsa temizle (farklı email olabilir)
+      await this.pendingRepo.deleteByUsername(dto.username);
+
+      const verificationToken = randomBytes(32).toString('hex');
+      const verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      await this.pendingRepo.create({
+        email,
+        username: dto.username,
+        passwordHash,
+        role: 'CANDIDATE',
+        acceptedTermsContractId: dto.acceptedTermsContractId ?? null,
+        acceptedPrivacyContractId: dto.acceptedPrivacyContractId ?? null,
+        verificationToken,
+        verificationTokenExpiresAt,
+        ip: ctx?.ip ?? null,
+        userAgent: ctx?.userAgent ?? null,
+        tenantId: getDefaultTenantId(),
+      });
+
+      return { message: 'Doğrulama maili gönderildi', email };
+    }
+
+    // Fallback (pendingRepo DI verilmemişse): eski davranış — direkt User oluştur
+    // Bu yol yalnızca eski testler için backward-compat. Production'da pendingRepo daima verilir.
+    const user = {
       id: randomUUID(),
-      email: dto.email.toLowerCase(),
+      email,
       username: dto.username,
       passwordHash,
-      role: 'CANDIDATE',
-      status: 'ACTIVE',
+      role: 'CANDIDATE' as const,
+      status: 'ACTIVE' as const,
       metadata: {},
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-
     const saved = await this.userRepository.save(user);
 
-    // Sözleşme acceptance kayıtları — kullanıcı oluşturulduktan sonra.
-    // İdempotent: aynı kullanıcı + contract için tek kayıt (unique constraint).
     if (this.acceptanceRepo && activeTerms && activePrivacy) {
       for (const contract of [activeTerms, activePrivacy]) {
         await this.acceptanceRepo.create({
@@ -128,18 +157,15 @@ export class RegisterUseCase {
       }
     }
 
-    return this.toPublic(saved);
-  }
-
-  /** Kullanıcı entity'sini güvenli public tipine dönüştürür (passwordHash dahil edilmez). */
-  private toPublic(user: User): UserPublic {
+    // Eski backward-compat dönüş: UserPublic shape (passwordHash hariç)
     return {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      role: user.role,
-      status: user.status,
-      createdAt: user.createdAt,
-    };
+      id: saved.id,
+      email: saved.email,
+      username: saved.username,
+      role: saved.role,
+      status: saved.status,
+      createdAt: saved.createdAt,
+      message: 'Kullanıcı oluşturuldu',
+    } as any;
   }
 }

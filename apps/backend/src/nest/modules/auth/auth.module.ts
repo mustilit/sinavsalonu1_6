@@ -15,6 +15,7 @@ import { MockEmailProvider } from '../../../infrastructure/services/MockEmailPro
 import { PrismaAuditLogRepository } from '../../../infrastructure/repositories/PrismaAuditLogRepository';
 import { PrismaContractRepository } from '../../../infrastructure/repositories/PrismaContractRepository';
 import { PrismaContractAcceptanceRepository } from '../../../infrastructure/repositories/PrismaContractAcceptanceRepository';
+import { PrismaPendingRegistrationRepository } from '../../../infrastructure/repositories/PrismaPendingRegistrationRepository';
 import { prisma } from '../../../infrastructure/database/prisma';
 import { CONTRACT_REPO, CONTRACT_ACCEPTANCE_REPO, USER_REPO } from '../../../application/constants';
 import { CaptchaService } from '../../services/captcha.service';
@@ -30,18 +31,25 @@ import { SendEmailUseCase } from '../../../application/use-cases/email/SendEmail
     { provide: USER_REPO, useClass: PrismaUserRepository },
     PasswordService,
     JwtService,
+    PrismaPendingRegistrationRepository,
     // Sprint 14 — RegisterUseCase artık contract repo'larını alır (üyelik + KVKK zorunlu)
+    // Yeni: pendingRepo ile pending-first kayıt akışı
     {
       provide: RegisterUseCase,
-      useFactory: (userRepo: PrismaUserRepository, passwordService: PasswordService) =>
+      useFactory: (
+        userRepo: PrismaUserRepository,
+        passwordService: PasswordService,
+        pendingRepo: PrismaPendingRegistrationRepository,
+      ) =>
         new RegisterUseCase(
           userRepo,
           passwordService,
           new PrismaContractRepository(prisma),
           new PrismaContractAcceptanceRepository(prisma),
           new PrismaAuditLogRepository(),
+          pendingRepo,
         ),
-      inject: [PrismaUserRepository, PasswordService],
+      inject: [PrismaUserRepository, PasswordService, PrismaPendingRegistrationRepository],
     },
     AuditLogger,
     {
@@ -101,9 +109,10 @@ import { SendEmailUseCase } from '../../../application/use-cases/email/SendEmail
         auditRepo: PrismaAuditLogRepository,
         passwordService: PasswordService,
         jwtService: JwtService,
+        pendingRepo: PrismaPendingRegistrationRepository,
       ) =>
-        new RegisterEducatorUseCase(userRepo, contractRepo, acceptanceRepo, auditRepo, passwordService, jwtService),
-      inject: [PrismaUserRepository, CONTRACT_REPO, CONTRACT_ACCEPTANCE_REPO, PrismaAuditLogRepository, PasswordService, JwtService],
+        new RegisterEducatorUseCase(userRepo, contractRepo, acceptanceRepo, auditRepo, passwordService, jwtService, pendingRepo),
+      inject: [PrismaUserRepository, CONTRACT_REPO, CONTRACT_ACCEPTANCE_REPO, PrismaAuditLogRepository, PasswordService, JwtService, PrismaPendingRegistrationRepository],
     },
     {
       provide: GoogleAuthUseCase,

@@ -1,21 +1,26 @@
-import { randomUUID } from 'crypto';
-import { User, UserPublic } from '../../../domain/entities/User';
+import { randomBytes, randomUUID } from 'crypto';
 import type { IUserRepository } from '../../../domain/interfaces/IUserRepository';
 import type { IContractRepository } from '../../../domain/interfaces/IContractRepository';
 import type { IContractAcceptanceRepository } from '../../../domain/interfaces/IContractAcceptanceRepository';
 import type { IAuditLogRepository } from '../../../domain/interfaces/IAuditLogRepository';
+import type { IPendingRegistrationRepository } from '../../../domain/interfaces/IPendingRegistrationRepository';
 import { PasswordService } from '../../../infrastructure/services/PasswordService';
 import { JwtService } from '../../../infrastructure/services/JwtService';
 import { AppError } from '../../errors/AppError';
 import { prisma } from '../../../infrastructure/database/prisma';
+import { getDefaultTenantId } from '../../../common/tenant';
 
 /**
- * FR-E-01: Eğitici kaydı ve sözleşme onayı.
- * - Kullanıcı EDUCATOR rolüyle ve PENDING_EDUCATOR_APPROVAL statüsüyle oluşturulur.
- * - Admin onayı gerektiğinden hesap hemen aktif olmaz.
- * - Aktif EDUCATOR sözleşmesi otomatik kabul edilir; audit kaydı oluşturulur.
- * - firstName ve lastName **zorunludur** (aday kaydından farklı olarak).
- * - CV ve uzmanlık alanları ise post-verification onboarding adımında istenir.
+ * FR-E-01: Eğitici kaydı — pending-first akış.
+ *
+ * Yeni davranış:
+ *   1. User tablosuna YAZILMAZ.
+ *   2. PendingRegistration tablosuna yazılır (role=EDUCATOR).
+ *   3. Email doğrulama linki gönderilir.
+ *   4. Kullanıcı linke tıklayınca VerifyEmailUseCase User'ı oluşturur
+ *      (PENDING_EDUCATOR_APPROVAL statüsüyle).
+ *
+ * firstName ve lastName PendingRegistration'da saklanır; User oluşturulunca kopyalanır.
  */
 export class RegisterEducatorUseCase {
   constructor(
@@ -25,6 +30,7 @@ export class RegisterEducatorUseCase {
     private readonly auditRepo: IAuditLogRepository,
     private readonly passwordService: PasswordService,
     private readonly jwtService: JwtService,
+    private readonly pendingRepo?: IPendingRegistrationRepository,
   ) {}
 
   async execute(
@@ -40,7 +46,7 @@ export class RegisterEducatorUseCase {
       acceptedPrivacyContractId?: string;
     },
     ctx?: { ip?: string; userAgent?: string },
-  ): Promise<{ user: UserPublic; token: string }> {
+  ): Promise<{ message: string; email: string }> {
     // Zorunlu alan doğrulaması
     const firstName = (dto.firstName ?? '').trim();
     const lastName = (dto.lastName ?? '').trim();
@@ -53,31 +59,9 @@ export class RegisterEducatorUseCase {
       throw new AppError('LASTNAME_INVALID', 'Soyad 2-50 karakter olmalı', 400);
     }
 
-    const passwordHash = await this.passwordService.hash(dto.password);
+    const email = dto.email.toLowerCase();
 
-    const user: User = {
-      id: randomUUID(),
-      email: dto.email.toLowerCase(),
-      username: dto.username,
-      passwordHash,
-      role: 'EDUCATOR',
-      status: 'PENDING_EDUCATOR_APPROVAL',
-      metadata: {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const saved = await this.userRepo.save(user);
-
-    // firstName/lastName User entity tarafında olmadığı için repository.save bunları yazmaz.
-    // Schema'ya yeni eklenen kolonları doğrudan Prisma ile güncelle (ek tour gerektirmeden).
-    await (prisma as any).user.update({
-      where: { id: saved.id },
-      data: { firstName, lastName },
-    });
-
-    // Sprint 14 — Aktif EDUCATOR + PRIVACY sözleşmeleri zorunludur.
-    // Frontend her ikisini de doğru contract ID ile göndermeli.
+    // Sprint 14 — Aktif EDUCATOR + PRIVACY sözleşmeleri zorunlu
     const educatorContract = await this.contractRepo.getActiveByType('EDUCATOR');
     const privacyContract = await this.contractRepo.getActiveByType('PRIVACY');
     if (!educatorContract || !educatorContract.isActive || !privacyContract || !privacyContract.isActive) {
@@ -100,7 +84,66 @@ export class RegisterEducatorUseCase {
       );
     }
 
-    // Acceptance kayıtları — IP/UA delil olarak saklanır (TKHK + KVKK kanıt zinciri)
+    // Mevcut User çakışma kontrolü
+    const existingByEmail = await this.userRepo.findByEmail(email);
+    if (existingByEmail) {
+      throw new AppError('EMAIL_ALREADY_REGISTERED', 'Bu e-posta adresi zaten kayıtlı', 400);
+    }
+    const existingByUsername = await this.userRepo.findByUsername(dto.username);
+    if (existingByUsername) {
+      throw new AppError('USERNAME_ALREADY_TAKEN', 'Bu kullanıcı adı zaten alınmış', 400);
+    }
+
+    const passwordHash = await this.passwordService.hash(dto.password);
+
+    // PendingRegistration desteği varsa pending-first akış
+    if (this.pendingRepo) {
+      // Aynı email/username için eski pending varsa temizle (re-issue)
+      await this.pendingRepo.deleteByEmail(email);
+      await this.pendingRepo.deleteByUsername(dto.username);
+
+      const verificationToken = randomBytes(32).toString('hex');
+      const verificationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      await this.pendingRepo.create({
+        email,
+        username: dto.username,
+        passwordHash,
+        firstName,
+        lastName,
+        role: 'EDUCATOR',
+        acceptedTermsContractId: dto.acceptedEducatorContractId ?? null,
+        acceptedPrivacyContractId: dto.acceptedPrivacyContractId ?? null,
+        verificationToken,
+        verificationTokenExpiresAt,
+        ip: ctx?.ip ?? null,
+        userAgent: ctx?.userAgent ?? null,
+        tenantId: getDefaultTenantId(),
+      });
+
+      return { message: 'Doğrulama maili gönderildi', email };
+    }
+
+    // Fallback: eski davranış (pendingRepo DI verilmemişse)
+    const user = {
+      id: randomUUID(),
+      email,
+      username: dto.username,
+      passwordHash,
+      role: 'EDUCATOR' as const,
+      status: 'PENDING_EDUCATOR_APPROVAL' as const,
+      metadata: {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const saved = await this.userRepo.save(user);
+
+    await (prisma as any).user.update({
+      where: { id: saved.id },
+      data: { firstName, lastName },
+    });
+
+    // Acceptance kayıtları
     for (const contract of [educatorContract, privacyContract]) {
       const existingAcceptance = await this.acceptanceRepo.findByUserAndContract(saved.id, contract.id);
       if (!existingAcceptance) {
@@ -124,25 +167,21 @@ export class RegisterEducatorUseCase {
       }
     }
 
-    // Tek aktif oturum — kayıt sonrası kullanıcıya verilen token'ın session ID'si
-    // User.activeSessionId'ye yazılır. Sonraki bir login'de bu invalidate olur.
+    // Fallback: eski shape (user + token) döndür — backward compat
     const sid = randomUUID();
     await prisma.user.update({
       where: { id: saved.id },
       data: { activeSessionId: sid } as any,
     });
     const token = this.jwtService.sign({ sub: saved.id, email: saved.email, role: saved.role, sid });
-    return { user: this.toPublic(saved), token };
-  }
-
-  private toPublic(user: User): UserPublic {
-    return {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      role: user.role,
-      status: user.status,
-      createdAt: user.createdAt,
+    const userPublic = {
+      id: saved.id,
+      email: saved.email,
+      username: saved.username,
+      role: saved.role,
+      status: saved.status,
+      createdAt: saved.createdAt,
     };
+    return { user: userPublic, token, message: 'Kullanıcı oluşturuldu', email: saved.email } as any;
   }
 }
