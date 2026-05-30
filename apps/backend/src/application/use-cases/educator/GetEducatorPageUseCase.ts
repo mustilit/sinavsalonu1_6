@@ -54,6 +54,19 @@ export class GetEducatorPageUseCase {
       ratingData.ratingCount = agg._count._all ?? 0;
     }
 
+    // Toplam satış — Home/Educators kartlarıyla tutarlı (testId join, yayındaki testler).
+    let totalPurchases = 0;
+    {
+      const { prisma } = require('../../../infrastructure/database/prisma');
+      const rows: Array<{ cnt: number }> = await prisma.$queryRaw`
+        SELECT COUNT(p.id)::int AS cnt
+        FROM purchases p
+        JOIN exam_tests t ON p."testId" = t.id
+        WHERE t."educatorId" = ${educatorId} AND t."publishedAt" IS NOT NULL
+      `;
+      totalPurchases = Number(rows?.[0]?.cnt ?? 0);
+    }
+
     const items = tests.map((t: any) => ({
       id: t.id,
       title: t.title,
@@ -69,7 +82,7 @@ export class GetEducatorPageUseCase {
 
     return {
       educator: { id: educator.id, displayName: educator.username, bio: educator.bio ?? null, avatarUrl, isApproved: educator.status === 'ACTIVE' },
-      stats: { ratingAvg: ratingData.ratingAvg, ratingCount: ratingData.ratingCount, totalPublishedTests: total, totalPurchases: null },
+      stats: { ratingAvg: ratingData.ratingAvg, ratingCount: ratingData.ratingCount, totalPublishedTests: total, totalPurchases },
       tests: { items, meta: { page, limit, total } },
     };
   }

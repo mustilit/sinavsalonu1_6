@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { createPageUrl } from "@/utils";
 import { entities } from "@/api/dalClient";
+import api from "@/lib/api/apiClient";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PaymentModal } from "@/components/ui/PaymentModal";
@@ -14,6 +15,7 @@ import StarRating from "@/components/ui/StarRating";
 import {
   BookOpen,
   MessageSquare,
+  TrendingUp,
   Star,
   User,
   CheckCircle,
@@ -90,6 +92,18 @@ export default function TestDetail() {
     enabled: !!testId,
     staleTime: 60 * 1000,
     retry: 2,
+  });
+
+  // Eğitici kartı özet istatistikleri (test sayısı, satış, puan) — EducatorProfile ile aynı kaynak.
+  // educator_email aslında eğitici id'si (UUID); /educators/:id stats döner. limit=1 ile payload minimal.
+  const { data: educatorStats } = useQuery({
+    queryKey: ["educatorStats", test?.educator_email],
+    queryFn: async () => {
+      const res = await api.get(`/educators/${encodeURIComponent(test.educator_email)}?limit=1`);
+      return (res?.data ?? res)?.stats ?? null;
+    },
+    enabled: !!test?.educator_email,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: questions = [] } = useQuery({
@@ -396,6 +410,27 @@ export default function TestDetail() {
                 </Button>
               )}
             </div>
+            {/* Eğitici özet istatistikleri — test sayısı · satış · puan (Home/EducatorProfile kartıyla aynı) */}
+            {educatorStats && (
+              <div className="flex items-center flex-wrap gap-3 mt-4 text-sm text-slate-500">
+                <span className="flex items-center gap-1">
+                  <BookOpen className="w-4 h-4" aria-hidden="true" />
+                  {t("pages:card.testsCount", { count: educatorStats.totalPublishedTests ?? 0 })}
+                </span>
+                {(educatorStats.totalPurchases ?? 0) > 0 && (
+                  <span className="flex items-center gap-1">
+                    <TrendingUp className="w-4 h-4 text-emerald-500" aria-hidden="true" />
+                    {t("pages:card.salesCount", { count: educatorStats.totalPurchases })}
+                  </span>
+                )}
+                {educatorStats.ratingAvg != null && Number(educatorStats.ratingAvg) > 0 && (
+                  <span className="flex items-center gap-1 font-medium text-amber-600">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" aria-hidden="true" />
+                    {Number(educatorStats.ratingAvg).toFixed(1)}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Features */}
