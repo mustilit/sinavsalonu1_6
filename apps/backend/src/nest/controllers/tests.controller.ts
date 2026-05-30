@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Put, Param, Get, Req, Patch, Delete, Inject } from '@nestjs/common';
+import { Controller, Post, Body, Put, Param, Get, Req, Patch, Delete, Inject, UseGuards } from '@nestjs/common';
 import { Roles } from '../decorators/roles.decorator';
 import { Public } from '../decorators/public.decorator';
+import { EducatorActiveGuard } from '../guards/educator-active.guard';
 import { CreateTestUseCase } from '../../application/use-cases/test/CreateTestUseCase';
 import { CreateQuestionUseCase } from '../../application/use-cases/question/CreateQuestionUseCase';
 import { GetTestUseCase } from '../../application/use-cases/test/GetTestUseCase';
@@ -21,6 +22,7 @@ import { UpdateOptionDto } from './dto/update-option.dto';
  * Pazar yeri listesi ve test detayı herkese açıktır (@Public).
  */
 @Controller()
+@UseGuards(EducatorActiveGuard)
 export class TestsController {
   constructor(
     @Inject(CreateTestUseCase) private readonly createTestUC: CreateTestUseCase,

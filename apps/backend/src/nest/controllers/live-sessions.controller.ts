@@ -9,11 +9,13 @@ import {
   Req,
   Inject,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ApiErrorResponses } from '../swagger/decorators';
 import { Roles } from '../decorators/roles.decorator';
 import { Public } from '../decorators/public.decorator';
+import { EducatorActiveGuard } from '../guards/educator-active.guard';
 
 import { CreateLiveSessionDto } from './dto/create-live-session.dto';
 import { CreateLiveTierDto } from './dto/create-live-tier.dto';
@@ -41,6 +43,7 @@ import { GetLiveSessionComparisonUseCase } from '../../application/use-cases/liv
 @Controller('live-sessions')
 @ApiTags('LiveSessions')
 @ApiBearerAuth('bearer')
+@UseGuards(EducatorActiveGuard)
 export class LiveSessionsController {
   constructor(
     @Inject(CreateLiveSessionUseCase) private readonly createUC: CreateLiveSessionUseCase,

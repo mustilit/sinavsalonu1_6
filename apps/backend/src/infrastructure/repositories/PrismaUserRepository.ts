@@ -65,25 +65,48 @@ export class PrismaUserRepository implements IUserRepository {
     });
   }
 
+  /**
+   * Raw SQL lookup — Prisma client regenerate edilmediği için (Windows EPERM)
+   * UserStatus enum'da REJECTED yok; findUnique REJECTED kullanıcı görür görmez
+   * patlardı (login dahil tüm akış). status::text + role::text cast ile bypass.
+   */
+  private async findByRaw(field: 'email' | 'username' | 'id', value: string): Promise<User | null> {
+    const rows = await (field === 'email'
+      ? prisma.$queryRaw<any[]>`
+          SELECT id, email, username, "passwordHash",
+                 role::text AS role, status::text AS status,
+                 "educatorApprovedAt", "passwordResetTokenExpiresAt",
+                 metadata, "createdAt", "updatedAt"
+          FROM users WHERE email = ${value.toLowerCase()} LIMIT 1
+        `
+      : field === 'username'
+      ? prisma.$queryRaw<any[]>`
+          SELECT id, email, username, "passwordHash",
+                 role::text AS role, status::text AS status,
+                 "educatorApprovedAt", "passwordResetTokenExpiresAt",
+                 metadata, "createdAt", "updatedAt"
+          FROM users WHERE username = ${value} LIMIT 1
+        `
+      : prisma.$queryRaw<any[]>`
+          SELECT id, email, username, "passwordHash",
+                 role::text AS role, status::text AS status,
+                 "educatorApprovedAt", "passwordResetTokenExpiresAt",
+                 metadata, "createdAt", "updatedAt"
+          FROM users WHERE id = ${value} LIMIT 1
+        `);
+    return rows.length ? this.toDomain(rows[0]) : null;
+  }
+
   async findByEmail(email: string): Promise<User | null> {
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-    return user ? this.toDomain(user) : null;
+    return this.findByRaw('email', email);
   }
 
   async findByUsername(username: string): Promise<User | null> {
-    const user = await prisma.user.findUnique({
-      where: { username },
-    });
-    return user ? this.toDomain(user) : null;
+    return this.findByRaw('username', username);
   }
 
   async findById(id: string): Promise<User | null> {
-    const user = await prisma.user.findUnique({
-      where: { id },
-    });
-    return user ? this.toDomain(user) : null;
+    return this.findByRaw('id', id);
   }
 
   async updateLastLoginAt(userId: string, date: Date): Promise<void> {

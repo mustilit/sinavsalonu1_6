@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Put, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { ApiErrorResponses } from '../swagger/decorators';
 import { Roles } from '../decorators/roles.decorator';
+import { EducatorActiveGuard } from '../guards/educator-active.guard';
 import { prisma } from '../../infrastructure/database/prisma';
 import { UpsertDraftUseCase } from '../../application/use-cases/draft/UpsertDraftUseCase';
 import { GetDraftUseCase } from '../../application/use-cases/draft/GetDraftUseCase';
@@ -21,6 +22,7 @@ import { UpsertDraftDto } from './dto/upsert-draft.dto';
 @Controller('drafts')
 @ApiTags('Drafts')
 @ApiBearerAuth('bearer')
+@UseGuards(EducatorActiveGuard)
 export class DraftsController {
   private readonly upsertUC: UpsertDraftUseCase;
   private readonly getUC: GetDraftUseCase;

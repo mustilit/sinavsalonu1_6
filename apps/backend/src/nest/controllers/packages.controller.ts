@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Patch, Put, Delete, Param, Body, Req, Inject } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Put, Delete, Param, Body, Req, Inject, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOkResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ApiErrorResponses } from '../swagger/decorators';
 import { Roles } from '../decorators/roles.decorator';
+import { EducatorActiveGuard } from '../guards/educator-active.guard';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
 import { AddTestToPackageDto } from './dto/add-test-to-package.dto';
@@ -22,6 +23,7 @@ import { UnpublishTestPackageUseCase } from '../../application/use-cases/package
 @Controller('packages')
 @ApiTags('Packages')
 @ApiBearerAuth('bearer')
+@UseGuards(EducatorActiveGuard)
 export class PackagesController {
   constructor(
     @Inject(CreateTestPackageUseCase) private readonly createUC: CreateTestPackageUseCase,

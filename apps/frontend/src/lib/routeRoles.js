@@ -139,16 +139,43 @@ export function normalizeRole(role) {
   return (role || '').toString().toUpperCase();
 }
 
+/** Kullanıcı statüsünü büyük harfe normalize et */
+export function normalizeStatus(status) {
+  return (status || '').toString().toUpperCase();
+}
+
+/**
+ * Reddedilen eğiticinin (REJECTED) yalnızca girebileceği sayfalar.
+ * Amaç: Hatasını düzeltip yeniden başvurabilsin, başka bir aksiyon (test/paket/canlı
+ * oturum oluşturma, satış görüntüleme vb.) yapamasın. Sidebar buna göre filtrelenir,
+ * doğrudan URL girişinde de bu izin matrisi tutar.
+ */
+export const REJECTED_EDUCATOR_ALLOWED_PAGES = new Set([
+  'EducatorSettings',     // Red bildirimi + profil düzenle + Yeniden Başvur
+  'EmailPreferences',     // Mail tercihleri (hesap kontrolü)
+  'MyModerationStatus',   // Hesap durumu görünür kalsın
+]);
+
+/** Aktif bir eğitici hesabı sayılan statüler */
+const ACTIVE_EDUCATOR_STATUSES = new Set(['ACTIVE', 'APPROVED', 'PENDING_EDUCATOR_APPROVAL']);
+
 /**
  * Kullanıcı bu sayfaya erişebilir mi?
  * @param {string} pageName - Sayfa anahtarı (örn. 'MyResults')
- * @param {{ role?: string } | null} user - Giriş yapmış kullanıcı veya null
+ * @param {{ role?: string, status?: string } | null} user - Giriş yapmış kullanıcı veya null
  */
 export function canAccessPage(pageName, user) {
   const roles = PAGE_ROLES[pageName];
   if (!roles || roles.includes(ROLES.PUBLIC)) return true;
   if (!user) return false;
   const r = normalizeRole(user.role);
+  const status = normalizeStatus(user.status);
+
+  // REJECTED eğitici: sadece beyaz liste sayfalarına girebilir
+  if (r === ROLES.EDUCATOR && status === 'REJECTED') {
+    return REJECTED_EDUCATOR_ALLOWED_PAGES.has(pageName);
+  }
+
   if (r === ROLES.ADMIN) return true;
   // Worker: yalnızca kendisine atanan sayfalar
   if (r === ROLES.WORKER) {
@@ -163,14 +190,31 @@ export function canAccessPage(pageName, user) {
  */
 export function getHomeForRole(role, user) {
   const r = normalizeRole(role);
+  const status = normalizeStatus(user?.status);
+  // REJECTED eğitici doğrudan ayarlar sayfasına gitsin (red bildirimi + düzenleme formu)
+  if (r === ROLES.EDUCATOR && status === 'REJECTED') return 'EducatorSettings';
   if (r === ROLES.ADMIN) return 'AdminDashboard';
-  if (r === ROLES.EDUCATOR) return 'EducatorDashboard';
+  if (r === ROLES.EDUCATOR) {
+    // Onay bekleyenler de Settings'e — Dashboard'u görmesinler
+    if (status && !ACTIVE_EDUCATOR_STATUSES.has(status)) return 'EducatorSettings';
+    return 'EducatorDashboard';
+  }
   if (r === ROLES.WORKER) {
     // Worker için ilk izin verilen sayfayı döndür
     const pages = Array.isArray(user?.workerPages) ? user.workerPages : [];
     return pages[0] ?? 'AdminDashboard';
   }
   return 'Explore';
+}
+
+/**
+ * Kullanıcı reddedilmiş bir eğitici mi? (UI'da banner / sidebar filtresi vb.)
+ */
+export function isRejectedEducator(user) {
+  return (
+    normalizeRole(user?.role) === ROLES.EDUCATOR &&
+    normalizeStatus(user?.status) === 'REJECTED'
+  );
 }
 
 /** Giriş/kayıt sayfaları - sidebar yok, giriş yapmışsa ana sayfaya yönlendirilir */
