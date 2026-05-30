@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { createPageUrl } from "@/utils";
@@ -314,7 +314,9 @@ export default function Home() {
   const { data: packages = [], isLoading: pkgsLoading } = useQuery({
     queryKey: ["home-popular-packages", examTypeIdsParam],
     queryFn: async () => {
-      const params = new URLSearchParams({ limit: "6" });
+      // Önizleme için cömert çek (12); gösterimde grid'in gerçek sütun sayısına
+      // göre tam 2 satır kadar kesilir (aşağıdaki visiblePackages).
+      const params = new URLSearchParams({ limit: "12" });
       if (examTypeIdsParam) {
         const firstType = examTypeIdsParam.split(",")[0]?.trim();
         if (firstType) params.set("examTypeId", firstType);
@@ -324,6 +326,28 @@ export default function Home() {
     },
     staleTime: 3 * 60 * 1000,
   });
+
+  // "Test Paketleri" grid'i auto-fill olduğundan sütun sayısı viewport'a göre
+  // değişir. Sabit sayı yarım satır bırakır; bunun yerine grid'in çözdüğü gerçek
+  // sütun sayısını ölçüp TAM 2 satır (cols × 2) kadar paket gösteririz.
+  const pkgGridRef = useRef(null);
+  const [pkgCols, setPkgCols] = useState(0);
+  useLayoutEffect(() => {
+    const el = pkgGridRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const measure = () => {
+      const tracks = getComputedStyle(el)
+        .gridTemplateColumns.split(" ")
+        .filter(Boolean).length;
+      if (tracks > 0) setPkgCols(tracks);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [packages.length]);
+  // Ölçülene kadar 8 (4 sütunlu masaüstünde 2 satır) ile başla; ölçüm sonrası tam 2 satır.
+  const visiblePackages = packages.slice(0, (pkgCols > 0 ? pkgCols : 4) * 2);
 
   const { data: ownedPackages = [] } = useQuery({
     queryKey: ["home-owned-packages", user?.id],
@@ -534,8 +558,8 @@ export default function Home() {
               <p>{t("pages:home.empty.noPackages")}</p>
             </div>
           ) : (
-            <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
-              {packages.map((pkg) => (
+            <div ref={pkgGridRef} className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+              {visiblePackages.map((pkg) => (
                 <TestPackageCard
                   key={pkg.id}
                   test={pkgToTestCard(pkg)}
