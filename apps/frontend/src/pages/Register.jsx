@@ -108,6 +108,8 @@ export default function Register() {
   const [specializations, setSpecializations] = useState([]);
   const [educationInfo, setEducationInfo] = useState('');
   const [bio, setBio] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
 
   // Step 3 state (sözleşmeler)
   const [termsContract, setTermsContract] = useState(null);
@@ -273,6 +275,8 @@ export default function Register() {
           specializations,
           educationInfo: educationInfo || undefined,
           bio: bio || undefined,
+          linkedinUrl: linkedinUrl || undefined,
+          websiteUrl: websiteUrl || undefined,
         });
         navigate(createPageUrl('VerifyEmail') + `?email=${encodeURIComponent(email)}&role=educator`, { replace: true });
       } else {
@@ -601,6 +605,35 @@ export default function Register() {
                 onChange={(e) => setBio(e.target.value)}
                 placeholder={t('auth:register.wizard.bioPlaceholder', { defaultValue: 'Kendinizi kısaca tanıtın…' })}
                 rows={3}
+                className="w-full"
+              />
+            </div>
+
+            {/* LinkedIn ve kişisel web sitesi — opsiyonel ama admin için değerli bağlantılar */}
+            <div>
+              <label htmlFor="wizard-linkedin" className="block text-sm font-medium text-slate-700 mb-1">
+                {t('auth:register.wizard.linkedinLabel', { defaultValue: 'LinkedIn Profili (opsiyonel)' })}
+              </label>
+              <Input
+                id="wizard-linkedin"
+                type="url"
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+                placeholder="https://www.linkedin.com/in/..."
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="wizard-website" className="block text-sm font-medium text-slate-700 mb-1">
+                {t('auth:register.wizard.websiteLabel', { defaultValue: 'Kişisel Web Sitesi (opsiyonel)' })}
+              </label>
+              <Input
+                id="wizard-website"
+                type="url"
+                value={websiteUrl}
+                onChange={(e) => setWebsiteUrl(e.target.value)}
+                placeholder="https://..."
                 className="w-full"
               />
             </div>

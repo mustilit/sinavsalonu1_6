@@ -24,6 +24,10 @@ export type PendingRegistrationModel = {
   educationInfo?: string | null;
   /** Eğitici wizard step 2 — tanıtım metni / bio (opsiyonel) */
   bio?: string | null;
+  /** Eğitici wizard step 2 — LinkedIn profil URL'i (opsiyonel) */
+  linkedinUrl?: string | null;
+  /** Eğitici wizard step 2 — kişisel web sitesi URL'i (opsiyonel) */
+  websiteUrl?: string | null;
 };
 
 export interface IPendingRegistrationRepository {
@@ -46,6 +50,8 @@ export interface IPendingRegistrationRepository {
     specializations?: string[];
     educationInfo?: string | null;
     bio?: string | null;
+    linkedinUrl?: string | null;
+    websiteUrl?: string | null;
   }): Promise<PendingRegistrationModel>;
 
   findByEmail(email: string): Promise<PendingRegistrationModel | null>;

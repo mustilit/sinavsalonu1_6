@@ -32,6 +32,8 @@ export class PrismaPendingRegistrationRepository implements IPendingRegistration
     specializations?: string[];
     educationInfo?: string | null;
     bio?: string | null;
+    linkedinUrl?: string | null;
+    websiteUrl?: string | null;
   }): Promise<PendingRegistrationModel> {
     const id = randomUUID();
     const email = input.email.toLowerCase();
@@ -44,6 +46,7 @@ export class PrismaPendingRegistrationRepository implements IPendingRegistration
         "verificationToken", "verificationTokenExpiresAt",
         ip, "userAgent", "tenantId",
         "cvUrl", specializations, "educationInfo", bio,
+        "linkedinUrl", "websiteUrl",
         "createdAt"
       ) VALUES (
         ${id}, ${email}, ${input.username}, ${input.passwordHash},
@@ -53,6 +56,7 @@ export class PrismaPendingRegistrationRepository implements IPendingRegistration
         ${input.verificationToken}, ${input.verificationTokenExpiresAt},
         ${input.ip ?? null}, ${input.userAgent ?? null}, ${input.tenantId ?? null},
         ${input.cvUrl ?? null}, ${specializationsLiteral}::text[], ${input.educationInfo ?? null}, ${input.bio ?? null},
+        ${input.linkedinUrl ?? null}, ${input.websiteUrl ?? null},
         CURRENT_TIMESTAMP
       )
       RETURNING *
@@ -128,6 +132,8 @@ export class PrismaPendingRegistrationRepository implements IPendingRegistration
           : [],
       educationInfo: row.educationInfo ?? null,
       bio: row.bio ?? null,
+      linkedinUrl: row.linkedinUrl ?? null,
+      websiteUrl: row.websiteUrl ?? null,
     };
   }
 }

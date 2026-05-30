@@ -62,6 +62,8 @@ export class VerifyEmailUseCase {
       }
       if (pending.educationInfo) educatorMetadata['education_info'] = pending.educationInfo;
       if (pending.bio) educatorMetadata['bio'] = pending.bio;
+      if (pending.linkedinUrl) educatorMetadata['linkedin_url'] = pending.linkedinUrl;
+      if (pending.websiteUrl) educatorMetadata['website_url'] = pending.websiteUrl;
     }
 
     // User oluştur — transaction içinde

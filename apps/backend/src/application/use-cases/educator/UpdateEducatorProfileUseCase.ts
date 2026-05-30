@@ -21,6 +21,8 @@ export class UpdateEducatorProfileUseCase {
       'bio', 'avatarUrl', 'displayName', 'linkedIn', 'website',
       // Sprint 17: REJECTED eğiticinin yeniden başvuruda güncelleyebildiği alanlar
       'cv_url', 'specialized_exam_types', 'education_info',
+      // Sprint 17+: LinkedIn ve kişisel web sitesi (kayıt wizard step 2)
+      'linkedin_url', 'website_url',
       // EducatorSettings mevcut alanları
       'education', 'phone', 'city', 'google_scholar_url', 'profile_image_url',
       'notification_preferences', 'iban', 'bankName', 'accountHolder', 'linkedin',

@@ -183,6 +183,8 @@ export default function EducatorSettings() {
   const [rejectedSpecializations, setRejectedSpecializations] = useState([]);
   const [rejectedEducation, setRejectedEducation] = useState("");
   const [rejectedBio, setRejectedBio] = useState("");
+  const [rejectedLinkedin, setRejectedLinkedin] = useState("");
+  const [rejectedWebsite, setRejectedWebsite] = useState("");
   const [uploadingRejectedCv, setUploadingRejectedCv] = useState(false);
   const rejectedCvInputRef = useRef(null);
 
@@ -193,6 +195,8 @@ export default function EducatorSettings() {
     setRejectedSpecializations(user.specialized_exam_types || user.metadata?.specialized_exam_types || []);
     setRejectedEducation(user.education || user.metadata?.education_info || "");
     setRejectedBio(user.bio || "");
+    setRejectedLinkedin(user.metadata?.linkedin_url || "");
+    setRejectedWebsite(user.metadata?.website_url || "");
   }, [user?.id]);
 
   const handleRejectedCvUpload = async (e) => {
@@ -239,6 +243,8 @@ export default function EducatorSettings() {
           specialized_exam_types: rejectedSpecializations,
           education_info: rejectedEducation,
           bio: rejectedBio,
+          linkedin_url: rejectedLinkedin || null,
+          website_url: rejectedWebsite || null,
         },
       });
       // 2. status → PENDING_EDUCATOR_APPROVAL (eski alan adıyla da dengesel uyumluluk)
@@ -486,6 +492,42 @@ export default function EducatorSettings() {
                 onChange={(e) => setRejectedBio(e.target.value)}
                 placeholder={t("pages:educatorSettings.profile.bioPlaceholder")}
                 rows={3}
+                className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+
+            {/* LinkedIn — opsiyonel */}
+            <div>
+              <label htmlFor="rejected-linkedin" className="block text-sm font-medium text-rose-800 mb-1">
+                LinkedIn Profili{' '}
+                <span className="font-normal text-rose-500">
+                  ({t("pages:educatorSettings.profile.optional", { defaultValue: "opsiyonel" })})
+                </span>
+              </label>
+              <input
+                id="rejected-linkedin"
+                type="url"
+                value={rejectedLinkedin}
+                onChange={(e) => setRejectedLinkedin(e.target.value)}
+                placeholder="https://www.linkedin.com/in/..."
+                className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+
+            {/* Kişisel Web Sitesi — opsiyonel */}
+            <div>
+              <label htmlFor="rejected-website" className="block text-sm font-medium text-rose-800 mb-1">
+                Kişisel Web Sitesi{' '}
+                <span className="font-normal text-rose-500">
+                  ({t("pages:educatorSettings.profile.optional", { defaultValue: "opsiyonel" })})
+                </span>
+              </label>
+              <input
+                id="rejected-website"
+                type="url"
+                value={rejectedWebsite}
+                onChange={(e) => setRejectedWebsite(e.target.value)}
+                placeholder="https://..."
                 className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>

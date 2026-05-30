@@ -62,6 +62,8 @@ export const auth = {
       ...(opts.specializations?.length ? { specializations: opts.specializations } : {}),
       ...(opts.educationInfo ? { educationInfo: opts.educationInfo } : {}),
       ...(opts.bio ? { bio: opts.bio } : {}),
+      ...(opts.linkedinUrl ? { linkedinUrl: opts.linkedinUrl } : {}),
+      ...(opts.websiteUrl ? { websiteUrl: opts.websiteUrl } : {}),
     };
     const { data } = await api.post('/auth/register/educator', body);
     return data;

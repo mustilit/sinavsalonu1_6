@@ -52,6 +52,10 @@ export class RegisterEducatorUseCase {
       educationInfo?: string;
       /** Wizard step 2 — tanıtım metni / bio (opsiyonel) */
       bio?: string;
+      /** Wizard step 2 — LinkedIn profil URL'i (opsiyonel) */
+      linkedinUrl?: string;
+      /** Wizard step 2 — kişisel web sitesi URL'i (opsiyonel) */
+      websiteUrl?: string;
     },
     ctx?: { ip?: string; userAgent?: string },
   ): Promise<{ message: string; email: string }> {
@@ -139,6 +143,8 @@ export class RegisterEducatorUseCase {
         specializations: dto.specializations ?? [],
         educationInfo: dto.educationInfo ?? null,
         bio: dto.bio ?? null,
+        linkedinUrl: dto.linkedinUrl?.trim() ? dto.linkedinUrl.trim() : null,
+        websiteUrl: dto.websiteUrl?.trim() ? dto.websiteUrl.trim() : null,
       });
 
       return { message: 'Doğrulama maili gönderildi', email };

@@ -330,6 +330,8 @@ export class AuthController {
       specializations?: string[];
       educationInfo?: string;
       bio?: string;
+      linkedinUrl?: string;
+      websiteUrl?: string;
     },
     @Req() req: any,
   ) {
@@ -363,6 +365,8 @@ export class AuthController {
           specializations: Array.isArray(body.specializations) ? body.specializations : [],
           educationInfo: body.educationInfo,
           bio: body.bio,
+          linkedinUrl: body.linkedinUrl,
+          websiteUrl: body.websiteUrl,
         },
         { ip, userAgent },
       );

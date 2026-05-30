@@ -718,21 +718,67 @@ export default function ManageUsers() {
                 </dl>
               </div>
 
-              {/* CV */}
-              {reviewDetail.metadata?.cv_url && (
+              {/* CV / Özgeçmiş — her başvuruda gösterilir, yoksa "yüklenmemiş" notu */}
+              <div className="rounded-lg border border-slate-200 p-4">
+                <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-500" aria-hidden="true" />
+                  CV / Özgeçmiş
+                </h3>
+                {reviewDetail.metadata?.cv_url ? (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <a
+                      href={reviewDetail.metadata.cv_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:underline"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                      Yeni sekmede aç
+                    </a>
+                    <a
+                      href={reviewDetail.metadata.cv_url}
+                      download
+                      className="inline-flex items-center gap-1.5 text-sm text-emerald-700 hover:underline"
+                    >
+                      ↓ İndir
+                    </a>
+                    <span className="text-xs text-slate-400 truncate max-w-[280px]">
+                      {reviewDetail.metadata.cv_url.split('/').pop()}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400 italic">CV yüklenmemiş (eski kayıt).</p>
+                )}
+              </div>
+
+              {/* Sosyal bağlantılar — LinkedIn ve kişisel web sitesi */}
+              {(reviewDetail.metadata?.linkedin_url || reviewDetail.metadata?.website_url) && (
                 <div className="rounded-lg border border-slate-200 p-4">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-indigo-500" aria-hidden="true" />
-                    CV / Özgeçmiş
-                  </h3>
-                  <a
-                    href={reviewDetail.metadata.cv_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline"
-                  >
-                    CV'yi yeni sekmede aç <ExternalLink className="w-3 h-3" aria-hidden="true" />
-                  </a>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Bağlantılar</h3>
+                  <div className="flex flex-col gap-1.5 text-sm">
+                    {reviewDetail.metadata?.linkedin_url && (
+                      <a
+                        href={reviewDetail.metadata.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-indigo-600 hover:underline"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                        LinkedIn Profili
+                      </a>
+                    )}
+                    {reviewDetail.metadata?.website_url && (
+                      <a
+                        href={reviewDetail.metadata.website_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-indigo-600 hover:underline"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                        Kişisel Web Sitesi
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
 

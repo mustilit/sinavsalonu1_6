@@ -90,6 +90,8 @@ export class AdminEducatorsController {
         cv_url: user.metadata?.cv_url ?? null,
         education_info: user.metadata?.education_info ?? null,
         bio: user.metadata?.bio ?? null,
+        linkedin_url: user.metadata?.linkedin_url ?? null,
+        website_url: user.metadata?.website_url ?? null,
       },
       specializations,
       contractAcceptances: acceptances,
