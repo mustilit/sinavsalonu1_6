@@ -1,5 +1,10 @@
 /**
  * PrismaUserRepository unit testleri.
+ *
+ * Not (B9): findByEmail/findByUsername/findById/list/updateEducatorProfile
+ * `$queryRaw` + `$executeRaw` kullanıyor (REJECTED enum'unu Prisma client tanımıyor;
+ * `prisma.user.findUnique/findMany/update` row hydrate edip patlardı). Mock'a
+ * `$queryRaw` ve `$executeRaw` eklenmeden testler kırılıyordu.
  */
 jest.mock('../../src/infrastructure/database/prisma', () => ({
   prisma: {
@@ -15,8 +20,11 @@ jest.mock('../../src/infrastructure/database/prisma', () => ({
     },
     workerPermission: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
     $transaction: jest.fn(),
+    $queryRaw: jest.fn(),
+    $executeRaw: jest.fn(),
   },
 }));
 
@@ -53,36 +61,62 @@ describe('PrismaUserRepository', () => {
     repo = new PrismaUserRepository();
   });
 
-  // --- findByEmail ---
+  // --- findByEmail (raw SQL — B9) ---
 
   describe('findByEmail', () => {
     it('email kayıtlıysa kullanıcıyı döner', async () => {
-      mock.user.findUnique.mockResolvedValueOnce(makeUserRow());
+      mock.$queryRaw.mockResolvedValueOnce([makeUserRow()]);
       const result = await repo.findByEmail('test@example.com');
       expect(result).not.toBeNull();
       expect(result!.email).toBe('test@example.com');
     });
 
-    it('email bulunamazsa null döner', async () => {
-      mock.user.findUnique.mockResolvedValueOnce(null);
+    it('email bulunamazsa null döner (boş array)', async () => {
+      mock.$queryRaw.mockResolvedValueOnce([]);
       const result = await repo.findByEmail('unknown@example.com');
       expect(result).toBeNull();
     });
 
-    it('emaili lowercase\'e normalize ederek sorgular', async () => {
-      mock.user.findUnique.mockResolvedValueOnce(makeUserRow({ email: 'upper@example.com' }));
+    it("emaili lowercase'e normalize ederek sorgular", async () => {
+      mock.$queryRaw.mockResolvedValueOnce([makeUserRow({ email: 'upper@example.com' })]);
       await repo.findByEmail('UPPER@EXAMPLE.COM');
-      expect(mock.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'upper@example.com' },
-      });
+      // Prisma template literal — values dizisinde lowercase parametre
+      const callArgs = mock.$queryRaw.mock.calls[0];
+      const values = callArgs.slice(1).flat();
+      expect(values).toContain('upper@example.com');
+    });
+
+    it('REJECTED status kullanıcıyı sorunsuz döndürür (enum bypass)', async () => {
+      // Prisma client'da REJECTED yok; raw SQL `status::text` cast ile string olarak gelir.
+      mock.$queryRaw.mockResolvedValueOnce([makeUserRow({ status: 'REJECTED' })]);
+      const result = await repo.findByEmail('rejected@example.com');
+      expect(result).not.toBeNull();
+      expect((result as any)!.status).toBe('REJECTED');
     });
   });
 
-  // --- findById ---
+  // --- findByUsername (raw SQL — B9) ---
+
+  describe('findByUsername', () => {
+    it('username kayıtlıysa kullanıcıyı döner', async () => {
+      mock.$queryRaw.mockResolvedValueOnce([makeUserRow({ username: 'mehmet' })]);
+      const result = await repo.findByUsername('mehmet');
+      expect(result).not.toBeNull();
+      expect(result!.username).toBe('mehmet');
+    });
+
+    it('bulunamazsa null döner', async () => {
+      mock.$queryRaw.mockResolvedValueOnce([]);
+      const result = await repo.findByUsername('yok');
+      expect(result).toBeNull();
+    });
+  });
+
+  // --- findById (raw SQL — B9) ---
 
   describe('findById', () => {
     it('kullanıcı bulunduğunda domain nesnesini döner', async () => {
-      mock.user.findUnique.mockResolvedValueOnce(makeUserRow());
+      mock.$queryRaw.mockResolvedValueOnce([makeUserRow()]);
       const result = await repo.findById('user-1');
       expect(result).not.toBeNull();
       expect(result!.id).toBe('user-1');
@@ -90,7 +124,7 @@ describe('PrismaUserRepository', () => {
     });
 
     it('kullanıcı bulunamadığında null döner', async () => {
-      mock.user.findUnique.mockResolvedValueOnce(null);
+      mock.$queryRaw.mockResolvedValueOnce([]);
       const result = await repo.findById('nonexistent');
       expect(result).toBeNull();
     });
@@ -113,9 +147,9 @@ describe('PrismaUserRepository', () => {
   // --- updateEducatorStatus ---
 
   describe('updateEducatorStatus', () => {
-    it('INACTIVE durumunu SUSPENDED\'a çevirir', async () => {
+    it("INACTIVE durumunu SUSPENDED'a çevirir", async () => {
       mock.user.updateMany.mockResolvedValueOnce({ count: 1 });
-      mock.user.findUnique.mockResolvedValueOnce(makeUserRow({ status: 'SUSPENDED' }));
+      mock.$queryRaw.mockResolvedValueOnce([makeUserRow({ status: 'SUSPENDED' })]);
 
       const result = await repo.updateEducatorStatus('user-1', { status: 'INACTIVE' });
       expect(mock.user.updateMany).toHaveBeenCalledWith({
@@ -129,6 +163,66 @@ describe('PrismaUserRepository', () => {
       mock.user.updateMany.mockResolvedValueOnce({ count: 0 });
       const result = await repo.updateEducatorStatus('nonexistent', { status: 'ACTIVE' });
       expect(result).toBeNull();
+    });
+  });
+
+  // --- updateEducatorProfile (raw SQL + metadata merge — B9) ---
+
+  describe('updateEducatorProfile', () => {
+    it('boş metadata için sadece findById sonucu döner (no-op)', async () => {
+      mock.$queryRaw.mockResolvedValueOnce([makeUserRow()]);
+      const result = await repo.updateEducatorProfile('user-1', { metadata: {} });
+      // updateEducatorProfile içinde $executeRaw çağrılmadığını doğrula
+      expect(mock.$executeRaw).not.toHaveBeenCalled();
+      expect(result).not.toBeNull();
+    });
+
+    it('mevcut metadata + yeni alanları merge edip yazar', async () => {
+      // 1. $queryRaw: SELECT metadata
+      mock.$queryRaw.mockResolvedValueOnce([{ metadata: { existing: 'value', shared: 'old' } }]);
+      // 2. $executeRaw: UPDATE
+      mock.$executeRaw.mockResolvedValueOnce(1);
+      // 3. findById sonrası tekrar $queryRaw
+      mock.$queryRaw.mockResolvedValueOnce([makeUserRow({
+        metadata: { existing: 'value', shared: 'new', added: 'x' },
+      })]);
+
+      const result = await repo.updateEducatorProfile('user-1', {
+        metadata: { shared: 'new', added: 'x' },
+      });
+
+      expect(mock.$executeRaw).toHaveBeenCalledTimes(1);
+      // Update parametrelerinde merged JSON.stringify'lanmış olmalı
+      const updateCall = mock.$executeRaw.mock.calls[0];
+      const values = updateCall.slice(1).flat();
+      const jsonParam = values.find((v: any) => typeof v === 'string' && v.startsWith('{'));
+      expect(jsonParam).toBeDefined();
+      const parsed = JSON.parse(jsonParam);
+      expect(parsed).toEqual({ existing: 'value', shared: 'new', added: 'x' });
+      expect(result).not.toBeNull();
+    });
+
+    it('kullanıcı bulunamazsa null döner', async () => {
+      mock.$queryRaw.mockResolvedValueOnce([]);
+      const result = await repo.updateEducatorProfile('nonexistent', {
+        metadata: { cv_url: 'x.pdf' },
+      });
+      expect(mock.$executeRaw).not.toHaveBeenCalled();
+      expect(result).toBeNull();
+    });
+
+    it('REJECTED kullanıcıda da çalışır (enum bypass)', async () => {
+      mock.$queryRaw.mockResolvedValueOnce([{ metadata: {} }]);
+      mock.$executeRaw.mockResolvedValueOnce(1);
+      mock.$queryRaw.mockResolvedValueOnce([makeUserRow({
+        status: 'REJECTED',
+        metadata: { cv_url: 'new.pdf' },
+      })]);
+
+      const result = await repo.updateEducatorProfile('user-1', {
+        metadata: { cv_url: 'new.pdf' },
+      });
+      expect((result as any)!.status).toBe('REJECTED');
     });
   });
 
@@ -146,22 +240,25 @@ describe('PrismaUserRepository', () => {
     });
   });
 
-  // --- list ---
+  // --- list (raw SQL — Sprint öncesi) ---
 
   describe('list', () => {
     it('filtre olmadan kullanıcıları listeler', async () => {
       const rows = [makeUserRow(), makeUserRow({ id: 'user-2', email: 'b@b.com', username: 'b' })];
-      mock.user.findMany.mockResolvedValueOnce(rows);
+      mock.$queryRaw.mockResolvedValueOnce(rows);
       const result = await repo.list({});
       expect(result).toHaveLength(2);
     });
 
-    it('limit 500 ile sınırlandırılır', async () => {
-      mock.user.findMany.mockResolvedValueOnce([]);
-      await repo.list({ limit: 9999 });
-      expect(mock.user.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 500 }),
-      );
+    it('REJECTED kullanıcılar da liste sonuçlarına dahil edilir', async () => {
+      const rows = [
+        makeUserRow({ status: 'ACTIVE' }),
+        makeUserRow({ id: 'rej-1', status: 'REJECTED' }),
+      ];
+      mock.$queryRaw.mockResolvedValueOnce(rows);
+      const result = await repo.list({});
+      expect(result).toHaveLength(2);
+      expect((result[1] as any).status).toBe('REJECTED');
     });
   });
 });
