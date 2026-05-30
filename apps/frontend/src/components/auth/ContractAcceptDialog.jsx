@@ -40,6 +40,9 @@ export function ContractAcceptDialog({ open, onOpenChange, isEducator, submittin
   const [privacy, setPrivacy] = useState(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  // Geçici hata (örn. backend yeniden başlarken) sonrası kapat/aç gerektirmeden
+  // tekrar denemek için: artırınca aşağıdaki useEffect fetch'i yeniden çalıştırır.
+  const [retryNonce, setRetryNonce] = useState(0);
 
   // Her açılışta sözleşmeleri yeniden çek (on-demand). Kapatınca state sıfırlanır.
   useEffect(() => {
@@ -66,7 +69,7 @@ export function ContractAcceptDialog({ open, onOpenChange, isEducator, submittin
     return () => {
       cancelled = true;
     };
-  }, [open, isEducator]);
+  }, [open, isEducator, retryNonce]);
 
   const canConfirm =
     acceptedTerms && acceptedPrivacy && Boolean(terms?.id) && Boolean(privacy?.id) && !submitting;
@@ -97,15 +100,26 @@ export function ContractAcceptDialog({ open, onOpenChange, isEducator, submittin
         {!loading && loadError && (
           <div
             role="alert"
-            className="rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700 flex gap-2"
+            className="rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700"
           >
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-            <span>
-              {t('auth:register.contractsLoadFailed', {
-                defaultValue:
-                  'Sözleşme metinleri şu an yüklenemedi. Lütfen pencereyi kapatıp tekrar açın.',
-              })}
-            </span>
+            <div className="flex gap-2">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+              <span>
+                {t('auth:register.contractsLoadFailed', {
+                  defaultValue: 'Sözleşme metinleri şu an yüklenemedi.',
+                })}
+              </span>
+            </div>
+            <div className="mt-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setRetryNonce((n) => n + 1)}
+              >
+                {t('auth:register.contractDialog.retry', { defaultValue: 'Tekrar dene' })}
+              </Button>
+            </div>
           </div>
         )}
 
