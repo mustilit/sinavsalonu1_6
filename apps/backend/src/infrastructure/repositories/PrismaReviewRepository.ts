@@ -19,7 +19,9 @@ export class PrismaReviewRepository implements IReviewRepository {
       where: { packageId: input.packageId, candidateId: input.candidateId },
     });
 
-    const resolvedTestRating = input.testRating ?? existing?.testRating ?? 1;
+    // Educator-only review (sadece eğitici puanı) durumunda testRating null kalır —
+    // sahte bir test puanı (eski "1" default'u) ÜRETİLMEZ.
+    const resolvedTestRating = input.testRating ?? existing?.testRating ?? null;
 
     let row: any;
     if (existing) {
@@ -70,12 +72,13 @@ export class PrismaReviewRepository implements IReviewRepository {
   }
 
   async getAggregateForPackage(packageId: string): Promise<{ avg: number | null; count: number }> {
+    // count: testRating dolu satır sayısı — educator-only satırlar (testRating null) sayılmaz.
     const rows: any = await (prisma as any).review.aggregate({
       _avg: { testRating: true },
-      _count: { _all: true },
+      _count: { testRating: true },
       where: { packageId },
     });
-    return { avg: rows._avg.testRating ?? null, count: rows._count._all ?? 0 };
+    return { avg: rows._avg.testRating ?? null, count: rows._count.testRating ?? 0 };
   }
 
   async getAggregateForEducator(educatorId: string): Promise<{ avg: number | null; count: number }> {

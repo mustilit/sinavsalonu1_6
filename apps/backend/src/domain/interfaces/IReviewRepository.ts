@@ -4,7 +4,7 @@ export type ReviewRecord = {
   testId: string | null;
   educatorId: string;
   candidateId: string;
-  testRating: number;
+  testRating: number | null;
   educatorRating?: number | null;
   comment?: string | null;
   createdAt: string;

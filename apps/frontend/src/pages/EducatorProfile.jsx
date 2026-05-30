@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPageUrl } from '@/utils';
 import api from '@/lib/api/apiClient';
 import { entities } from '@/api/dalClient';
@@ -9,6 +9,10 @@ import TestPackageCard from '@/components/ui/TestPackageCard';
 import PaginationBar from '@/components/ui/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import RatingStars from '@/components/ui/StarRating';
+import { toast } from 'sonner';
 import { ArrowLeft, Star, BookOpen, Users, GraduationCap, MessageSquare, User } from 'lucide-react';
 import { buildPageUrl, useAppNavigate } from '@/lib/navigation';
 
@@ -81,6 +85,19 @@ export default function EducatorProfile() {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Aday için: bu eğiticiyi puanlayabilir mi (satın alma var mı) + mevcut puanı.
+  const isCandidate = (user?.role || '').toString().toUpperCase() === 'CANDIDATE';
+  const educatorId = data?.educator?.id;
+  const { data: myRating } = useQuery({
+    queryKey: ['educatorMyRating', educatorId],
+    queryFn: async () => {
+      const res = await api.get(`/educators/${educatorId}/my-rating`);
+      return res?.data ?? res;
+    },
+    enabled: !!educatorId && isCandidate,
+    staleTime: 60_000,
+  });
+
   const { data: purchases = [] } = useQuery({
     queryKey: ['purchases', user?.id],
     queryFn: () => entities.Purchase.filter({}),
@@ -97,6 +114,31 @@ export default function EducatorProfile() {
     queryKey: ['testProgress', user?.id],
     queryFn: () => entities.TestProgress.filter({ user_email: user?.email, is_completed: false }),
     enabled: !!user,
+  });
+
+  const queryClient = useQueryClient();
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+
+  const openRateModal = () => {
+    setRatingValue(myRating?.rating ?? 0);
+    setRatingComment(myRating?.comment ?? '');
+    setShowRateModal(true);
+  };
+
+  const rateMutation = useMutation({
+    mutationFn: ({ rating, comment }) => api.post(`/educators/${educatorId}/rate`, { rating, comment }),
+    onSuccess: () => {
+      toast.success('Değerlendirmeniz kaydedildi');
+      queryClient.invalidateQueries({ queryKey: ['educatorPage', idOrEmail] });
+      queryClient.invalidateQueries({ queryKey: ['educatorReviews', idOrEmail] });
+      queryClient.invalidateQueries({ queryKey: ['educatorMyRating', educatorId] });
+      setShowRateModal(false);
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || 'Değerlendirme kaydedilemedi');
+    },
   });
 
   const purchasedIds = new Set(purchases.map(p => p.test_package_id));
@@ -226,6 +268,24 @@ export default function EducatorProfile() {
               )}
             </div>
 
+            {/* Aday bu eğiticiden test satın almışsa eğiticiyi puanlayabilir
+                (educatorRating — test puanından bağımsız). */}
+            {isCandidate && myRating?.eligible && (
+              <div className="mb-4">
+                <Button
+                  onClick={openRateModal}
+                  variant={myRating?.rating ? 'outline' : 'default'}
+                  className={myRating?.rating ? '' : 'bg-indigo-600 hover:bg-indigo-700'}
+                >
+                  <Star
+                    className={`w-4 h-4 mr-1.5 ${myRating?.rating ? 'fill-amber-400 text-amber-400' : ''}`}
+                    aria-hidden="true"
+                  />
+                  {myRating?.rating ? `Puanını Güncelle (${myRating.rating}/5)` : 'Eğiticiyi Değerlendir'}
+                </Button>
+              </div>
+            )}
+
             {/* Uzmanlık Alanları */}
             {specialties.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
@@ -312,10 +372,12 @@ export default function EducatorProfile() {
                   <div>
                     <p className="text-xs text-slate-400 font-medium mb-1">{r.testTitle}</p>
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-500">Test:</span>
-                        <StarRating value={r.testRating} />
-                      </div>
+                      {r.testRating != null && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-slate-500">Test:</span>
+                          <StarRating value={r.testRating} />
+                        </div>
+                      )}
                       {r.educatorRating != null && (
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs text-slate-500">Eğitici:</span>
@@ -336,6 +398,45 @@ export default function EducatorProfile() {
           </div>
         )}
       </div>
+
+      {/* Eğiticiyi Değerlendir modalı — yalnızca satın almış aday açabilir.
+          Eğitici puanı (educatorRating) test puanından bağımsızdır. */}
+      <Dialog open={showRateModal} onOpenChange={setShowRateModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{myRating?.rating ? 'Puanını Güncelle' : 'Eğiticiyi Değerlendir'}</DialogTitle>
+            <DialogDescription>
+              {educator.displayName} ile deneyiminizi puanlayın. Bu puan yalnızca eğiticiye aittir, teste değil.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <RatingStars value={ratingValue} onChange={setRatingValue} size="lg" />
+              {ratingValue > 0 && (
+                <span className="text-lg font-medium text-slate-700">{ratingValue}/5</span>
+              )}
+            </div>
+            <Textarea
+              placeholder="Yorumunuz (isteğe bağlı)"
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              rows={4}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowRateModal(false)}>
+                İptal
+              </Button>
+              <Button
+                onClick={() => rateMutation.mutate({ rating: ratingValue, comment: ratingComment })}
+                disabled={ratingValue === 0 || rateMutation.isPending}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
+                {rateMutation.isPending ? 'Kaydediliyor…' : myRating?.rating ? 'Güncelle' : 'Gönder'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

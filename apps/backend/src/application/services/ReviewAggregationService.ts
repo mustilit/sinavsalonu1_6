@@ -37,14 +37,15 @@ export class ReviewAggregationService {
       by: ['packageId'],
       where: { packageId: { in: packageIds } },
       _avg: { testRating: true },
-      _count: { _all: true },
+      _count: { testRating: true },
     });
     const aggByPackage = new Map<string, { avg: number | null; count: number }>();
     for (const r of rows) {
       if (r.packageId) {
         aggByPackage.set(r.packageId, {
           avg: r._avg.testRating ?? null,
-          count: r._count._all ?? 0,
+          // testRating dolu satır sayısı — educator-only satırlar (testRating null) sayılmaz.
+          count: r._count.testRating ?? 0,
         });
       }
     }

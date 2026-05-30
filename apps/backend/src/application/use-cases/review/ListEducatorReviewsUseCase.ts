@@ -4,7 +4,7 @@ export interface EducatorReviewItem {
   id: string;
   packageId: string | null;
   packageTitle: string;
-  testRating: number;
+  testRating: number | null;
   educatorRating: number | null;
   comment: string | null;
   createdAt: string;

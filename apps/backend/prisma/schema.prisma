@@ -877,7 +877,9 @@ model Review {
   educatorId  String
   candidateId String
 
-  testRating     Int
+  // testRating opsiyonel: aday testi değerlendirmeden SADECE eğiticiyi (educatorRating)
+  // puanlayabilir. Educator-only satırlar testRating = null taşır.
+  testRating     Int?
   educatorRating Int?
   comment        String?
   createdAt      DateTime @default(now())

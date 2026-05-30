@@ -8,8 +8,11 @@ import { EducatorPageQueryDto } from './dto/educator-page-query.dto';
 import { PatchEducatorProfileDto } from './dto/patch-educator-profile.dto';
 import { CreateDiscountCodeDto } from './dto/create-discount-code.dto';
 import { PurchaseAdDto } from './dto/purchase-ad.dto';
+import { RateEducatorDto } from './dto/rate-educator.dto';
 import { GetEducatorPageUseCase } from '../../application/use-cases/educator/GetEducatorPageUseCase';
 import { ListEducatorReviewsUseCase } from '../../application/use-cases/review/ListEducatorReviewsUseCase';
+import { RateEducatorUseCase } from '../../application/use-cases/review/RateEducatorUseCase';
+import { GetMyEducatorRatingUseCase } from '../../application/use-cases/review/GetMyEducatorRatingUseCase';
 import { UpdateEducatorProfileUseCase } from '../../application/use-cases/educator/UpdateEducatorProfileUseCase';
 import { CreateDiscountCodeUseCase } from '../../application/use-cases/discount/CreateDiscountCodeUseCase';
 import { ListEducatorDiscountCodesUseCase } from '../../application/use-cases/discount/ListEducatorDiscountCodesUseCase';
@@ -263,6 +266,36 @@ export class EducatorsController {
     const uc = new ListEducatorReviewsUseCase();
     const l = limit ? parseInt(limit, 10) : 20;
     return uc.execute(id, isNaN(l) ? 20 : l);
+  }
+
+  /**
+   * Aday eğiticiyi puanlar (educatorRating). Satın alma zorunlu (use case doğrular).
+   * Eğitici puanı test puanından (testRating) BAĞIMSIZDIR.
+   */
+  @Post(':id/rate')
+  @Roles('CANDIDATE')
+  @ApiBearerAuth('bearer')
+  @ApiOkResponse({ description: 'Aday eğiticiyi puanlar (1-5, educatorRating)' })
+  @ApiErrorResponses()
+  async rateEducator(@Param('id') id: string, @Body() dto: RateEducatorDto, @Req() req: any) {
+    const candidateId = (req as any).user?.id;
+    const uc = new RateEducatorUseCase();
+    return uc.execute(id, candidateId, { rating: dto.rating, comment: dto.comment });
+  }
+
+  /**
+   * Adayın bu eğitici için puanlama uygunluğu (satın alma var mı) + mevcut puanı.
+   * Frontend "Değerlendir" butonunu ve modal prefill'ini bununla yönetir.
+   */
+  @Get(':id/my-rating')
+  @Roles('CANDIDATE')
+  @ApiBearerAuth('bearer')
+  @ApiOkResponse({ description: 'Adayın eğitici puanı durumu (eligible + mevcut rating/comment)' })
+  @ApiErrorResponses()
+  async myEducatorRating(@Param('id') id: string, @Req() req: any) {
+    const candidateId = (req as any).user?.id;
+    const uc = new GetMyEducatorRatingUseCase();
+    return uc.execute(id, candidateId);
   }
 
   @Public()
