@@ -173,21 +173,26 @@ export default function Educators() {
                     <h3 className="font-semibold text-lg text-slate-900 group-hover:text-indigo-600 transition-colors truncate mb-3">
                       {educator.name}
                     </h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                    {/* Tek satır istatistik: Test solda; puan + satış sağda (ml-auto).
+                        Puan yalnızca varsa gösterilir — yoksa o blok hiç render edilmez.
+                        Dar kartta (280px) sığmazsa flex-wrap ile alt satıra düşer. */}
+                    <div className="flex items-center gap-2 text-sm text-slate-600 flex-wrap">
+                      <span className="flex items-center gap-1.5">
                         <BookOpen className="w-4 h-4 text-indigo-500" />
-                        <span>{educator.testCount} Test</span>
-                      </div>
-                      {educator.avgRating > 0 && (
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                          <span>{educator.avgRating} Puan</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <TrendingUp className="w-4 h-4 text-emerald-500" />
-                        <span>{educator.totalSales} Satış</span>
-                      </div>
+                        {educator.testCount} Test
+                      </span>
+                      <span className="flex items-center gap-3 ml-auto">
+                        {educator.avgRating > 0 && (
+                          <span className="flex items-center gap-1 font-medium text-amber-600">
+                            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                            {educator.avgRating}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1.5">
+                          <TrendingUp className="w-4 h-4 text-emerald-500" />
+                          {educator.totalSales} Satış
+                        </span>
+                      </span>
                     </div>
                   </div>
                 </div>
