@@ -973,7 +973,7 @@
   "educatorSettings": {
     "tabs": {
       "profile": "Profil",
-      "verification": "Doğrulama",
+      "verification": "Özgeçmiş",
       "contact": "İletişim",
       "exams": "Sınav Tercihleri",
       "notifications": "Bildirimler",
@@ -1007,9 +1007,7 @@
       "bioHint": "Profil sayfanızda görünecek tanıtım metni"
     },
     "verification": {
-      "title": "Akademik Doğrulama",
-      "gscholarLabel": "Google Scholar Profil Linki",
-      "gscholarHint": "Akademik geçmişinizi doğrulamak için Google Scholar profil linkinizi ekleyin",
+      "title": "Özgeçmiş",
       "cvLabel": "CV Yükle",
       "cvUploaded": "CV yüklendi",
       "cvView": "Dosyayı görüntüle",
@@ -1024,7 +1022,9 @@
       "phoneLabel": "Telefon",
       "cityLabel": "Şehir",
       "websiteLabel": "Website/Blog",
-      "linkedinLabel": "LinkedIn"
+      "linkedinLabel": "LinkedIn",
+      "gscholarLabel": "Google Scholar Profil Linki",
+      "gscholarHint": "Akademik geçmişinizi doğrulamak için Google Scholar profil linkinizi ekleyin"
     },
     "exams": {
       "title": "Uzmanlık Alanlarım",

@@ -973,7 +973,7 @@
   "educatorSettings": {
     "tabs": {
       "profile": "资料",
-      "verification": "认证",
+      "verification": "简历",
       "contact": "联系方式",
       "exams": "考试偏好",
       "notifications": "通知",
@@ -1007,9 +1007,7 @@
       "bioHint": "显示在您资料页的简介"
     },
     "verification": {
-      "title": "学术认证",
-      "gscholarLabel": "Google Scholar 资料",
-      "gscholarHint": "添加 Google Scholar 链接以验证学术背景",
+      "title": "简历",
       "cvLabel": "上传简历",
       "cvUploaded": "简历已上传",
       "cvView": "查看文件",
@@ -1024,7 +1022,9 @@
       "phoneLabel": "电话",
       "cityLabel": "城市",
       "websiteLabel": "网站/博客",
-      "linkedinLabel": "LinkedIn"
+      "linkedinLabel": "LinkedIn",
+      "gscholarLabel": "Google Scholar 资料",
+      "gscholarHint": "添加 Google Scholar 链接以验证学术背景"
     },
     "exams": {
       "title": "我的专业领域",

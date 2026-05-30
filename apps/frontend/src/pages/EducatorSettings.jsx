@@ -699,21 +699,6 @@ export default function EducatorSettings() {
 
                 <div className="space-y-6">
               <div>
-                <Label htmlFor="google_scholar" className="flex items-center gap-2">
-                  <Globe className="w-4 h-4" />
-                  {t("pages:educatorSettings.verification.gscholarLabel")}
-                </Label>
-                <Input
-                  id="google_scholar"
-                  placeholder="https://scholar.google.com/citations?user=..."
-                  value={formData.google_scholar_url}
-                  onChange={(e) => setFormData({ ...formData, google_scholar_url: e.target.value })}
-                  className="mt-2"
-                />
-                <p className="text-xs text-slate-500 mt-1">{t("pages:educatorSettings.verification.gscholarHint")}</p>
-              </div>
-
-              <div>
                 <Label className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   {t("pages:educatorSettings.verification.cvLabel")}
@@ -847,6 +832,21 @@ export default function EducatorSettings() {
                   onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
                   className="mt-2"
                 />
+              </div>
+
+              <div className="md:col-span-2">
+                <Label htmlFor="google_scholar" className="flex items-center gap-2">
+                  <Globe className="w-4 h-4" />
+                  {t("pages:educatorSettings.contact.gscholarLabel")}
+                </Label>
+                <Input
+                  id="google_scholar"
+                  placeholder="https://scholar.google.com/citations?user=..."
+                  value={formData.google_scholar_url}
+                  onChange={(e) => setFormData({ ...formData, google_scholar_url: e.target.value })}
+                  className="mt-2"
+                />
+                <p className="text-xs text-slate-500 mt-1">{t("pages:educatorSettings.contact.gscholarHint")}</p>
                 </div>
                 </div>
               </div>

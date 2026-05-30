@@ -976,7 +976,7 @@
   "educatorSettings": {
     "tabs": {
       "profile": "Perfil",
-      "verification": "Verificación",
+      "verification": "CV",
       "contact": "Contacto",
       "exams": "Preferencias de examen",
       "notifications": "Notificaciones",
@@ -1010,9 +1010,7 @@
       "bioHint": "Biografía que aparece en tu perfil"
     },
     "verification": {
-      "title": "Verificación académica",
-      "gscholarLabel": "Perfil de Google Scholar",
-      "gscholarHint": "Añade tu Google Scholar para verificar tu trayectoria académica",
+      "title": "CV",
       "cvLabel": "Subir CV",
       "cvUploaded": "CV subido",
       "cvView": "Ver archivo",
@@ -1027,7 +1025,9 @@
       "phoneLabel": "Teléfono",
       "cityLabel": "Ciudad",
       "websiteLabel": "Sitio web/Blog",
-      "linkedinLabel": "LinkedIn"
+      "linkedinLabel": "LinkedIn",
+      "gscholarLabel": "Perfil de Google Scholar",
+      "gscholarHint": "Añade tu Google Scholar para verificar tu trayectoria académica"
     },
     "exams": {
       "title": "Mis áreas de experiencia",

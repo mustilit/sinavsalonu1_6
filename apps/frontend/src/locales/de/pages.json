@@ -973,7 +973,7 @@
   "educatorSettings": {
     "tabs": {
       "profile": "Profil",
-      "verification": "Verifizierung",
+      "verification": "Lebenslauf",
       "contact": "Kontakt",
       "exams": "Testeinstellungen",
       "notifications": "Benachrichtigungen",
@@ -1007,9 +1007,7 @@
       "bioHint": "Bio, die auf Ihrem Profil angezeigt wird"
     },
     "verification": {
-      "title": "Akademische Verifizierung",
-      "gscholarLabel": "Google Scholar Profil",
-      "gscholarHint": "Fügen Sie Ihren Google Scholar Link hinzu, um Ihren akademischen Hintergrund zu verifizieren",
+      "title": "Lebenslauf",
       "cvLabel": "Lebenslauf hochladen",
       "cvUploaded": "Lebenslauf hochgeladen",
       "cvView": "Datei ansehen",
@@ -1024,7 +1022,9 @@
       "phoneLabel": "Telefon",
       "cityLabel": "Stadt",
       "websiteLabel": "Website/Blog",
-      "linkedinLabel": "LinkedIn"
+      "linkedinLabel": "LinkedIn",
+      "gscholarLabel": "Google Scholar Profil",
+      "gscholarHint": "Fügen Sie Ihren Google Scholar Link hinzu, um Ihren akademischen Hintergrund zu verifizieren"
     },
     "exams": {
       "title": "Meine Fachgebiete",
