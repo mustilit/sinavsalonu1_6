@@ -848,20 +848,48 @@ export default function ManageUsers() {
                 </div>
               )}
 
-              {/* Sözleşme kabul (delil) */}
-              {reviewDetail.contractAcceptances?.length > 0 && (
+              {/* İşlem Geçmişi — sözleşme onayları + admin onay/red + eğitici geri gönderim
+                  (audit log + ContractAcceptance backend'de birleştirilip occurredAt'a göre sıralanır). */}
+              {reviewDetail.history?.length > 0 && (
                 <div className="rounded-lg border border-slate-200 p-4">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Sözleşme Onayları</h3>
-                  <ul className="text-xs text-slate-600 space-y-1">
-                    {reviewDetail.contractAcceptances.map((a, i) => (
-                      <li key={i}>
-                        <strong>{a.contract?.title || a.contract?.type}</strong>
-                        {a.contract?.version != null && <span className="ml-1 text-slate-400">v{a.contract.version}</span>}
-                        <span className="text-slate-400"> · {a.acceptedAt && format(new Date(a.acceptedAt), "d MMM yyyy HH:mm", { locale: tr })}</span>
-                        {a.ip && <span className="text-slate-400"> · IP: {a.ip}</span>}
-                      </li>
-                    ))}
-                  </ul>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-3">İşlem Geçmişi</h3>
+                  <ol className="text-xs text-slate-700 space-y-2 border-l-2 border-slate-200 pl-3 ml-1">
+                    {reviewDetail.history.map((h, i) => {
+                      const dot =
+                        h.kind === 'EDUCATOR_APPROVED' ? 'bg-emerald-500'
+                        : h.kind === 'EDUCATOR_REJECTED' ? 'bg-rose-500'
+                        : h.kind === 'EDUCATOR_RESUBMITTED' ? 'bg-amber-500'
+                        : h.kind === 'EDUCATOR_SUSPENDED' ? 'bg-slate-500'
+                        : h.kind === 'EDUCATOR_UNSUSPENDED' ? 'bg-emerald-400'
+                        : h.kind === 'USER_CREATED' ? 'bg-indigo-500'
+                        : 'bg-slate-400'; // CONTRACT_ACCEPTED ve diğerleri
+                      const label =
+                        h.kind === 'EDUCATOR_APPROVED' ? 'Admin onayladı'
+                        : h.kind === 'EDUCATOR_REJECTED' ? 'Admin reddetti'
+                        : h.kind === 'EDUCATOR_RESUBMITTED' ? 'Eğitici yeniden başvurdu'
+                        : h.kind === 'EDUCATOR_SUSPENDED' ? 'Eğitici askıya alındı'
+                        : h.kind === 'EDUCATOR_UNSUSPENDED' ? 'Askı kaldırıldı'
+                        : h.kind === 'USER_CREATED' ? 'Hesap oluşturuldu (e-posta doğrulandı)'
+                        : h.kind === 'CONTRACT_ACCEPTED' ? (h.contractTitle || 'Sözleşme onayı')
+                        : h.kind;
+                      return (
+                        <li key={i} className="relative -ml-[18px] pl-[18px]">
+                          <span className={`absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full ${dot}`} aria-hidden="true" />
+                          <div>
+                            <strong className="text-slate-900">{label}</strong>
+                            {h.contractVersion != null && (
+                              <span className="ml-1 text-slate-400">v{h.contractVersion}</span>
+                            )}
+                            <span className="text-slate-400"> · {h.occurredAt && format(new Date(h.occurredAt), "d MMM yyyy HH:mm", { locale: tr })}</span>
+                            {h.ip && <span className="text-slate-400"> · IP: {h.ip}</span>}
+                          </div>
+                          {h.kind === 'EDUCATOR_REJECTED' && h.metadata?.reason && (
+                            <p className="text-rose-700 mt-0.5">Sebep: {h.metadata.reason}</p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
                 </div>
               )}
 

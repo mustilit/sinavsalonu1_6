@@ -72,6 +72,43 @@ export class AdminEducatorsController {
       orderBy: { acceptedAt: 'desc' },
     });
 
+    // İşlem Geçmişi — admin/system eylemleri (kayıt, onay, red, geri gönderim)
+    const auditRows = await prisma.$queryRaw<Array<{
+      action: string; metadata: any; createdAt: Date; actorId: string | null;
+    }>>`
+      SELECT action::text AS action, metadata, "createdAt", "actorId"
+      FROM audit_logs
+      WHERE "entityId" = ${id}
+        AND action::text IN (
+          'USER_CREATED','EDUCATOR_APPROVED','EDUCATOR_REJECTED',
+          'EDUCATOR_RESUBMITTED','EDUCATOR_SUSPENDED','EDUCATOR_UNSUSPENDED'
+        )
+      ORDER BY "createdAt" DESC
+    `;
+    // Birleşik timeline (ContractAcceptance + AuditLog) — tarih sırasına göre
+    const history = [
+      ...acceptances.map((a) => ({
+        kind: 'CONTRACT_ACCEPTED' as const,
+        occurredAt: a.acceptedAt,
+        contractType: a.contract?.type ?? null,
+        contractVersion: a.contract?.version ?? null,
+        contractTitle: a.contract?.title ?? null,
+        ip: a.ip ?? null,
+        userAgent: a.userAgent ?? null,
+        metadata: null,
+      })),
+      ...auditRows.map((r) => ({
+        kind: r.action,
+        occurredAt: r.createdAt,
+        contractType: null,
+        contractVersion: null,
+        contractTitle: null,
+        ip: null,
+        userAgent: null,
+        metadata: r.metadata ?? null,
+      })),
+    ].sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+
     return {
       id: user.id,
       email: user.email,
@@ -95,6 +132,7 @@ export class AdminEducatorsController {
       },
       specializations,
       contractAcceptances: acceptances,
+      history,
     };
   }
 

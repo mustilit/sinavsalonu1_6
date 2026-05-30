@@ -72,6 +72,51 @@ export class EducatorsController {
   }
 
   /**
+   * Reddedilmiş eğitici başvurusunu yeniden gönder — REJECTED → PENDING_EDUCATOR_APPROVAL.
+   * rejectionReason ve rejectedAt temizlenir. EDUCATOR_RESUBMITTED audit kaydı oluşturulur.
+   * Raw SQL — Prisma client regenerate edilmediği için (Windows EPERM) status enum'a
+   * REJECTED dahil olmayabilir; status::text karşılaştırması güvenli.
+   */
+  @Post('me/resubmit-application')
+  @Roles('EDUCATOR')
+  @ApiBearerAuth('bearer')
+  @ApiOkResponse({ description: 'Educator application resubmitted (REJECTED → PENDING)' })
+  @ApiErrorResponses()
+  async resubmitApplication(@Req() req: any) {
+    const userId = (req as any).user?.id;
+    const { prisma } = require('../../infrastructure/database/prisma');
+    const cur = await prisma.$queryRaw<Array<{ status: string }>>`
+      SELECT status::text AS status FROM users WHERE id = ${userId} LIMIT 1
+    `;
+    if (!cur[0]) throw new Error('USER_NOT_FOUND');
+    if (cur[0].status !== 'REJECTED') {
+      // Sadece REJECTED durumdan yeniden başvuru anlamlı; aksi halde no-op (idempotent).
+      return { status: cur[0].status, message: 'NO_CHANGE' };
+    }
+    const now = new Date();
+    await prisma.$executeRaw`
+      UPDATE users
+      SET status = 'PENDING_EDUCATOR_APPROVAL'::"UserStatus",
+          "rejectionReason" = NULL,
+          "rejectedAt" = NULL,
+          "updatedAt" = ${now}
+      WHERE id = ${userId}
+    `;
+    try {
+      await this.auditRepo.create({
+        action: 'EDUCATOR_RESUBMITTED' as any,
+        entityType: 'USER',
+        entityId: userId,
+        actorId: userId,
+        metadata: {} as any,
+      });
+    } catch {
+      // best-effort
+    }
+    return { status: 'PENDING_EDUCATOR_APPROVAL', resubmittedAt: now };
+  }
+
+  /**
    * Eğiticinin onboarding tamamlanma durumunu döner.
    * CV ve uzmanlık alanları doldurulmuş mu? Frontend bu cevapla kullanıcıyı
    * `EducatorOnboarding` sayfasına yönlendirip yönlendirmeyeceğine karar verir.

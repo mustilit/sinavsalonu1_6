@@ -247,11 +247,9 @@ export default function EducatorSettings() {
           website_url: rejectedWebsite || null,
         },
       });
-      // 2. status → PENDING_EDUCATOR_APPROVAL (eski alan adıyla da dengesel uyumluluk)
-      await auth.updateMe({
-        educator_status: "pending",
-        rejection_reason: null,
-      });
+      // 2. Adanmış resubmit endpoint'i: status REJECTED → PENDING + EDUCATOR_RESUBMITTED
+      //    audit log atılır (admin İncele timeline'ında "Eğitici yeniden başvurdu" satırı çıkar).
+      await api.post("/educators/me/resubmit-application");
     },
     onSuccess: async () => {
       toast.success(t("pages:educatorSettings.notices.rejected.resubmittedToast"));
