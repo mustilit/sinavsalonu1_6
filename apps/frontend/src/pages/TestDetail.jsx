@@ -450,7 +450,9 @@ export default function TestDetail() {
                 <BookOpen className="w-5 h-5 text-indigo-600" />
                 <div>
                   <p className="text-sm text-slate-500">{t("pages:testDetail.features.questionCount")}</p>
-                  <p className="font-semibold text-slate-900">{realQuestionCount}</p>
+                  {/* Paket toplam soru sayısı (tüm testlerin toplamı) — tek testin değil.
+                      test.question_count adapter'da paketin tüm testlerinin toplamıdır. */}
+                  <p className="font-semibold text-slate-900">{test.question_count ?? realQuestionCount}</p>
                 </div>
               </div>
 
