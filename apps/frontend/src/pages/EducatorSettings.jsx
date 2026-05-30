@@ -94,7 +94,10 @@ export default function EducatorSettings() {
       },
       iban: user.iban || "",
       bankName: user.bankName || "",
-      accountHolder: user.accountHolder || "",
+      // Hesap sahibi adı kayıt sırasında girilen full_name'den gelir, UI'dan
+      // değiştirilemez (banka uyumu). Eski kayıtlarda accountHolder farklıysa
+      // önceliği full_name'e ver — tek doğru kaynak.
+      accountHolder: user.full_name || user.accountHolder || "",
     };
     setFormData(initialData);
     setInitialFormData(initialData);
@@ -1063,14 +1066,21 @@ export default function EducatorSettings() {
                       <User className="w-4 h-4" />
                       {t("pages:educatorSettings.payment.holderLabel")} <span className="text-rose-500 ml-1">*</span>
                     </Label>
+                    {/*
+                      Hesap sahibi adı kayıt sırasında girilen full_name'den gelir
+                      ve UI'dan değiştirilemez. TKHK + Banka uyumu: ödeme alıcısı
+                      hesap profilindeki gerçek kimlikle eşleşmek zorunda. Ad
+                      değişikliği destek üzerinden yapılır.
+                    */}
                     <Input
                       id="accountHolder"
-                      placeholder={t("pages:educatorSettings.payment.holderPlaceholder")}
-                      value={formData.accountHolder}
-                      onChange={(e) => setFormData({ ...formData, accountHolder: e.target.value })}
-                      className="mt-2"
+                      value={user?.full_name || ""}
+                      readOnly
+                      disabled
+                      aria-readonly="true"
+                      className="mt-2 bg-slate-50 text-slate-600 cursor-not-allowed"
                     />
-                    <p className="text-xs text-slate-500 mt-1">{t("pages:educatorSettings.payment.holderHint")}</p>
+                    <p className="text-xs text-slate-500 mt-1">{t("pages:educatorSettings.payment.holderLockedHint")}</p>
                   </div>
 
                   <div>

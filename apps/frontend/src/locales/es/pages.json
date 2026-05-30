@@ -1055,6 +1055,7 @@
       "holderLabel": "Titular de la cuenta",
       "holderPlaceholder": "Nombre completo",
       "holderHint": "Nombre registrado en la cuenta bancaria",
+      "holderLockedHint": "Nombre del registro. Contacta con soporte para cambiarlo.",
       "bankLabel": "Banco",
       "bankPlaceholder": "p.ej. Ziraat Bank",
       "important": "Importante:",

@@ -1052,6 +1052,7 @@
       "holderLabel": "Kontoinhaber",
       "holderPlaceholder": "Vollständiger Name",
       "holderHint": "Name, der bei der Bank registriert ist",
+      "holderLockedHint": "Name aus Ihrer Registrierung. Wenden Sie sich an den Support, um ihn zu ändern.",
       "bankLabel": "Bank",
       "bankPlaceholder": "z. B. Ziraat Bank",
       "important": "Wichtig:",

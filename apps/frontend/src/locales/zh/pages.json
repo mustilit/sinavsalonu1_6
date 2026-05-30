@@ -1052,6 +1052,7 @@
       "holderLabel": "账户持有人",
       "holderPlaceholder": "姓名",
       "holderHint": "银行账户上注册的姓名",
+      "holderLockedHint": "您注册时填写的姓名。如需修改请联系客服。",
       "bankLabel": "银行名称",
       "bankPlaceholder": "例如:Ziraat 银行",
       "important": "重要:",

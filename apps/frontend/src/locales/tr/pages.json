@@ -1052,6 +1052,7 @@
       "holderLabel": "Hesap Sahibi Adı",
       "holderPlaceholder": "Ad Soyad",
       "holderHint": "Banka hesabında kayıtlı ad ve soyadınız",
+      "holderLockedHint": "Kayıt sırasında girdiğiniz ad-soyad. Değiştirmek için destek ile iletişime geçin.",
       "bankLabel": "Banka Adı",
       "bankPlaceholder": "Örn: Ziraat Bankası",
       "important": "Önemli:",
