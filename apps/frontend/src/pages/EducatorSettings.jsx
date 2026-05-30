@@ -214,7 +214,9 @@ export default function EducatorSettings() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      // PDF için /upload/document. /upload/image Sharp pipeline magic byte ile
+      // PDF'i reddediyor (yukarıdaki normal CV handler'ı ile aynı düzeltme).
+      const res = await api.post("/upload/document", fd, { headers: { "Content-Type": "multipart/form-data" } });
       const url = res.data?.url || res.data?.fileUrl || res.data?.file_url;
       if (!url) throw new Error("URL alınamadı");
       setRejectedCvUrl(url);
@@ -281,7 +283,9 @@ export default function EducatorSettings() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      // PDF için ayrı endpoint — /upload/image Sharp pipeline'ına gider ve magic
+      // byte kontrolünde PDF'i reddeder. /upload/document yalnızca PDF kabul eder.
+      const res = await api.post("/upload/document", fd, { headers: { "Content-Type": "multipart/form-data" } });
       const file_url = res.data.url || res.data.fileUrl || res.data.file_url;
       setFormData({ ...formData, cv_url: file_url });
       toast.success(t("pages:educatorSettings.toasts.cvUploaded"));
