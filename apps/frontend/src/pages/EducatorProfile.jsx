@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useLayoutEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPageUrl } from '@/utils';
@@ -16,7 +16,8 @@ import { toast } from 'sonner';
 import { ArrowLeft, Star, BookOpen, Users, GraduationCap, MessageSquare, User } from 'lucide-react';
 import { buildPageUrl, useAppNavigate } from '@/lib/navigation';
 
-const PAGE_SIZE = 10;
+// Test grid'i auto-fill: sayfa boyutu sabit değil, ölçülen sütun sayısı × satır.
+const TESTS_ROWS_PER_PAGE = 4;
 
 function isEmailLike(v) {
   return typeof v === 'string' && v.includes('@');
@@ -167,12 +168,36 @@ export default function EducatorProfile() {
 
   // Paging — 10 test / sayfa
   const [testsPage, setTestsPage] = useState(1);
-  const testsTotalPages = Math.max(1, Math.ceil(tests.length / PAGE_SIZE));
+  // Auto-fill: grid sütun sayısını runtime ölç → sayfa boyutu = sütun × satır (tam satırlar).
+  const testsGridRef = useRef(null);
+  const [testCols, setTestCols] = useState(0);
+  useLayoutEffect(() => {
+    const el = testsGridRef.current;
+    if (!el) return undefined;
+    const measure = () => {
+      const cols = getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length;
+      if (cols > 0) setTestCols(cols);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [tests.length]);
+  const testsPageSize = (testCols > 0 ? testCols : 4) * TESTS_ROWS_PER_PAGE;
+  const testsTotalPages = Math.max(1, Math.ceil(tests.length / testsPageSize));
   const testsCurrentPage = Math.min(testsPage, testsTotalPages);
   const pagedTests = useMemo(
-    () => tests.slice((testsCurrentPage - 1) * PAGE_SIZE, testsCurrentPage * PAGE_SIZE),
-    [tests, testsCurrentPage],
+    () => tests.slice((testsCurrentPage - 1) * testsPageSize, testsCurrentPage * testsPageSize),
+    [tests, testsCurrentPage, testsPageSize],
   );
+  // Sayfa değişince grid başına kaydır — yeni testler ekranın üstünde görünür olsun.
+  // (Pagination grid'in altında; aksi halde "yeni test gelmedi" gibi görünüyordu.)
+  const goToTestsPage = (next) => {
+    setTestsPage(next);
+    requestAnimationFrame(() => {
+      testsGridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   if (!idOrEmail) {
     return (
@@ -301,7 +326,7 @@ export default function EducatorProfile() {
         </div>
       ) : (
         <>
-          <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(280px,1fr))] mb-8">
+          <div ref={testsGridRef} className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(280px,1fr))] mb-8">
             {pagedTests.map((t) => (
               <TestPackageCard
                 key={t.id}
@@ -329,7 +354,7 @@ export default function EducatorProfile() {
           <PaginationBar
             page={testsCurrentPage}
             totalPages={testsTotalPages}
-            onPageChange={setTestsPage}
+            onPageChange={goToTestsPage}
           />
         </>
       )}
