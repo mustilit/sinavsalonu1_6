@@ -46,8 +46,11 @@ export default function EducatorProfile() {
 
   const endpoint = useMemo(() => {
     if (!idOrEmail) return null;
-    if (isEmailLike(idOrEmail)) return `/educators/by-email?email=${encodeURIComponent(idOrEmail)}`;
-    return `/educators/${encodeURIComponent(idOrEmail)}`;
+    // limit=50 (API üst sınırı): eğiticinin tüm yayın testlerini tek seferde çek; grid
+    // client-side 10'arlı sayfalanır. Varsayılan limit 20 olunca 23 test "2 sayfa" görünüp
+    // 21-23. testler erişilemiyordu. (50'den fazla test ileride server pagination gerektirir.)
+    if (isEmailLike(idOrEmail)) return `/educators/by-email?email=${encodeURIComponent(idOrEmail)}&limit=50`;
+    return `/educators/${encodeURIComponent(idOrEmail)}?limit=50`;
   }, [idOrEmail]);
 
   // Eğitici profil verisi
