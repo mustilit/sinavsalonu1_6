@@ -2,6 +2,7 @@ import { User } from '../../domain/entities/User';
 import type { UserStatus } from '../../domain/types';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 import type { UserStatus as PrismaUserStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../database/prisma';
 import { getDefaultTenantId } from '../../common/tenant';
 
@@ -147,26 +148,48 @@ export class PrismaUserRepository implements IUserRepository {
     const offset = Math.max(params?.offset ?? 0, 0);
     const sort = params?.sort ?? '-createdAt';
 
-    const rows = await prisma.user.findMany({
-      where: {
-        ...(q && {
-          OR: [
-            { email: { contains: q, mode: 'insensitive' } },
-            { username: { contains: q, mode: 'insensitive' } },
-          ],
-        }),
-        ...(role && { role: role as any }),
-        ...(status && { status: toPrismaStatus(status) as any }),
-      } as any,
-      include: { workerPermission: true },
-      orderBy: { createdAt: sort === 'createdAt' ? 'asc' : 'desc' } as any,
-      take: limit,
-      skip: offset,
-    });
+    // Raw SQL: Prisma client regenerate edilmediği için (Windows EPERM) UserStatus enum'unda
+    // REJECTED yok; findMany REJECTED durumdaki bir kayıt görünce patlar. status::text cast
+    // ile enum'u text olarak okuyup type assertion ile domain User['status']'a map ediyoruz.
+    // Parametreler Prisma.sql template literal ile güvenli (SQL injection yok).
+    const conditions: any[] = [];
+    if (q) {
+      const pattern = `%${q}%`;
+      conditions.push(Prisma.sql`(email ILIKE ${pattern} OR username ILIKE ${pattern})`);
+    }
+    if (role) conditions.push(Prisma.sql`role::text = ${role}`);
+    if (status) conditions.push(Prisma.sql`status::text = ${toPrismaStatus(status)}`);
+    const whereClause = conditions.length
+      ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+      : Prisma.empty;
+    const orderClause = sort === 'createdAt' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+
+    const rows = await prisma.$queryRaw<any[]>`
+      SELECT id, email, username, "passwordHash",
+             role::text AS role, status::text AS status,
+             "educatorApprovedAt", "passwordResetTokenExpiresAt",
+             metadata, "createdAt", "updatedAt"
+      FROM users
+      ${whereClause}
+      ORDER BY "createdAt" ${orderClause}
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    // WORKER kullanıcılarının izin sayfalarını ayrı sorguda çek (n+1 değil tek toplu sorgu)
+    const workerIds = rows.filter((r) => r.role === 'WORKER').map((r) => r.id);
+    let workerMap: Map<string, string[]> = new Map();
+    if (workerIds.length) {
+      const perms = await prisma.workerPermission.findMany({
+        where: { userId: { in: workerIds } },
+        select: { userId: true, pages: true },
+      });
+      workerMap = new Map(perms.map((p) => [p.userId, p.pages]));
+    }
+
     return rows.map((r) => {
-      const base = this.toDomain(r as any);
+      const base = this.toDomain(r);
       if (r.role === 'WORKER') {
-        (base as any).workerPages = (r as any).workerPermission?.pages ?? [];
+        (base as any).workerPages = workerMap.get(r.id) ?? [];
       }
       return base;
     });
