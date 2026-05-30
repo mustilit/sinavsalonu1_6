@@ -3,7 +3,8 @@ export type UserStatus =
   | 'INACTIVE'
   | 'DELETED'
   | 'SUSPENDED'
-  | 'PENDING_EDUCATOR_APPROVAL';
+  | 'PENDING_EDUCATOR_APPROVAL'
+  | 'REJECTED';
 
 export type UserRole = 'ADMIN' | 'EDUCATOR' | 'CANDIDATE' | 'WORKER';
 

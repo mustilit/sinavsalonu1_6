@@ -54,6 +54,7 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   PENDING_EDUCATOR_APPROVAL
+  REJECTED
 }
 
 enum AttemptStatus {
@@ -86,6 +87,7 @@ enum AuditAction {
   OBJECTION_CREATED
   OBJECTION_ANSWERED
   EDUCATOR_APPROVED
+  EDUCATOR_REJECTED
   EDUCATOR_SUSPENDED
   EDUCATOR_UNSUSPENDED
   DISCOUNT_CREATED
@@ -305,6 +307,9 @@ model User {
   role                            UserRole   @default(CANDIDATE)
   status                          UserStatus @default(ACTIVE)
   educatorApprovedAt              DateTime?
+  // Admin tarafından reddedilme — eğitici başvurusu reddedildiyse sebep ve zaman
+  rejectionReason                 String?
+  rejectedAt                      DateTime?
   lastLoginAt                     DateTime?
   passwordResetToken              String?    @unique
   passwordResetTokenExpiresAt     DateTime?

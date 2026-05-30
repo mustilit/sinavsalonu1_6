@@ -81,13 +81,29 @@ export class AuthController {
     const user = await this.userRepo.findById(sub);
     if (!user) throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND);
 
-    const userResponse = {
+    // Rejection bilgisi (eğitici başvurusu reddedildiyse) — raw SQL (client yeni
+    // kolonları henüz tanımıyor olabilir, EPERM nedeniyle generate edilmedi).
+    const rejectionRows = await prisma.$queryRaw<Array<{ rejectionReason: string | null; rejectedAt: Date | null }>>`
+      SELECT "rejectionReason", "rejectedAt" FROM users WHERE id = ${user.id} LIMIT 1
+    `;
+    const rejRow = rejectionRows[0] ?? null;
+
+    const userResponse: any = {
       id: user.id,
       email: user.email,
       username: user.username,
       role: user.role,
       status: user.status,
       educatorApprovedAt: user.educatorApprovedAt ?? undefined,
+      rejectionReason: rejRow?.rejectionReason ?? null,
+      rejectedAt: rejRow?.rejectedAt ?? null,
+      // Geriye dönük uyumluluk — eski frontend alan adları (EducatorSettings rejection notice)
+      educator_status:
+        user.status === 'REJECTED' ? 'rejected'
+        : user.status === 'ACTIVE' && user.educatorApprovedAt ? 'approved'
+        : user.status === 'PENDING_EDUCATOR_APPROVAL' ? 'pending'
+        : undefined,
+      rejection_reason: rejRow?.rejectionReason ?? undefined,
       createdAt: user.createdAt,
     };
 

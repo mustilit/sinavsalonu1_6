@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "@/lib/api/apiClient";
+import { adminEducators } from "@/api/dalClient";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -193,6 +194,32 @@ export default function ManageUsers() {
     onError: () => toast.error("Güncelleme başarısız"),
   });
 
+  // Pending eğitici başvurusunu onayla — adanmış endpoint /admin/educators/:id/approve
+  const approveEducatorMutation = useMutation({
+    mutationFn: (educatorId) => adminEducators.approve(educatorId),
+    onSuccess: () => {
+      toast.success("Eğitici onaylandı");
+      queryClient.invalidateQueries({ queryKey: ["allUsers"] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.error?.message || err?.response?.data?.message || "Onaylama başarısız";
+      toast.error(typeof msg === "string" ? msg : "Onaylama başarısız");
+    },
+  });
+
+  // Pending eğitici başvurusunu reddet — sebep zorunlu (/admin/educators/:id/reject)
+  const rejectEducatorMutation = useMutation({
+    mutationFn: ({ id, reason }) => adminEducators.reject(id, reason),
+    onSuccess: () => {
+      toast.success("Eğitici başvurusu reddedildi");
+      queryClient.invalidateQueries({ queryKey: ["allUsers"] });
+    },
+    onError: (err) => {
+      const msg = err?.response?.data?.error?.message || err?.response?.data?.message || "Reddetme başarısız";
+      toast.error(typeof msg === "string" ? msg : "Reddetme başarısız");
+    },
+  });
+
   // Worker oluştur
   const createWorkerMutation = useMutation({
     mutationFn: (body) => api.post("/admin/workers", body),
@@ -251,13 +278,17 @@ export default function ManageUsers() {
       toast.error("Lütfen red nedeni belirtin");
       return;
     }
-    updateUserMutation.mutate({
-      id: rejectUserId,
-      body: { educator_status: "rejected", rejection_reason: rejectionReason },
-    });
-    setShowRejectDialog(false);
-    setRejectUserId(null);
-    setRejectionReason("");
+    // Yeni adanmış endpoint: /admin/educators/:id/reject {reason}
+    rejectEducatorMutation.mutate(
+      { id: rejectUserId, reason: rejectionReason },
+      {
+        onSettled: () => {
+          setShowRejectDialog(false);
+          setRejectUserId(null);
+          setRejectionReason("");
+        },
+      },
+    );
   };
 
   const roleBadge = (role) => {
@@ -444,19 +475,33 @@ export default function ManageUsers() {
                         <div className="flex gap-2">
                           {u.role === "EDUCATOR" && (
                             <>
-                              {u.status !== "ACTIVE" && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-emerald-600 hover:text-emerald-700"
-                                  onClick={() => updateUserMutation.mutate({
-                                    id: u.id,
-                                    body: { educator_status: "approved" },
-                                  })}
-                                >
-                                  Onayla
-                                </Button>
+                              {/* Pending başvuru → Onayla + Reddet (yeni adanmış endpoint'ler) */}
+                              {u.status === "PENDING_EDUCATOR_APPROVAL" && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-emerald-600 hover:text-emerald-700"
+                                    onClick={() => approveEducatorMutation.mutate(u.id)}
+                                    disabled={approveEducatorMutation.isPending}
+                                  >
+                                    Onayla
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-rose-600 hover:text-rose-700"
+                                    onClick={() => {
+                                      setRejectUserId(u.id);
+                                      setShowRejectDialog(true);
+                                    }}
+                                    disabled={rejectEducatorMutation.isPending}
+                                  >
+                                    Reddet
+                                  </Button>
+                                </>
                               )}
+                              {/* Aktif eğitici: Askıya Al (mevcut suspend akışı) */}
                               {u.status === "ACTIVE" && (
                                 <Button
                                   variant="ghost"

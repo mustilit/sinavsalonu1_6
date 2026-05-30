@@ -1159,6 +1159,31 @@ export const adminUsers = {
 };
 
 /**
+ * Admin eğitici durum yönetimi.
+ *   - approve: pending başvuruyu onayla (status → ACTIVE + educatorApprovedAt)
+ *   - reject:  pending başvuruyu reddet (status → REJECTED + rejectionReason + rejectedAt). Sebep zorunlu.
+ *   - suspend / unsuspend: aktif eğiticiyi askıya al / askıdan kaldır
+ */
+export const adminEducators = {
+  approve: async (educatorId) => {
+    const { data } = await api.post(`/admin/educators/${educatorId}/approve`);
+    return data;
+  },
+  reject: async (educatorId, reason) => {
+    const { data } = await api.post(`/admin/educators/${educatorId}/reject`, { reason });
+    return data;
+  },
+  suspend: async (educatorId) => {
+    const { data } = await api.post(`/admin/educators/${educatorId}/suspend`);
+    return data;
+  },
+  unsuspend: async (educatorId) => {
+    const { data } = await api.post(`/admin/educators/${educatorId}/unsuspend`);
+    return data;
+  },
+};
+
+/**
  * Admin audit log listesi — GET /admin/audit
  * actorId + tarih aralığı + action/entity filtreleri.
  * Backend page/limit'le offset pagination yapar.

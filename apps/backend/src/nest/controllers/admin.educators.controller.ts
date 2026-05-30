@@ -1,8 +1,9 @@
-import { Controller, Post, Param, Req, HttpCode, Inject } from '@nestjs/common';
+import { Controller, Post, Param, Req, Body, HttpCode, Inject } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiConflictResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 import { Roles } from '../decorators/roles.decorator';
 import { ParseUUIDPipe } from '../pipes/parse-uuid.pipe';
 import { ApproveEducatorUseCase } from '../../application/use-cases/educator/ApproveEducatorUseCase';
+import { RejectEducatorUseCase } from '../../application/use-cases/educator/RejectEducatorUseCase';
 import { SuspendEducatorUseCase } from '../../application/use-cases/educator/SuspendEducatorUseCase';
 import { UnsuspendEducatorUseCase } from '../../application/use-cases/educator/UnsuspendEducatorUseCase';
 
@@ -15,6 +16,7 @@ import { UnsuspendEducatorUseCase } from '../../application/use-cases/educator/U
 export class AdminEducatorsController {
   constructor(
     @Inject(ApproveEducatorUseCase) private readonly approveEducator: ApproveEducatorUseCase,
+    @Inject(RejectEducatorUseCase) private readonly rejectEducator: RejectEducatorUseCase,
     @Inject(SuspendEducatorUseCase) private readonly suspendEducator: SuspendEducatorUseCase,
     @Inject(UnsuspendEducatorUseCase) private readonly unsuspendEducator: UnsuspendEducatorUseCase,
   ) {}
@@ -31,6 +33,25 @@ export class AdminEducatorsController {
   async approve(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
     const actorId = (req as any).user?.id;
     return this.approveEducator.execute(actorId, id);
+  }
+
+  /** Eğitici başvurusunu reddet — sebep zorunlu. Status REJECTED + rejectionReason kaydedilir. */
+  @Post(':id/reject')
+  @HttpCode(200)
+  @Roles('ADMIN')
+  @ApiBearerAuth('bearer')
+  @ApiOkResponse({ description: 'Educator rejected (or already rejected)' })
+  @ApiForbiddenResponse({ description: 'Forbidden' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiConflictResponse({ description: 'User is not an educator' })
+  @ApiBadRequestResponse({ description: 'Reason missing or invalid UUID' })
+  async reject(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { reason?: string },
+    @Req() req: any,
+  ) {
+    const actorId = (req as any).user?.id;
+    return this.rejectEducator.execute(actorId, id, body?.reason ?? '');
   }
 
   @Post(':id/suspend')

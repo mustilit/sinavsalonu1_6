@@ -61,6 +61,7 @@ import { UpdateTopicUseCase } from '../application/use-cases/admin/UpdateTopicUs
 import { DeleteTopicUseCase } from '../application/use-cases/admin/DeleteTopicUseCase';
 import { GetTopicTreeUseCase } from '../application/use-cases/admin/GetTopicTreeUseCase';
 import { ApproveEducatorUseCase } from '../application/use-cases/educator/ApproveEducatorUseCase';
+import { RejectEducatorUseCase } from '../application/use-cases/educator/RejectEducatorUseCase';
 import { SuspendEducatorUseCase } from '../application/use-cases/educator/SuspendEducatorUseCase';
 import { UnsuspendEducatorUseCase } from '../application/use-cases/educator/UnsuspendEducatorUseCase';
 import { PrismaUserRepository } from '../infrastructure/repositories/PrismaUserRepository';
@@ -406,6 +407,11 @@ const throttleDisabled = process.env.THROTTLE_DISABLED === '1';
     {
       provide: ApproveEducatorUseCase,
       useFactory: (userRepo: PrismaUserRepository, auditRepo: PrismaAuditLogRepository) => new ApproveEducatorUseCase(userRepo, auditRepo),
+      inject: [USER_REPO, AUDIT_LOG_REPO],
+    },
+    {
+      provide: RejectEducatorUseCase,
+      useFactory: (userRepo: PrismaUserRepository, auditRepo: PrismaAuditLogRepository) => new RejectEducatorUseCase(userRepo, auditRepo),
       inject: [USER_REPO, AUDIT_LOG_REPO],
     },
     {
