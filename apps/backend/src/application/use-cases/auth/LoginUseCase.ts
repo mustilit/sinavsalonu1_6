@@ -121,11 +121,15 @@ export class LoginUseCase {
     // 2FA kapalı → normal akış. Tek aktif oturum kuralı için yeni sessionId
     // üretilir ve User.activeSessionId'ye yazılır; eski cihazların token'ları
     // bu noktada otomatik geçersizleşir (JwtAuthGuard sid karşılaştırması).
+    //
+    // RAW SQL: Prisma client REJECTED enum'unu görmediği için (Windows EPERM)
+    // status select etmesek bile `prisma.user.update` row hydrate edip patlar.
+    // `$executeRaw` enum'a dokunmuyor → güvenli.
     const sid = randomUUID();
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { activeSessionId: sid } as any,
-    });
+    await prisma.$executeRaw`
+      UPDATE users SET "activeSessionId" = ${sid}, "updatedAt" = NOW()
+      WHERE id = ${user.id}
+    `;
 
     // Cache'i hemen invalidate et — JwtAuthGuard 60s TTL bekleyip eski
     // session ID ile kabul etmesin. Best-effort.
